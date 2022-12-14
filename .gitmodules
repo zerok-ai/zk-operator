@@ -1,0 +1,3 @@
+[submodule "lattice"]
+	path = lattice
+	url = https://github.com/zerok-ai/lattice.git
