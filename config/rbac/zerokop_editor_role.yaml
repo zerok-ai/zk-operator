@@ -1,0 +1,24 @@
+# permissions for end users to edit zerokops.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: zerokop-editor-role
+rules:
+- apiGroups:
+  - operator.zerok.ai
+  resources:
+  - zerokops
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.zerok.ai
+  resources:
+  - zerokops/status
+  verbs:
+  - get

@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+option go_package = "/proto";
+
+package envoy.extensions.filters.network.http_connection_manager.v3;
+
+import "envoy/extensions/access_loggers/file/v3/FileAccessLog.proto";
+
+message AccessLog {
+    string name = 1;
+    envoy.extensions.access_loggers.file.v3.FileAccessLog typed_config = 2;
+}
+
+message HttpConnectionManager {
+    AccessLog access_log = 1;
+}

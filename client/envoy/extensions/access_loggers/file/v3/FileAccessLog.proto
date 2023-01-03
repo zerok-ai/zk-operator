@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+option go_package = "/proto";
+
+package envoy.extensions.access_loggers.file.v3;
+
+message FileAccessLog {
+  
+  string path = 1;
+  string format = 2; 
+
+}

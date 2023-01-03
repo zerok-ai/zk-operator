@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+option go_package = "/proto";
+
+import "envoy/extensions/filters/network/http_connection_manager/v3/HttpConnectionManager.proto";
+
+message Value {
+    envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager typed_config = 1;
+}
+
+
+
+
+
+
+
