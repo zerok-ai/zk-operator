@@ -1,3 +1,6 @@
 mode: set
-github.com/zerokdotai/zerok-operator/controllers/zerokop_controller.go:55.99,65.2 7 0
-github.com/zerokdotai/zerok-operator/controllers/zerokop_controller.go:68.70,73.2 1 0
+github.com/zerokdotai/zerok-operator/controllers/zerokop_controller.go:55.99,59.16 4 0
+github.com/zerokdotai/zerok-operator/controllers/zerokop_controller.go:64.2,65.27 2 0
+github.com/zerokdotai/zerok-operator/controllers/zerokop_controller.go:59.16,61.3 1 0
+github.com/zerokdotai/zerok-operator/controllers/zerokop_controller.go:61.8,63.3 1 0
+github.com/zerokdotai/zerok-operator/controllers/zerokop_controller.go:69.70,74.2 1 0
