@@ -31,10 +31,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	operatorv1alpha1 "github.com/zerokdotai/zerok-operator/api/v1alpha1"
-	"github.com/zerokdotai/zerok-operator/controllers"
-	opclients "github.com/zerokdotai/zerok-operator/opclients"
-	resources "github.com/zerokdotai/zerok-operator/resources"
+	operatorv1alpha1 "github.com/zerok-ai/operator/api/v1alpha1"
+	"github.com/zerok-ai/operator/controllers"
+	//opclients "github.com/zerok-ai/operator/opclients"
+	//resources "github.com/zerok-ai/operator/resources"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -95,10 +95,6 @@ func main() {
 	if err = (&controllers.ZerokopReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
-		Kclient: &opclients.K8sClient{
-			DeploymentInformers: make(map[string]*opclients.PodObserver),
-			ServiceInformers:    make(map[string]*opclients.PodObserver),
-		},
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Zerokop")
 		os.Exit(1)
@@ -119,8 +115,4 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
-
-	//Setting up operator Apis
-	resources.RegisterUpdateEnvoyAPI()
-
 }
