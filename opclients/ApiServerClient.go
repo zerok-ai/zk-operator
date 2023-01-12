@@ -15,7 +15,7 @@ import (
 var token_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 var cert_path = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 
-func doesObjectExist(version, kind, namespace, name string) (bool, map[interface{}]interface{}) {
+func doesObjectExist(version, kind, namespace, name string) (bool, map[string]interface{}) {
 	url := getUpdateUrl(version, kind, namespace, name)
 	fmt.Println("Url is", url)
 	req, err := http.NewRequest("GET", url, nil)
@@ -39,17 +39,29 @@ func doesObjectExist(version, kind, namespace, name string) (bool, map[interface
 		fmt.Println("Error while reading the response bytes:", err)
 	}
 
-	fmt.Println("Response ", body)
+	fmt.Println("Response ", string(body))
 
-	m := make(map[interface{}]interface{})
+	m := make(map[string]interface{})
 	json.Unmarshal(body, &m)
 
+	fmt.Println("Response map ", m)
+
 	code, ok := m["code"]
+
+	fmt.Printf("Type of code is %T.\n", code)
 
 	if ok {
 		switch x := code.(type) {
 		case string:
 			if x == "404" {
+				return false, nil
+			}
+		case int:
+			if x == 404 {
+				return false, nil
+			}
+		case float64:
+			if int(x) == 404 {
 				return false, nil
 			}
 		default:

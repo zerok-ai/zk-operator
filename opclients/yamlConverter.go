@@ -82,7 +82,7 @@ func convertMapToJsonBytes(yamlMap map[interface{}]interface{}) ([]byte, error) 
 	return jsonBytes, nil
 }
 
-func getLastAppliedConfig(yamlMap map[interface{}]interface{}) string {
+func getLastAppliedConfig(yamlMap map[string]interface{}) string {
 	defaultOut := ""
 	metadata, ok := yamlMap["metadata"]
 	if ok {
@@ -125,7 +125,11 @@ func addLastAppliedConfiguration(yamlMap map[interface{}]interface{}) map[interf
 			if ok {
 				switch y := annotations.(type) {
 				case map[interface{}]interface{}:
-					y[lastAppliedConfigKey] = fmt.Sprint(yamlMap)
+					yamlMapBytes, err := convertMapToJsonBytes(yamlMap)
+					if err != nil {
+						fmt.Println("Error caught while converting map to json.")
+					}
+					y[lastAppliedConfigKey] = string(yamlMapBytes)
 					x["annotatations"] = y
 					yamlMap["metadata"] = x
 					return yamlMap
@@ -133,8 +137,12 @@ func addLastAppliedConfiguration(yamlMap map[interface{}]interface{}) map[interf
 					panic("Annotations in metadata of yaml object is not map.")
 				}
 			} else {
+				yamlMapBytes, err := convertMapToJsonBytes(yamlMap)
+				if err != nil {
+					fmt.Println("Error caught while converting map to json.")
+				}
 				defaultOut := make(map[interface{}]interface{})
-				defaultOut[lastAppliedConfigKey] = fmt.Sprint(yamlMap)
+				defaultOut[lastAppliedConfigKey] = string(yamlMapBytes)
 				x["annotatations"] = defaultOut
 				yamlMap["metadata"] = x
 				return yamlMap
