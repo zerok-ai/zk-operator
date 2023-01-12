@@ -14,6 +14,7 @@ COPY main.go main.go
 COPY api/ api/
 COPY controllers/ controllers/
 COPY opclients/ opclients/
+COPY zk_yaml/ zk_yaml/ 
 
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager main.go
@@ -27,5 +28,6 @@ ADD https://storage.googleapis.com/kubernetes-release/release/v1.9.4/bin/linux/a
 RUN chmod +x /usr/local/bin/kubectl
 WORKDIR /
 COPY --from=builder /workspace/manager .
+COPY --from=builder /workspace/zk_yaml/ zk_yaml/
 USER 65532:65532
 ENTRYPOINT ["/manager"]

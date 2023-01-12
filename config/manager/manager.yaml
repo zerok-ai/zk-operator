@@ -40,6 +40,9 @@ spec:
         - --leader-elect
         image: controller:latest
         imagePullPolicy: Always
+        env:
+        - name: "ZK_YAML_PATH"
+          value: "zk_yaml"
         name: manager
         securityContext:
           allowPrivilegeEscalation: false
