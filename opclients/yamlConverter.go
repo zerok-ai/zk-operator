@@ -15,6 +15,14 @@ import (
 var path = ""
 var lastAppliedConfigKey = "zk/last-applied-configuration"
 
+func ApplyZerokObjects(path string) {
+	yamlFiles, err := getAllYamlFileNamesInPath(path, true)
+	if err != nil {
+		panic("Error finding yaml files in given path")
+	}
+	createK8sObjects(yamlFiles)
+}
+
 func createK8sObjects(fileNames []string) {
 	for _, fn := range fileNames {
 		yfile, err := ioutil.ReadFile(path + "/" + fn)
