@@ -45,7 +45,8 @@ func createK8sObjects(path string, fileNames []string) {
 			}
 			version, kind := getVK(yamlMap)
 			namespace := getNamespace(yamlMap)
-			objectExist, respMap := doesObjectExist(version, kind, namespace)
+			name := getName(yamlMap)
+			objectExist, respMap := doesObjectExist(version, kind, namespace, name)
 			yamlMap = addLastAppliedConfiguration(yamlMap)
 			if objectExist {
 				fmt.Println("Object exists.")
@@ -58,7 +59,7 @@ func createK8sObjects(path string, fileNames []string) {
 				if err != nil {
 					fmt.Println("Error caught while finding patch for file ", fn, " error ", err)
 				}
-				updateObject(version, kind, namespace, patch)
+				updateObject(version, kind, namespace, name, patch)
 			} else {
 				fmt.Println("Object does not exist.")
 				partBytes, err = yaml.Marshal(yamlMap)
@@ -202,6 +203,30 @@ func getVK(yamlMap map[interface{}]interface{}) (string, string) {
 	}
 
 	return versionStr, kindStr
+}
+
+func getName(yamlMap map[interface{}]interface{}) string {
+	metadata, ok := yamlMap["metadata"]
+	name := ""
+	if ok {
+		switch x := metadata.(type) {
+		case map[string]interface{}:
+			nameobj, ok := x["name"]
+			if ok {
+				switch y := nameobj.(type) {
+				case string:
+					name = y
+				default:
+					panic("name in yaml object is not string.")
+				}
+			}
+		default:
+			panic("metada of yaml object is not map.")
+		}
+	} else {
+		panic("metadata is not present in  yaml object.")
+	}
+	return name
 }
 
 func getNamespace(yamlMap map[interface{}]interface{}) string {

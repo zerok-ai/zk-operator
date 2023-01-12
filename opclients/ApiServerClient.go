@@ -15,8 +15,9 @@ import (
 var token_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 var cert_path = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 
-func doesObjectExist(version, kind, namespace string) (bool, map[interface{}]interface{}) {
-	url := getUrl(version, kind, namespace)
+func doesObjectExist(version, kind, namespace, name string) (bool, map[interface{}]interface{}) {
+	url := getUpdateUrl(version, kind, namespace, name)
+	fmt.Println("Url is", url)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		fmt.Println("Get request failed.")
@@ -38,6 +39,8 @@ func doesObjectExist(version, kind, namespace string) (bool, map[interface{}]int
 		fmt.Println("Error while reading the response bytes:", err)
 	}
 
+	fmt.Println("Response ", body)
+
 	m := make(map[interface{}]interface{})
 	json.Unmarshal(body, &m)
 
@@ -56,7 +59,12 @@ func doesObjectExist(version, kind, namespace string) (bool, map[interface{}]int
 	return true, m
 }
 
-func getUrl(version, kind, namespace string) string {
+func getUpdateUrl(version, kind, namespace, name string) string {
+	url := getCreateUrl(version, kind, namespace)
+	return url + "/" + name
+}
+
+func getCreateUrl(version, kind, namespace string) string {
 	url := ""
 	if namespace == "" {
 		url = "https://" + getK8sApiEndPoint() + "/apis/" + version + "/" + kind
@@ -66,8 +74,8 @@ func getUrl(version, kind, namespace string) string {
 	return url
 }
 
-func updateObject(version, kind, namespace string, yaml []byte) {
-	url := getUrl(version, kind, namespace)
+func updateObject(version, kind, namespace, name string, yaml []byte) {
+	url := getUpdateUrl(version, kind, namespace, name)
 	req, err := http.NewRequest("PATCH", url, bytes.NewBuffer(yaml))
 
 	if err != nil {
@@ -95,7 +103,7 @@ func updateObject(version, kind, namespace string, yaml []byte) {
 }
 
 func createObject(version, kind, namespace string, yaml []byte) {
-	url := getUrl(version, kind, namespace)
+	url := getCreateUrl(version, kind, namespace)
 	fmt.Println("url is ", url)
 	fmt.Println("Yaml is ", string(yaml))
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(yaml))
