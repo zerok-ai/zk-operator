@@ -96,6 +96,8 @@ func updateObject(version, kind, namespace string, yaml []byte) {
 
 func createObject(version, kind, namespace string, yaml []byte) {
 	url := getUrl(version, kind, namespace)
+	fmt.Println("url is ", url)
+	fmt.Println("Yaml is ", string(yaml))
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(yaml))
 
 	if err != nil {

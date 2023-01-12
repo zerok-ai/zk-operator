@@ -11,19 +11,18 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// TODO: get this path from yaml file of operator
-var path = ""
 var lastAppliedConfigKey = "zk/last-applied-configuration"
 
 func ApplyZerokObjects(path string) {
 	yamlFiles, err := getAllYamlFileNamesInPath(path, true)
+
 	if err != nil {
 		panic("Error finding yaml files in given path")
 	}
-	createK8sObjects(yamlFiles)
+	createK8sObjects(path, yamlFiles)
 }
 
-func createK8sObjects(fileNames []string) {
+func createK8sObjects(path string, fileNames []string) {
 	for _, fn := range fileNames {
 		yfile, err := ioutil.ReadFile(path + "/" + fn)
 
@@ -37,6 +36,7 @@ func createK8sObjects(fileNames []string) {
 		parts := strings.Split(yfilestring, "\n---\n")
 
 		for _, part := range parts {
+			fmt.Println("Applying part", part)
 			partBytes := []byte(part)
 			yamlMap, err := yamlToMap(partBytes)
 			if err != nil {
@@ -48,6 +48,7 @@ func createK8sObjects(fileNames []string) {
 			objectExist, respMap := doesObjectExist(version, kind, namespace)
 			yamlMap = addLastAppliedConfiguration(yamlMap)
 			if objectExist {
+				fmt.Println("Object exists.")
 				lastAppliedConfig := getLastAppliedConfig(respMap)
 				jsonBytes, err := convertMapToJsonBytes(yamlMap)
 				if err != nil {
@@ -59,6 +60,7 @@ func createK8sObjects(fileNames []string) {
 				}
 				updateObject(version, kind, namespace, patch)
 			} else {
+				fmt.Println("Object does not exist.")
 				partBytes, err = yaml.Marshal(yamlMap)
 				if err != nil {
 					fmt.Println("Unable to marshal map into marshal after adding last applied config.")
