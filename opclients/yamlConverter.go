@@ -1,6 +1,7 @@
 package opclients
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -40,7 +41,11 @@ func createK8sObjects(fileNames []string) {
 			yamlMap = addLastAppliedConfiguration(yamlMap)
 			if objectExist {
 				lastAppliedConfig := getLastAppliedConfig(respMap)
-				patch, err := findPatch([]byte(lastAppliedConfig), []byte(fmt.Sprint(yamlMap)))
+				jsonBytes, err := convertMapToJsonBytes(yamlMap)
+				if err != nil {
+					return
+				}
+				patch, err := findPatch([]byte(lastAppliedConfig), jsonBytes)
 				if err != nil {
 					fmt.Println("Error caught while finding patch for file ", fn, " error ", err)
 				}
@@ -55,6 +60,15 @@ func createK8sObjects(fileNames []string) {
 			}
 		}
 	}
+}
+
+func convertMapToJsonBytes(yamlMap map[interface{}]interface{}) ([]byte, error) {
+	jsonBytes, err := json.Marshal(yamlMap)
+	if err != nil {
+		fmt.Println("Unable to convert map to json.")
+		return nil, err
+	}
+	return jsonBytes, nil
 }
 
 func getLastAppliedConfig(yamlMap map[interface{}]interface{}) string {
