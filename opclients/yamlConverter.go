@@ -51,7 +51,7 @@ func createK8sObjects(path string, fileNames []string) {
 			if objectExist {
 				fmt.Println("Object exists.")
 				lastAppliedConfig := getLastAppliedConfig(respMap)
-				jsonBytes, err := convertMapToJsonBytes(yamlMap)
+				jsonBytes, err := convertMapToJsonBytes(converMap(yamlMap))
 				if err != nil {
 					return
 				}
@@ -73,7 +73,20 @@ func createK8sObjects(path string, fileNames []string) {
 	}
 }
 
-func convertMapToJsonBytes(yamlMap map[interface{}]interface{}) ([]byte, error) {
+func converMap(yamlMap map[interface{}]interface{}) map[string]interface{} {
+	outMap := make(map[string]interface{})
+	for k, v := range yamlMap {
+		switch x := k.(type) {
+		case string:
+			outMap[x] = v
+		default:
+		}
+	}
+
+	return outMap
+}
+
+func convertMapToJsonBytes(yamlMap map[string]interface{}) ([]byte, error) {
 	jsonBytes, err := json.Marshal(yamlMap)
 	if err != nil {
 		fmt.Println("Unable to convert map to json.")
@@ -124,8 +137,8 @@ func addLastAppliedConfiguration(yamlMap map[interface{}]interface{}) map[interf
 			annotations, ok := x["annotations"]
 			if ok {
 				switch y := annotations.(type) {
-				case map[interface{}]interface{}:
-					yamlMapBytes, err := convertMapToJsonBytes(yamlMap)
+				case map[string]interface{}:
+					yamlMapBytes, err := convertMapToJsonBytes(converMap(yamlMap))
 					if err != nil {
 						fmt.Println("Error caught while converting map to json.")
 					}
@@ -137,11 +150,11 @@ func addLastAppliedConfiguration(yamlMap map[interface{}]interface{}) map[interf
 					panic("Annotations in metadata of yaml object is not map.")
 				}
 			} else {
-				yamlMapBytes, err := convertMapToJsonBytes(yamlMap)
+				yamlMapBytes, err := convertMapToJsonBytes(converMap(yamlMap))
 				if err != nil {
 					fmt.Println("Error caught while converting map to json.")
 				}
-				defaultOut := make(map[interface{}]interface{})
+				defaultOut := make(map[string]interface{})
 				defaultOut[lastAppliedConfigKey] = string(yamlMapBytes)
 				x["annotatations"] = defaultOut
 				yamlMap["metadata"] = x
