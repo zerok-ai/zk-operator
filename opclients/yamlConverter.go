@@ -37,17 +37,15 @@ func createK8sObjects(fileNames []string) {
 			version, kind := getVK(yamlMap)
 			namespace := getNamespace(yamlMap)
 			objectExist, respMap := doesObjectExist(version, kind, namespace)
+			yamlMap = addLastAppliedConfiguration(yamlMap)
 			if objectExist {
 				lastAppliedConfig := getLastAppliedConfig(respMap)
 				patch, err := findPatch([]byte(lastAppliedConfig), []byte(fmt.Sprint(yamlMap)))
 				if err != nil {
 					fmt.Println("Error caught while finding patch for file ", fn, " error ", err)
 				}
-				// update last applied configuration value in patch
 				updateObject(version, kind, namespace, patch)
 			} else {
-				// add last applied configuration in patch
-				yamlMap = addLastAppliedConfiguration(yamlMap)
 				partBytes, err = yaml.Marshal(yamlMap)
 				if err != nil {
 					fmt.Println("Unable to marshal map into marshal after adding last applied config.")
