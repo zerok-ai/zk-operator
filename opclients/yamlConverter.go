@@ -12,6 +12,7 @@ import (
 
 // TODO: get this path from yaml file of operator
 var path = ""
+var lastAppliedConfigKey = "zk/last-applied-configuration"
 
 func createK8sObjects(fileNames []string) {
 	for _, fn := range fileNames {
@@ -54,8 +55,8 @@ func createK8sObjects(fileNames []string) {
 	}
 }
 
-func getExistingAnnotationsMap(yamlMap map[interface{}]interface{}) map[interface{}]interface{} {
-	defaultOut := make(map[interface{}]interface{})
+func getLastAppliedConfig(yamlMap map[interface{}]interface{}) string {
+	defaultOut := ""
 	metadata, ok := yamlMap["metadata"]
 	if ok {
 		switch x := metadata.(type) {
@@ -64,7 +65,17 @@ func getExistingAnnotationsMap(yamlMap map[interface{}]interface{}) map[interfac
 			if ok {
 				switch y := annotations.(type) {
 				case map[interface{}]interface{}:
-					return y
+					lastApplied, ok := y[lastAppliedConfigKey]
+					if ok {
+						switch z := lastApplied.(type) {
+						case string:
+							return z
+						default:
+							return defaultOut
+						}
+					} else {
+						return defaultOut
+					}
 				default:
 					return defaultOut
 				}
@@ -87,7 +98,7 @@ func addLastAppliedConfiguration(yamlMap map[interface{}]interface{}) map[interf
 			if ok {
 				switch y := annotations.(type) {
 				case map[interface{}]interface{}:
-					y["zk/last-applied-configuration"] = fmt.Sprint(yamlMap)
+					y[lastAppliedConfigKey] = fmt.Sprint(yamlMap)
 					x["annotatations"] = y
 					return x
 				default:
@@ -95,7 +106,7 @@ func addLastAppliedConfiguration(yamlMap map[interface{}]interface{}) map[interf
 				}
 			} else {
 				defaultOut := make(map[interface{}]interface{})
-				defaultOut["zk/last-applied-configuration"] = fmt.Sprint(yamlMap)
+				defaultOut[lastAppliedConfigKey] = fmt.Sprint(yamlMap)
 				x["annotatations"] = defaultOut
 				return x
 			}
