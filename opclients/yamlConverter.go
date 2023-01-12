@@ -62,7 +62,7 @@ func getLastAppliedConfig(yamlMap map[interface{}]interface{}) string {
 	metadata, ok := yamlMap["metadata"]
 	if ok {
 		switch x := metadata.(type) {
-		case map[interface{}]interface{}:
+		case map[string]interface{}:
 			annotations, ok := x["annotations"]
 			if ok {
 				switch y := annotations.(type) {
@@ -95,14 +95,15 @@ func addLastAppliedConfiguration(yamlMap map[interface{}]interface{}) map[interf
 	metadata, ok := yamlMap["metadata"]
 	if ok {
 		switch x := metadata.(type) {
-		case map[interface{}]interface{}:
+		case map[string]interface{}:
 			annotations, ok := x["annotations"]
 			if ok {
 				switch y := annotations.(type) {
 				case map[interface{}]interface{}:
 					y[lastAppliedConfigKey] = fmt.Sprint(yamlMap)
 					x["annotatations"] = y
-					return x
+					yamlMap["metadata"] = x
+					return yamlMap
 				default:
 					panic("Annotations in metadata of yaml object is not map.")
 				}
@@ -110,7 +111,8 @@ func addLastAppliedConfiguration(yamlMap map[interface{}]interface{}) map[interf
 				defaultOut := make(map[interface{}]interface{})
 				defaultOut[lastAppliedConfigKey] = fmt.Sprint(yamlMap)
 				x["annotatations"] = defaultOut
-				return x
+				yamlMap["metadata"] = x
+				return yamlMap
 			}
 		default:
 			panic("metada of yaml object is not map.")
@@ -183,7 +185,7 @@ func getNamespace(yamlMap map[interface{}]interface{}) string {
 	namespace := ""
 	if ok {
 		switch x := metadata.(type) {
-		case map[interface{}]interface{}:
+		case map[string]interface{}:
 			namespaceobj, ok := x["namespace"]
 			if ok {
 				switch y := namespaceobj.(type) {
