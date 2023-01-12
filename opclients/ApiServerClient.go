@@ -15,7 +15,7 @@ import (
 var token_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 var cert_path = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 
-func doesObjectExist(version, kind, namespace string) bool {
+func doesObjectExist(version, kind, namespace string) (bool, map[interface{}]interface{}) {
 	url := getUrl(version, kind, namespace)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -38,7 +38,7 @@ func doesObjectExist(version, kind, namespace string) bool {
 		fmt.Println("Error while reading the response bytes:", err)
 	}
 
-	m := make(map[string]interface{})
+	m := make(map[interface{}]interface{})
 	json.Unmarshal(body, &m)
 
 	code, ok := m["code"]
@@ -47,13 +47,13 @@ func doesObjectExist(version, kind, namespace string) bool {
 		switch x := code.(type) {
 		case string:
 			if x == "404" {
-				return false
+				return false, nil
 			}
 		default:
 			panic("Unkown response code received.")
 		}
 	}
-	return true
+	return true, m
 }
 
 func getUrl(version, kind, namespace string) string {
@@ -64,6 +64,34 @@ func getUrl(version, kind, namespace string) string {
 		url = "https://" + getK8sApiEndPoint() + "/apis/" + version + "/namespaces/" + namespace + "/" + kind
 	}
 	return url
+}
+
+func updateObject(version, kind, namespace string, yaml []byte) {
+	url := getUrl(version, kind, namespace)
+	req, err := http.NewRequest("PATCH", url, bytes.NewBuffer(yaml))
+
+	if err != nil {
+		fmt.Println("Update request failed.")
+	}
+
+	req.Header.Add("Authorization", getBearerAuthToken())
+
+	req.Header.Add("Content-Type", "application/merge-patch+json")
+
+	client := getHttpClient()
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Error on response.\n[ERROR] -", err)
+	}
+
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error while reading the response bytes:", err)
+	}
+	fmt.Println(string([]byte(body)))
 }
 
 func createObject(version, kind, namespace string, yaml []byte) {
