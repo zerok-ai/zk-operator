@@ -42,10 +42,68 @@ func createK8sObjects(fileNames []string) {
 				// apply patch
 			} else {
 				// add last applied configuration in patch
+				yamlMap = addLastAppliedConfiguration(yamlMap)
+				partBytes, err = yaml.Marshal(yamlMap)
+				if err != nil {
+					fmt.Println("Unable to marshal map into marshal after adding last applied config.")
+					return
+				}
 				createObject(version, kind, namespace, partBytes)
 			}
 		}
 	}
+}
+
+func getExistingAnnotationsMap(yamlMap map[interface{}]interface{}) map[interface{}]interface{} {
+	defaultOut := make(map[interface{}]interface{})
+	metadata, ok := yamlMap["metadata"]
+	if ok {
+		switch x := metadata.(type) {
+		case map[interface{}]interface{}:
+			annotations, ok := x["annotations"]
+			if ok {
+				switch y := annotations.(type) {
+				case map[interface{}]interface{}:
+					return y
+				default:
+					return defaultOut
+				}
+			} else {
+				return defaultOut
+			}
+		default:
+			panic("metada of yaml object is not map.")
+		}
+	}
+	return defaultOut
+}
+
+func addLastAppliedConfiguration(yamlMap map[interface{}]interface{}) map[interface{}]interface{} {
+	metadata, ok := yamlMap["metadata"]
+	if ok {
+		switch x := metadata.(type) {
+		case map[interface{}]interface{}:
+			annotations, ok := x["annotations"]
+			if ok {
+				switch y := annotations.(type) {
+				case map[interface{}]interface{}:
+					y["zk/last-applied-configuration"] = fmt.Sprint(yamlMap)
+					x["annotatations"] = y
+					return x
+				default:
+					panic("Annotations in metadata of yaml object is not map.")
+				}
+			} else {
+				defaultOut := make(map[interface{}]interface{})
+				defaultOut["zk/last-applied-configuration"] = fmt.Sprint(yamlMap)
+				x["annotatations"] = defaultOut
+				return x
+			}
+		default:
+			panic("metada of yaml object is not map.")
+		}
+	}
+	panic("metada is not present in yaml object.")
 }
 
 func getAllYamlFileNamesInPath(path string, recursive bool) ([]string, error) {
@@ -112,7 +170,7 @@ func getNamespace(yamlMap map[interface{}]interface{}) string {
 	namespace := ""
 	if ok {
 		switch x := metadata.(type) {
-		case map[string]interface{}:
+		case map[interface{}]interface{}:
 			namespaceobj, ok := x["namespace"]
 			if ok {
 				switch y := namespaceobj.(type) {

@@ -15,13 +15,6 @@ import (
 var token_path = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 var cert_path = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 
-type ApiServerClient struct {
-	K8sServiceHost string
-	K8sServicePort string
-	caCertPath     string
-	tokenPath      string
-}
-
 func doesObjectExist(version, kind, namespace string) bool {
 	url := getUrl(version, kind, namespace)
 	req, err := http.NewRequest("GET", url, nil)
@@ -46,7 +39,7 @@ func doesObjectExist(version, kind, namespace string) bool {
 	}
 
 	m := make(map[string]interface{})
-	err = json.Unmarshal(body, &m)
+	json.Unmarshal(body, &m)
 
 	code, ok := m["code"]
 
