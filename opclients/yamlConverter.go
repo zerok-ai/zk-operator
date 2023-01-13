@@ -99,13 +99,15 @@ func convertMapToJsonBytes(yamlMap map[string]interface{}) ([]byte, error) {
 func getLastAppliedConfig(yamlMap map[string]interface{}) string {
 	defaultOut := ""
 	metadata, ok := yamlMap["metadata"]
+	fmt.Printf("Metadata value is %v and type is %T\n", metadata, metadata)
 	if ok {
 		switch x := metadata.(type) {
 		case map[string]interface{}:
-			annotations, ok := x["annotations"]
+			annotations, ok := x[annotationsKey]
 			if ok {
+				fmt.Printf("Annotations value is %v and type is %T\n", annotations, annotations)
 				switch y := annotations.(type) {
-				case map[interface{}]interface{}:
+				case map[string]interface{}:
 					lastApplied, ok := y[lastAppliedConfigKey]
 					if ok {
 						switch z := lastApplied.(type) {
@@ -193,6 +195,8 @@ func getAllYamlFileNamesInPath(path string, recursive bool) ([]string, error) {
 }
 
 func findPatch(sourceJson []byte, targetJson []byte) ([]byte, error) {
+	fmt.Printf("SourceJson %v.\n", string(sourceJson))
+	fmt.Printf("targetJson %v.\n", string(targetJson))
 	return jsonpatch.CreateMergePatch(sourceJson, targetJson)
 }
 
