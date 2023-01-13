@@ -12,6 +12,7 @@ import (
 )
 
 var lastAppliedConfigKey = "zk/last-applied-configuration"
+var annotationsKey = "annotations"
 
 func ApplyZerokObjects(path string) {
 	yamlFiles, err := getAllYamlFileNamesInPath(path, true)
@@ -143,7 +144,7 @@ func addLastAppliedConfiguration(yamlMap map[interface{}]interface{}) map[interf
 						fmt.Println("Error caught while converting map to json.")
 					}
 					y[lastAppliedConfigKey] = string(yamlMapBytes)
-					x["annotatations"] = y
+					x[annotationsKey] = y
 					yamlMap["metadata"] = x
 					return yamlMap
 				default:
@@ -156,7 +157,7 @@ func addLastAppliedConfiguration(yamlMap map[interface{}]interface{}) map[interf
 				}
 				defaultOut := make(map[string]interface{})
 				defaultOut[lastAppliedConfigKey] = string(yamlMapBytes)
-				x["annotatations"] = defaultOut
+				x[annotationsKey] = defaultOut
 				yamlMap["metadata"] = x
 				return yamlMap
 			}
