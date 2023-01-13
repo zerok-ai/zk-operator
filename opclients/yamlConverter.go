@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"sort"
 	"strings"
 
 	jsonpatch "github.com/evanphx/json-patch"
@@ -176,21 +177,24 @@ func getAllYamlFileNamesInPath(path string, recursive bool) ([]string, error) {
 	items, err := ioutil.ReadDir(path)
 	if err != nil {
 		fmt.Println("Error caught while getting files from path ", err)
-		return []string{}, fmt.Errorf("Error caught while getting files %v", err)
+		return []string{}, fmt.Errorf("error caught while getting files %v", err)
 	}
 
+	filesInCurreDir := []string{}
 	for _, f := range items {
 		if f.IsDir() && recursive {
 			subFiles, err := getAllYamlFileNamesInPath(path+"/"+f.Name(), recursive)
 			if err != nil {
 				fmt.Println("Error caught while getting files from path ", err)
-				return []string{}, fmt.Errorf("Error caught while getting files %v", err)
+				return []string{}, fmt.Errorf("error caught while getting files %v", err)
 			}
 			files = append(files, subFiles...)
 		} else if strings.HasSuffix(f.Name(), ".yaml") {
-			files = append(files, f.Name())
+			filesInCurreDir = append(filesInCurreDir, f.Name())
 		}
 	}
+	sort.Strings(filesInCurreDir)
+	files = append(files, filesInCurreDir...)
 	return files, nil
 }
 
