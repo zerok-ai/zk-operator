@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 
@@ -34,41 +35,48 @@ func doesObjectExist(version, kind, namespace, name string) (bool, map[string]in
 
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("Error while reading the response bytes:", err)
-	}
+	resp_code := resp.StatusCode
 
-	fmt.Println("Response ", string(body))
-
-	m := make(map[string]interface{})
-	json.Unmarshal(body, &m)
-
-	fmt.Println("Response map ", m)
-
-	code, ok := m["code"]
-
-	fmt.Printf("Type of code is %T.\n", code)
-
-	if ok {
-		switch x := code.(type) {
-		case string:
-			if x == "404" {
-				return false, nil
-			}
-		case int:
-			if x == 404 {
-				return false, nil
-			}
-		case float64:
-			if int(x) == 404 {
-				return false, nil
-			}
-		default:
-			panic("Unkown response code received.")
+	if resp_code == 404 {
+		return false, nil
+	} else {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Println("Error while reading the response bytes:", err)
 		}
+
+		fmt.Println("Response ", string(body))
+
+		m := make(map[string]interface{})
+
+		json.Unmarshal(body, &m)
+
+		fmt.Println("Response map ", m)
+
+		code, ok := m["code"]
+
+		fmt.Printf("Type of code is %T.\n", code)
+
+		if ok {
+			switch x := code.(type) {
+			case string:
+				if x == "404" {
+					return false, nil
+				}
+			case int:
+				if x == 404 {
+					return false, nil
+				}
+			case float64:
+				if int(x) == 404 {
+					return false, nil
+				}
+			default:
+				panic("Unkown response code received.")
+			}
+		}
+		return true, m
 	}
-	return true, m
 }
 
 func getUpdateUrl(version, kind, namespace, name string) string {
@@ -107,7 +115,7 @@ func updateObject(version, kind, namespace, name string, yaml []byte) {
 
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("Error while reading the response bytes:", err)
 	}
@@ -137,7 +145,7 @@ func createObject(version, kind, namespace string, yaml []byte) {
 
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("Error while reading the response bytes:", err)
 	}

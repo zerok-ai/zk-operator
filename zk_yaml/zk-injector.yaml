@@ -1,0 +1,106 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zk-injector
+  labels:
+    app: zk-injector
+spec:
+  publishNotReadyAddresses: true
+  ports:
+    - port: 443
+      targetPort: 8443
+  selector:
+    app: zk-injector
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zk-injector
+  namespace: zk-injector
+  labels:
+    app: zk-injector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zk-injector
+  template:
+    metadata:
+      name: zk-injector
+      labels:
+        app: zk-injector
+    spec:
+      serviceAccountName: zk-injector
+      containers:
+        - name: zk-injector
+          image: rajeevzerok/zk-injector:0.6
+          imagePullPolicy: Always
+          resources:
+            limits:
+              cpu: 500m
+              memory: 128Mi
+            requests:
+              cpu: 250m
+              memory: 64Mi
+          env:
+          - name: DOCKER_HOST
+            value: tcp://localhost:2375
+        - name: dind
+          image: docker:20.10-dind
+          imagePullPolicy: Always
+          command: ["dockerd", "--host", "tcp://127.0.0.1:2375"]
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: dind-storage
+              mountPath: /var/lib/docker
+          resources:
+            limits:
+              cpu: 500m
+              memory: 128Mi
+            requests:
+              cpu: 250m
+              memory: 64Mi
+      volumes:
+        - name: dind-storage
+          emptyDir: {}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: zk-injector
+  labels:
+    app: zk-injector
+rules:
+- apiGroups: ["admissionregistration.k8s.io"]
+  resources: ["mutatingwebhookconfigurations"]
+  verbs: ["create", "get", "delete", "list", "patch", "update", "watch"]
+- apiGroups: ["v1",""]
+  resources: ["secrets"]
+  verbs: ["create", "get", "delete", "list", "patch", "update", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: zk-injector
+  labels:
+    app: zk-injector
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: zk-injector
+subjects:
+- kind: ServiceAccount
+  name: zk-injector
+  namespace: zk-injector
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: zk-injector
+  labels:
+    app: zk-injector
