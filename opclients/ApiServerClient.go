@@ -35,48 +35,43 @@ func doesObjectExist(version, kind, namespace, name string) (bool, map[string]in
 
 	defer resp.Body.Close()
 
-	resp_code := resp.StatusCode
-
-	if resp_code == 404 {
-		return false, nil
-	} else {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			fmt.Println("Error while reading the response bytes:", err)
-		}
-
-		fmt.Println("Response ", string(body))
-
-		m := make(map[string]interface{})
-
-		json.Unmarshal(body, &m)
-
-		fmt.Println("Response map ", m)
-
-		code, ok := m["code"]
-
-		fmt.Printf("Type of code is %T.\n", code)
-
-		if ok {
-			switch x := code.(type) {
-			case string:
-				if x == "404" {
-					return false, nil
-				}
-			case int:
-				if x == 404 {
-					return false, nil
-				}
-			case float64:
-				if int(x) == 404 {
-					return false, nil
-				}
-			default:
-				panic("Unkown response code received.")
-			}
-		}
-		return true, m
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error while reading the response bytes:", err)
 	}
+
+	fmt.Println("Response ", string(body))
+
+	m := make(map[string]interface{})
+
+	json.Unmarshal(body, &m)
+
+	fmt.Println("Response map ", m)
+
+	code, ok := m["code"]
+
+	fmt.Printf("Type of code is %T.\n", code)
+
+	if ok {
+		switch x := code.(type) {
+		case string:
+			if x == "404" {
+				return false, nil
+			}
+		case int:
+			if x == 404 {
+				return false, nil
+			}
+		case float64:
+			if int(x) == 404 {
+				return false, nil
+			}
+		default:
+			panic("Unkown response code received.")
+		}
+	}
+	return true, m
+
 }
 
 func getUpdateUrl(version, kind, namespace, name string) string {
@@ -85,11 +80,16 @@ func getUpdateUrl(version, kind, namespace, name string) string {
 }
 
 func getCreateUrl(version, kind, namespace string) string {
+	apiPathItem := "/apis/"
+	if version == "v1" {
+		apiPathItem = "/api/"
+	}
+
 	url := ""
 	if namespace == "" {
-		url = "https://" + getK8sApiEndPoint() + "/apis/" + version + "/" + kind
+		url = "https://" + getK8sApiEndPoint() + apiPathItem + version + "/" + kind
 	} else {
-		url = "https://" + getK8sApiEndPoint() + "/apis/" + version + "/namespaces/" + namespace + "/" + kind
+		url = "https://" + getK8sApiEndPoint() + apiPathItem + version + "/namespaces/" + namespace + "/" + kind
 	}
 	return url
 }
