@@ -7,8 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
+	"os"
 
 	"k8s.io/utils/env"
 )
@@ -165,7 +165,7 @@ func getHttpClient() *http.Client {
 }
 
 func getCaCertPool() *x509.CertPool {
-	caCert, err := ioutil.ReadFile(cert_path)
+	caCert, err := os.ReadFile(cert_path)
 	if err != nil {
 		panic("Unable to ca cert file. Installation of zerok components failed.")
 	}
@@ -175,7 +175,7 @@ func getCaCertPool() *x509.CertPool {
 }
 
 func getBearerAuthToken() string {
-	tokenFile, err := ioutil.ReadFile(token_path)
+	tokenFile, err := os.ReadFile(token_path)
 
 	if err != nil {
 		panic("Unable to find token file. Installation of zerok components failed.")

@@ -2,8 +2,8 @@ package opclients
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"sort"
 	"strings"
 
@@ -25,7 +25,7 @@ func ApplyZerokObjects(path string) {
 
 func createK8sObjects(path string, fileNames []string) {
 	for _, fn := range fileNames {
-		yfile, err := ioutil.ReadFile(path + "/" + fn)
+		yfile, err := os.ReadFile(path + "/" + fn)
 
 		if err != nil {
 
@@ -146,7 +146,7 @@ func addLastAppliedConfiguration(yamlMap map[interface{}]interface{}) map[interf
 func getAllYamlFileNamesInPath(path string, recursive bool) ([]string, error) {
 	files := []string{}
 
-	items, err := ioutil.ReadDir(path)
+	items, err := os.ReadDir(path)
 	if err != nil {
 		fmt.Println("Error caught while getting files from path ", err)
 		return []string{}, fmt.Errorf("error caught while getting files %v", err)
