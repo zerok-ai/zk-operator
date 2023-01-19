@@ -53,7 +53,8 @@ func LabelPod(pod *v1.Pod, path string, value string) {
 	payloadBytes, _ := json.Marshal(payload)
 	_, updateErr := k8sClient.Pods(pod.GetNamespace()).Patch(context.Background(), pod.GetName(), types.JSONPatchType, payloadBytes, metav1.PatchOptions{})
 	if updateErr == nil {
-		fmt.Println(fmt.Sprintf("Pod %s labeled successfully for Path %s and Value %s.", pod.GetName(), path, value))
+		logMessage := fmt.Sprintf("Pod %s labeled successfully for Path %s and Value %s.", pod.GetName(), path, value)
+		fmt.Println(logMessage)
 	} else {
 		fmt.Println(updateErr)
 	}
@@ -73,7 +74,8 @@ func GetPodsForDeployment(Name string, Namespace string) *v1.PodList {
 		return nil
 	} else {
 		for _, pod := range podList.Items {
-			fmt.Println(fmt.Sprintf("Pod found with name %s.", pod.GetName()))
+			logMessage := fmt.Sprintf("Pod found with name %s.", pod.GetName())
+			fmt.Println(logMessage)
 		}
 	}
 
@@ -94,7 +96,8 @@ func GetPodsForService(Name string, Namespace string) *v1.PodList {
 		return nil
 	} else {
 		for _, pod := range pods.Items {
-			fmt.Println(fmt.Sprintf("Pod found with name %s.", pod.GetName()))
+			logMessage := fmt.Sprintf("Pod found with name %s.", pod.GetName())
+			fmt.Println(logMessage)
 		}
 	}
 
