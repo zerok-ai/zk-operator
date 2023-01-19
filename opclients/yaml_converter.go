@@ -1,7 +1,6 @@
 package opclients
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -75,28 +74,6 @@ func createK8sObjects(path string, fileNames []string) {
 	}
 }
 
-func converMap(yamlMap map[interface{}]interface{}) map[string]interface{} {
-	outMap := make(map[string]interface{})
-	for k, v := range yamlMap {
-		switch x := k.(type) {
-		case string:
-			outMap[x] = v
-		default:
-		}
-	}
-
-	return outMap
-}
-
-func convertMapToJsonBytes(yamlMap map[string]interface{}) ([]byte, error) {
-	jsonBytes, err := json.Marshal(yamlMap)
-	if err != nil {
-		fmt.Println("Unable to convert map to json.")
-		return nil, err
-	}
-	return jsonBytes, nil
-}
-
 func getLastAppliedConfig(yamlMap map[string]interface{}) string {
 	defaultOut := ""
 	metadata, ok := yamlMap["metadata"]
@@ -134,38 +111,33 @@ func getLastAppliedConfig(yamlMap map[string]interface{}) string {
 }
 
 func addLastAppliedConfiguration(yamlMap map[interface{}]interface{}) map[interface{}]interface{} {
-	metadata, ok := yamlMap["metadata"]
-	if ok {
-		switch x := metadata.(type) {
-		case map[string]interface{}:
-			annotations, ok := x["annotations"]
-			if ok {
-				switch y := annotations.(type) {
-				case map[string]interface{}:
-					yamlMapBytes, err := convertMapToJsonBytes(converMap(yamlMap))
-					if err != nil {
-						fmt.Println("Error caught while converting map to json.")
-					}
-					y[lastAppliedConfigKey] = string(yamlMapBytes)
-					x[annotationsKey] = y
-					yamlMap["metadata"] = x
-					return yamlMap
-				default:
-					panic("Annotations in metadata of yaml object is not map.")
-				}
-			} else {
+	metadata, err := getMetadata(yamlMap)
+	if err != nil {
+		annotations, ok := metadata["annotations"]
+		if ok {
+			switch y := annotations.(type) {
+			case map[string]interface{}:
 				yamlMapBytes, err := convertMapToJsonBytes(converMap(yamlMap))
 				if err != nil {
 					fmt.Println("Error caught while converting map to json.")
 				}
-				defaultOut := make(map[string]interface{})
-				defaultOut[lastAppliedConfigKey] = string(yamlMapBytes)
-				x[annotationsKey] = defaultOut
-				yamlMap["metadata"] = x
+				y[lastAppliedConfigKey] = string(yamlMapBytes)
+				metadata[annotationsKey] = y
+				yamlMap["metadata"] = metadata
 				return yamlMap
+			default:
+				panic("Annotations in metadata of yaml object is not map.")
 			}
-		default:
-			panic("metada of yaml object is not map.")
+		} else {
+			yamlMapBytes, err := convertMapToJsonBytes(converMap(yamlMap))
+			if err != nil {
+				fmt.Println("Error caught while converting map to json.")
+			}
+			defaultOut := make(map[string]interface{})
+			defaultOut[lastAppliedConfigKey] = string(yamlMapBytes)
+			metadata[annotationsKey] = defaultOut
+			yamlMap["metadata"] = metadata
+			return yamlMap
 		}
 	}
 	panic("metada is not present in yaml object.")
@@ -199,8 +171,6 @@ func getAllYamlFileNamesInPath(path string, recursive bool) ([]string, error) {
 }
 
 func findPatch(sourceJson []byte, targetJson []byte) ([]byte, error) {
-	fmt.Printf("SourceJson %v.\n", string(sourceJson))
-	fmt.Printf("targetJson %v.\n", string(targetJson))
 	return jsonpatch.CreateMergePatch(sourceJson, targetJson)
 }
 
@@ -236,22 +206,17 @@ func getVK(yamlMap map[interface{}]interface{}) (string, string) {
 }
 
 func getName(yamlMap map[interface{}]interface{}) string {
-	metadata, ok := yamlMap["metadata"]
 	name := ""
-	if ok {
-		switch x := metadata.(type) {
-		case map[string]interface{}:
-			nameobj, ok := x["name"]
-			if ok {
-				switch y := nameobj.(type) {
-				case string:
-					name = y
-				default:
-					panic("name in yaml object is not string.")
-				}
+	metadata, err := getMetadata(yamlMap)
+	if err != nil {
+		nameobj, ok := metadata["name"]
+		if ok {
+			switch y := nameobj.(type) {
+			case string:
+				name = y
+			default:
+				panic("name in yaml object is not string.")
 			}
-		default:
-			panic("metada of yaml object is not map.")
 		}
 	} else {
 		panic("metadata is not present in  yaml object.")
@@ -260,35 +225,18 @@ func getName(yamlMap map[interface{}]interface{}) string {
 }
 
 func getNamespace(yamlMap map[interface{}]interface{}) string {
-	metadata, ok := yamlMap["metadata"]
 	namespace := ""
-	if ok {
-		switch x := metadata.(type) {
-		case map[string]interface{}:
-			namespaceobj, ok := x["namespace"]
-			if ok {
-				switch y := namespaceobj.(type) {
-				case string:
-					namespace = y
-				default:
-					panic("namespace in yaml object is not string.")
-				}
+	metadata, err := getMetadata(yamlMap)
+	if err != nil {
+		namespaceobj, ok := metadata["namespace"]
+		if ok {
+			switch y := namespaceobj.(type) {
+			case string:
+				namespace = y
+			default:
+				panic("namespace in yaml object is not string.")
 			}
-		default:
-			panic("metada of yaml object is not map.")
 		}
-	} else {
-		panic("metadata is not present in  yaml object.")
 	}
 	return namespace
-}
-
-func yamlToMap(data []byte) (map[interface{}]interface{}, error) {
-	m := make(map[interface{}]interface{})
-	err := yaml.Unmarshal([]byte(data), &m)
-	if err != nil {
-		fmt.Printf("error while converting yaml: %v.\n", err)
-		return m, err
-	}
-	return m, nil
 }
