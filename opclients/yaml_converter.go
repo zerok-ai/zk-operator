@@ -112,7 +112,7 @@ func getLastAppliedConfig(yamlMap map[string]interface{}) string {
 
 func addLastAppliedConfiguration(yamlMap map[interface{}]interface{}) map[interface{}]interface{} {
 	metadata, err := getMetadata(yamlMap)
-	if err != nil {
+	if err == nil {
 		annotations, ok := metadata["annotations"]
 		if ok {
 			switch y := annotations.(type) {
@@ -208,7 +208,7 @@ func getVK(yamlMap map[interface{}]interface{}) (string, string) {
 func getName(yamlMap map[interface{}]interface{}) string {
 	name := ""
 	metadata, err := getMetadata(yamlMap)
-	if err != nil {
+	if err == nil {
 		nameobj, ok := metadata["name"]
 		if ok {
 			switch y := nameobj.(type) {
@@ -227,7 +227,7 @@ func getName(yamlMap map[interface{}]interface{}) string {
 func getNamespace(yamlMap map[interface{}]interface{}) string {
 	namespace := ""
 	metadata, err := getMetadata(yamlMap)
-	if err != nil {
+	if err == nil {
 		namespaceobj, ok := metadata["namespace"]
 		if ok {
 			switch y := namespaceobj.(type) {

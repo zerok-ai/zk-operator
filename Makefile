@@ -3,7 +3,12 @@
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
-VERSION ?= 0.0.101
+VERSION ?= latest
+LOCATION ?= us-west1
+PROJECT_ID ?= zerok-dev
+REPOSITORY ?= stage
+IMAGE ?= zerok-operator
+ART_Repo_URI ?= $(LOCATION)-docker.pkg.dev/$(PROJECT_ID)/$(REPOSITORY)/$(IMAGE)
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "candidate,fast,stable")
@@ -29,7 +34,7 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 #
 # For example, running 'make bundle-build bundle-push catalog-build catalog-push' will build and push both
 # zerok.ai/zerok-operator-bundle:$VERSION and zerok.ai/zerok-operator-catalog:$VERSION.
-IMAGE_TAG_BASE ?= rajeevzerok/zerok-operator
+IMAGE_TAG_BASE ?= $(ART_Repo_URI)
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
@@ -115,9 +120,14 @@ build: generate fmt vet ## Build manager binary.
 run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./main.go
 
+.PHONY: gke
+gke:
+	gcloud auth configure-docker ${LOCATION}-docker.pkg.dev
+
 .PHONY: docker-build
 docker-build: test ## Build docker image with the manager.
-	docker build -t ${IMG} .
+	docker build -t ${IMAGE} .
+	docker tag ${IMAGE} ${IMG}
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
