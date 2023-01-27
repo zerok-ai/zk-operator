@@ -13,3 +13,7 @@ if [ "$1" = "build" ]; then
   make -C ${scriptDir} gke docker-build docker-push
 fi
 make -C ${scriptDir} deploy
+
+# OLM install
+make bundle
+make bundle-build bundle-push
