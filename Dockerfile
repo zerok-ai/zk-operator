@@ -21,11 +21,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager main.go
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM ubuntu
-RUN apt-get update 
-RUN apt-get install -y git
-ADD https://storage.googleapis.com/kubernetes-release/release/v1.9.4/bin/linux/amd64/kubectl /usr/local/bin/kubectl
-RUN chmod +x /usr/local/bin/kubectl
+FROM gcr.io/distroless/static:nonroot
 WORKDIR /
 COPY --from=builder /workspace/manager .
 COPY --from=builder /workspace/zk_yaml/ zk_yaml/
