@@ -1,5 +1,5 @@
 apiVersion: operator.zerok.ai/v1alpha1
-kind: Zerokop
+kind: zerokop
 metadata:
   name: zerokop-sample
 spec:

@@ -9,8 +9,8 @@ metadata:
 spec:
   group: operator.zerok.ai
   names:
-    kind: Zerokop
-    listKind: ZerokopList
+    kind: zerokop
+    listKind: zerokopList
     plural: zerokops
     singular: zerokop
   scope: Namespaced
@@ -18,7 +18,7 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: Zerokop is the Schema for the zerokops API
+        description: zerokop is the Schema for the zerokops API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -33,10 +33,10 @@ spec:
           metadata:
             type: object
           spec:
-            description: ZerokopSpec defines the desired state of Zerokop
+            description: zerokopSpec defines the desired state of zerokop
             properties:
               size:
-                description: Foo is an example field of Zerokop. Edit zerokop_types.go
+                description: Foo is an example field of zerokop. Edit zerokop_types.go
                   to remove/update
                 format: int32
                 type: integer
@@ -44,7 +44,7 @@ spec:
             - size
             type: object
           status:
-            description: ZerokopStatus defines the observed state of Zerokop
+            description: zerokopStatus defines the observed state of zerokop
             properties:
               conditions:
                 description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
