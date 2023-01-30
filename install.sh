@@ -14,6 +14,3 @@ if [ "$1" = "build" ]; then
 fi
 make -C ${scriptDir} deploy
 
-# OLM install
-make bundle
-make bundle-build bundle-push
