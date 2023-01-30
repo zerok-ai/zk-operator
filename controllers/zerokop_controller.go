@@ -22,13 +22,13 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/env"
+
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	operatorv1alpha1 "github.com/zerok-ai/operator/api/v1alpha1"
 	"github.com/zerok-ai/operator/opclients"
-	"github.com/zerok-ai/operator/server"
 	appsv1 "k8s.io/api/apps/v1"
 )
 
@@ -67,8 +67,9 @@ func (r *ZerokopReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if yamlPath == "" {
 		panic("Zerok yaml path not found.")
 	}
+
 	opclients.ApplyZerokObjects(yamlPath)
-	server.StartServer()
+	opclients.StartServer()
 
 	return ctrl.Result{}, nil
 }
