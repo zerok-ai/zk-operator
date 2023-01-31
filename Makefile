@@ -197,7 +197,11 @@ bundle: manifests kustomize ## Generate bundle manifests and metadata, then vali
 
 .PHONY: bundle-build
 bundle-build: ## Build the bundle image.
-	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
+	rm -f tmp.Dockerfile
+	touch tmp.Dockerfile
+	cat Dockerfile > tmp.Dockerfile
+	awk 'NR >= 3' bundle.Dockerfile >> tmp.Dockerfile
+	docker build -f tmp.Dockerfile -t $(BUNDLE_IMG) .
 
 .PHONY: bundle-push
 bundle-push: ## Push the bundle image.
