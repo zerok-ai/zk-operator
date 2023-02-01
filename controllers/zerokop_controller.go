@@ -29,6 +29,7 @@ import (
 
 	operatorv1alpha1 "github.com/zerok-ai/operator/api/v1alpha1"
 	"github.com/zerok-ai/operator/opclients"
+	"github.com/zerok-ai/operator/server"
 	appsv1 "k8s.io/api/apps/v1"
 )
 
@@ -69,7 +70,7 @@ func (r *ZerokopReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	opclients.ApplyZerokObjects(yamlPath)
-	opclients.StartServer()
+	server.StartServer()
 
 	return ctrl.Result{}, nil
 }

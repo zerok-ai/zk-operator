@@ -1,4 +1,4 @@
-package opclients
+package server
 
 import (
 	"fmt"
