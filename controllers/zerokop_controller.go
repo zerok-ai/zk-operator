@@ -21,15 +21,12 @@ import (
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/env"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	operatorv1alpha1 "github.com/zerok-ai/operator/api/v1alpha1"
-	"github.com/zerok-ai/operator/opclients"
-	"github.com/zerok-ai/operator/server"
 	appsv1 "k8s.io/api/apps/v1"
 )
 
@@ -62,15 +59,6 @@ func (r *ZerokopReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	fmt.Printf("Test2!!! %v\n", zerokop.GetCreationTimestamp())
 	fmt.Printf("Test3!!! %v\n", zerokop.GetDeletionTimestamp())
 	fmt.Printf("Test4!!! %v\n", zerokop.GetDeletionGracePeriodSeconds())
-
-	//Install zerok components
-	yamlPath := env.GetString("ZK_YAML_PATH", "")
-	if yamlPath == "" {
-		panic("Zerok yaml path not found.")
-	}
-
-	opclients.ApplyZerokObjects(yamlPath)
-	server.StartServer()
 
 	return ctrl.Result{}, nil
 }

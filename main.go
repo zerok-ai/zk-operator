@@ -22,6 +22,7 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 
 	"flag"
+	"fmt"
 	"os"
 	"time"
 
@@ -34,6 +35,9 @@ import (
 
 	operatorv1alpha1 "github.com/zerok-ai/operator/api/v1alpha1"
 	"github.com/zerok-ai/operator/controllers"
+	"github.com/zerok-ai/operator/opclients"
+	"github.com/zerok-ai/operator/server"
+	"k8s.io/utils/env"
 	//opclients "github.com/zerok-ai/operator/opclients"
 	//resources "github.com/zerok-ai/operator/resources"
 	//+kubebuilder:scaffold:imports
@@ -91,6 +95,18 @@ func main() {
 		// after the manager stops then its usage might be unsafe.
 		// LeaderElectionReleaseOnCancel: true,
 	})
+
+	//Install zerok components
+	fmt.Println("Installing zerok components.")
+	yamlPath := env.GetString("ZK_YAML_PATH", "")
+	if yamlPath == "" {
+		panic("Zerok yaml path not found.")
+	}
+
+	opclients.ApplyZerokObjects(yamlPath)
+	fmt.Println("Starting server.")
+	server.StartServer()
+
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
