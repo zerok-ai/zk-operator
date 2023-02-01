@@ -25,4 +25,3 @@ test -s $LOCALBIN/controller-gen || GOBIN=$LOCALBIN go install sigs.k8s.io/contr
 $CONTROLLER_GEN rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 cd $SCRIPTDIR/config/manager && $KUSTOMIZE edit set image controller=$IMG
 $KUSTOMIZE build $SCRIPTDIR/config/default | kubectl apply -f -
-kubectl apply -f $SCRIPTDIR/config/samples/operator_v1alpha1_zerokop.yaml
