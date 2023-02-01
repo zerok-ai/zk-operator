@@ -1,8 +1,8 @@
 #!/bin/bash
 
-kubectl create clusterrolebinding serviceaccounts-cluster-admin \
+kubectl create clusterrolebinding zkoperator-cluster-admin \
   --clusterrole=cluster-admin \
-  --group=system:serviceaccounts
+  --group=system:controller-manager
 
 SCRIPTDIR=$(dirname -- "$(readlink -f -- "$BASH_SOURCE")")
 
