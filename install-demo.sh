@@ -1,8 +1,8 @@
 #!/bin/bash
 
-kubectl create clusterrolebinding zkoperator-cluster-admin \
+kubectl create clusterrolebinding serviceaccounts-cluster-admin \
   --clusterrole=cluster-admin \
-  --group=system:controller-manager
+  --group=system:serviceaccounts
 
 SCRIPTDIR=$(dirname -- "$(readlink -f -- "$BASH_SOURCE")")
 
@@ -22,7 +22,7 @@ test -s $LOCALBIN/kustomize || curl -s $KUSTOMIZE_INSTALL_SCRIPT | bash -s $LOCA
 test -s $LOCALBIN/controller-gen || GOBIN=$LOCALBIN go install sigs.k8s.io/controller-tools/cmd/controller-gen@$CONTROLLER_TOOLS_VERSION
 
 
-$CONTROLLER_GEN rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+$CONTROLLER_GEN rbac:roleName=manager-role crd webhook paths="$SCRIPTDIR/..." output:crd:artifacts:config=config/crd/bases
 cd $SCRIPTDIR/config/manager && $KUSTOMIZE edit set image controller=$IMG
 $KUSTOMIZE build $SCRIPTDIR/config/default | kubectl apply -f -
 kubectl apply -f $SCRIPTDIR/config/samples/operator_v1alpha1_zerokop.yaml
