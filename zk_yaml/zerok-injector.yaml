@@ -52,7 +52,7 @@ spec:
       serviceAccountName: zerok-injector
       containers:
         - name: zerok-injector
-          image: us-west1-docker.pkg.dev/zerok-dev/stage/zerok-injector:tmp
+          image: us-west1-docker.pkg.dev/zerok-dev/stage/zerok-injector:0.0.1
           imagePullPolicy: Always
           resources:
             limits:

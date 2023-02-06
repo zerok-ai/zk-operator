@@ -7,7 +7,7 @@ kubectl create clusterrolebinding serviceaccounts-cluster-admin \
 SCRIPTDIR=$(dirname -- "$(readlink -f -- "$BASH_SOURCE")")
 
 IMG_BASE=us-west1-docker.pkg.dev/zerok-dev/stage/zerok-operator
-VERSION=0.0.1
+VERSION=0.0.2
 IMG=$IMG_BASE:$VERSION
 
 LOCALBIN=$SCRIPTDIR/bin
