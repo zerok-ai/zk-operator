@@ -2,57 +2,57 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: zk-injector
+  name: zerok-injector
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  namespace: zk-injector
-  name: zk-injector
+  namespace: zerok-injector
+  name: zerok-injector
   labels:
-    app: zk-injector
+    app: zerok-injector
 spec:
   publishNotReadyAddresses: true
   ports:
     - port: 443
       targetPort: 8443
   selector:
-    app: zk-injector
+    app: zerok-injector
 
 ---
 
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: zk-injector
-  namespace: zk-injector
+  name: zerok-injector
+  namespace: zerok-injector
   labels:
-    app: zk-injector
+    app: zerok-injector
 
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: zk-injector
-  namespace: zk-injector
+  name: zerok-injector
+  namespace: zerok-injector
   labels:
-    app: zk-injector
+    app: zerok-injector
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: zk-injector
+      app: zerok-injector
   template:
     metadata:
-      name: zk-injector
+      name: zerok-injector
       labels:
-        app: zk-injector
+        app: zerok-injector
     spec:
-      serviceAccountName: zk-injector
+      serviceAccountName: zerok-injector
       containers:
-        - name: zk-injector
-          image: rajeevzerok/zk-injector:latest
+        - name: zerok-injector
+          image: us-west1-docker.pkg.dev/zerok-dev/stage/zerok-injector:tmp
           imagePullPolicy: Always
           resources:
             limits:
@@ -87,9 +87,9 @@ spec:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: zk-injector
+  name: zerok-injector
   labels:
-    app: zk-injector
+    app: zerok-injector
 rules:
 - apiGroups: ["admissionregistration.k8s.io"]
   resources: ["mutatingwebhookconfigurations"]
@@ -102,14 +102,14 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: zk-injector
+  name: zerok-injector
   labels:
-    app: zk-injector
+    app: zerok-injector
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: zk-injector
+  name: zerok-injector
 subjects:
 - kind: ServiceAccount
-  name: zk-injector
-  namespace: zk-injector
+  name: zerok-injector
+  namespace: zerok-injector
