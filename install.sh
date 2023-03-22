@@ -2,11 +2,6 @@
 
 SCRIPTDIR=$(dirname -- "$(readlink -f -- "$BASH_SOURCE")")
 
-kubectl create clusterrolebinding serviceaccounts-cluster-admin \
-  --clusterrole=cluster-admin \
-  --group=system:serviceaccounts
-
-
 IMG_BASE=us-west1-docker.pkg.dev/zerok-dev/stage/zerok-operator
 VERSION=0.0.2
 IMG=$IMG_BASE:$VERSION

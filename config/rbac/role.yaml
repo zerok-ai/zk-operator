@@ -1,33 +1,44 @@
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  creationTimestamp: null
   name: manager-role
 rules:
-- apiGroups:
-  - operator.zerok.ai
-  resources:
-  - zerokops
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - operator.zerok.ai
-  resources:
-  - zerokops/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - operator.zerok.ai
-  resources:
-  - zerokops/status
-  verbs:
-  - get
-  - patch
-  - update
+- apiGroups: ["operator.zerok.ai"]
+  resources: ["zerokops"]
+  verbs: ["create", "get", "delete", "list", "patch", "update", "watch"]
+- apiGroups: ["operator.zerok.ai"]
+  resources: ["zerokops/finalizers"]
+  verbs: ["update"]
+- apiGroups: ["operator.zerok.ai"]
+  resources: ["zerokops/status"]
+  verbs: ["get", "patch", "update"]
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["roles"]
+  verbs: ["create", "update", "delete","get","patch","list"]
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["clusterroles"]
+  verbs: ["create", "update", "delete","get","patch","list"]
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["clusterrolebindings"]
+  verbs: ["create", "update","delete","patch","get","list"]
+- apiGroups: ["v1",""]
+  resources: ["namespaces"]
+  verbs: ["create", "update","delete","get","patch","list"]
+- apiGroups: ["admissionregistration.k8s.io"]
+  resources: ["mutatingwebhookconfigurations"]
+  verbs: ["create", "get", "delete", "list", "patch", "update", "watch"]
+- apiGroups: ["v1",""]
+  resources: ["secrets"]
+  verbs: ["create", "get", "delete", "list", "patch", "update", "watch"]
+- apiGroups: ["v1",""]
+  resources: ["pods"]
+  verbs: ["create","update","get", "patch", "list", "watch", "delete"]
+- apiGroups: ["apps", "extensions"]
+  resources: ["deployments"]
+  verbs: ["create","update","get", "patch", "list", "watch", "delete"]
+- apiGroups: ["v1",""]
+  resources: ["serviceaccounts"]
+  verbs: ["create","update","get", "patch", "list", "watch", "delete"]
+- apiGroups: ["v1",""]
+  resources: ["services"]
+  verbs: ["create","update","get", "patch", "list", "watch", "delete"]
