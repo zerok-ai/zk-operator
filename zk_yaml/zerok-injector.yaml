@@ -39,7 +39,7 @@ metadata:
   labels:
     app: zerok-injector
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: zerok-injector
@@ -52,7 +52,7 @@ spec:
       serviceAccountName: zerok-injector
       containers:
         - name: zerok-injector
-          image: us-west1-docker.pkg.dev/zerok-dev/stage/zerok-injector:latest
+          image: us-west1-docker.pkg.dev/zerok-dev/stage/zerok-injector:0.0.2
           imagePullPolicy: Always
           resources:
             limits:
@@ -83,7 +83,6 @@ spec:
       volumes:
         - name: dind-storage
           emptyDir: {}
-      priorityClassName: system-cluster-critical
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
