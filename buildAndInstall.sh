@@ -13,4 +13,4 @@ if [ "$1" = "build" ]; then
   make -C ${scriptDir} gke docker-build docker-push
 fi
 make -C ${scriptDir} deploy
-
+kubectl apply -f $scriptDir/config/samples/operator_v1alpha1_zerokop.yaml
