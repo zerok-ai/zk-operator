@@ -1,3 +1,6 @@
+# zerok-operator
+Zerok operator sets up the required zerok components on the cluster. 
+
 ### Quickstart
 
 1. To create a new build and install the controller on the cluster.
