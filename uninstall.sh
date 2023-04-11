@@ -1,10 +1,8 @@
 #!/bin/bash
 
-#TODO: Create a new service account and only give access to minimum needed actions on the cluster.
 scriptDir=$(dirname -- "$(readlink -f -- "$BASH_SOURCE")")
 
-kubectl delete clusterrolebinding serviceaccounts-cluster-admin \
-  --clusterrole=cluster-admin \
-  --group=system:serviceaccounts
-
+kubectl delete mutatingwebhookconfiguration zerok-webhook
+kubectl delete namespace zerok-injector
 make -C ${scriptDir} undeploy
+kubectl delete -f $scriptDir/config/samples/operator_v1alpha1_zerokop.yaml
