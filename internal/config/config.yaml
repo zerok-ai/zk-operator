@@ -1,0 +1,23 @@
+redis:
+  host: redis.redis.svc.cluster.local
+  port: 6379
+  readTimeout: 20
+  pollingInterval: 30 #seconds
+  db: 7
+
+webhook:
+  namespace: zerok-operator
+  service: zerok-operator
+  name: zerok-webhook
+  path: /zk-injector
+  port: 8443
+
+zkcloud:
+  restartPath: /restart
+  port: 8442
+
+logs:
+  color: true
+  level: DEBUG
+
+local: false

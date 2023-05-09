@@ -16,6 +16,7 @@ COPY controllers/ controllers/
 COPY opclients/ opclients/
 COPY zk_yaml/ zk_yaml/ 
 COPY server/ server/
+COPY internal/ internal/
 
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager main.go
@@ -26,5 +27,6 @@ FROM gcr.io/distroless/static:nonroot
 WORKDIR /
 COPY --from=builder /workspace/manager .
 COPY --from=builder /workspace/zk_yaml/ zk_yaml/
+COPY --from=builder /workspace/internal/config/config.yaml .
 USER 65532:65532
-ENTRYPOINT ["/manager"]
+ENTRYPOINT ["/manager","-c", "/config.yaml"]

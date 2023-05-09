@@ -64,12 +64,12 @@ func (r *ZerokopReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	fmt.Printf("Test4!!! %v\n", zerokop.GetDeletionGracePeriodSeconds())
 
 	//Install zerok components
-	yamlPath := env.GetString("ZK_YAML_PATH", "")
-	if yamlPath == "" {
-		panic("Zerok yaml path not found.")
-	}
+	// yamlPath := env.GetString("ZK_YAML_PATH", "")
+	// if yamlPath == "" {
+	// 	panic("Zerok yaml path not found.")
+	// }
 
-	opclients.ApplyZerokObjects(yamlPath)
+	//opclients.ApplyZerokObjects(yamlPath)
 	server.StartServer()
 
 	return ctrl.Result{}, nil

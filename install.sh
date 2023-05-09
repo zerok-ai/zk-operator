@@ -3,7 +3,7 @@
 SCRIPTDIR=$(dirname -- "$(readlink -f -- "$BASH_SOURCE")")
 
 IMG_BASE=us-west1-docker.pkg.dev/zerok-dev/stage/zerok-operator
-VERSION=0.0.2
+VERSION=test
 IMG=$IMG_BASE:$VERSION
 
 LOCALBIN=$SCRIPTDIR/bin

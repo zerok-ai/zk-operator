@@ -34,9 +34,21 @@ import (
 
 	operatorv1alpha1 "github.com/zerok-ai/operator/api/v1alpha1"
 	"github.com/zerok-ai/operator/controllers"
-	//opclients "github.com/zerok-ai/operator/opclients"
-	//resources "github.com/zerok-ai/operator/resources"
-	//+kubebuilder:scaffold:imports
+	"flag"
+	"fmt"
+	"log"
+	"os"
+
+	"github.com/ilyakaznacheev/cleanenv"
+
+	"github.com/zerok-ai/operator/internal/config"
+	"github.com/zerok-ai/operator/pkg/cert"
+	"github.com/zerok-ai/operator/pkg/server"
+	"github.com/zerok-ai/operator/pkg/storage"
+	"github.com/zerok-ai/operator/pkg/sync"
+	"github.com/zerok-ai/operator/pkg/utils"
+
+	"github.com/kataras/iris/v12"
 )
 
 var (
@@ -69,6 +81,9 @@ func main() {
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	var d time.Duration = 15 * time.Minute
+
+	fmt.Println("Starting injector.")
+	injectorMain()
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
@@ -119,4 +134,112 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+// TODO:
+// Complete TODO in sync.go file.
+// Create an interface for store package and limit interaction to the interface methods.
+// Add zklogger in the project.
+// Merge injector with operator.
+// Unit testing.
+func injectorMain() {
+
+	fmt.Println("Running injector main.")
+	var cfg config.ZkInjectorConfig
+	args := ProcessArgs(&cfg)
+
+	// read configuration from the file and environment variables
+	log.Println("args.ConfigPath==", args.ConfigPath)
+
+	if err := cleanenv.ReadConfig(args.ConfigPath, &cfg); err != nil {
+		log.Println(err)
+	}
+
+	runtimeMap := &storage.ImageRuntimeHandler{}
+	runtimeMap.Init(cfg.Redis)
+	go sync.UpdateOrchestration(runtimeMap, cfg)
+
+	app := newApp()
+
+	irisConfig := iris.WithConfiguration(iris.Configuration{
+		DisablePathCorrection: true,
+		LogLevel:              "debug",
+	})
+
+	go server.StartZkCloudServer(newApp(), cfg, irisConfig)
+
+	if cfg.Local {
+		//Creating debug webhook server which accepts http requests for running on local machine.
+		go server.StartDebugWebHookServer(app, cfg, runtimeMap, irisConfig)
+	} else {
+		// initialize certificates
+		caPEM, cert, key, err := cert.InitializeKeysAndCertificates(cfg.Webhook)
+		if err != nil {
+			msg := fmt.Sprintf("Failed to create keys and certificates for webhook %v. Stopping initialization of the pod.\n", err)
+			fmt.Println(msg)
+			return
+		}
+
+		// start mutating webhook
+		err = utils.CreateOrUpdateMutatingWebhookConfiguration(caPEM, cfg.Webhook)
+		if err != nil {
+			msg := fmt.Sprintf("Failed to create or update the mutating webhook configuration: %v. Stopping initialization of the pod.\n", err)
+			fmt.Println(msg)
+			return
+		}
+
+		// start webhook server
+		go server.StartWebHookServer(app, cfg, cert, key, runtimeMap, irisConfig)
+	}
+}
+
+func newApp() *iris.Application {
+	app := iris.Default()
+
+	crs := func(ctx iris.Context) {
+		ctx.Header("Access-Control-Allow-Credentials", "true")
+
+		if ctx.Method() == iris.MethodOptions {
+			ctx.Header("Access-Control-Methods", "POST")
+
+			ctx.Header("Access-Control-Allow-Headers",
+				"Access-Control-Allow-Origin,Content-Type")
+
+			ctx.Header("Access-Control-Max-Age",
+				"86400")
+
+			ctx.StatusCode(iris.StatusNoContent)
+			return
+		}
+
+		ctx.Next()
+	}
+	app.UseRouter(crs)
+	app.AllowMethods(iris.MethodOptions)
+
+	return app
+}
+
+// Args command-line parameters
+type Args struct {
+	ConfigPath string
+}
+
+// ProcessArgs processes and handles CLI arguments
+func ProcessArgs(cfg interface{}) Args {
+	var a Args
+
+	f := flag.NewFlagSet("Example server", 1)
+	f.StringVar(&a.ConfigPath, "c", "config.yaml", "Path to configuration file")
+
+	fu := f.Usage
+	f.Usage = func() {
+		fu()
+		envHelp, _ := cleanenv.GetDescription(cfg, nil)
+		fmt.Fprintln(f.Output())
+		fmt.Fprintln(f.Output(), envHelp)
+	}
+
+	f.Parse(os.Args[1:])
+	return a
 }
