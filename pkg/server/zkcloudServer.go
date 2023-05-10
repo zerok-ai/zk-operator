@@ -3,10 +3,10 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"github.com/zerok-ai/operator/internal/config"
 	"github.com/zerok-ai/operator/pkg/server/models"
 	"github.com/zerok-ai/operator/pkg/zkclient"
+	"io"
 
 	"github.com/kataras/iris/v12"
 )

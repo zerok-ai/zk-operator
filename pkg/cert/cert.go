@@ -8,9 +8,9 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"github.com/zerok-ai/operator/internal/config"
 	"math/big"
 	"time"
-	"github.com/zerok-ai/operator/internal/config"
 )
 
 func InitializeKeysAndCertificates(cfg config.WebhookConfig) (*bytes.Buffer, *bytes.Buffer, *bytes.Buffer, error) {

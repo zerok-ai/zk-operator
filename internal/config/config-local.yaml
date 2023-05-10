@@ -10,11 +10,11 @@ webhook:
   service: zerok-injector
   name: zerok-webhook
   path: /zk-injector
-  port: 8443
+  port: 8473
 
 zkcloud:
   restartPath: /restart
-  port: 8442
+  port: 8472
 
 logs:
   color: true

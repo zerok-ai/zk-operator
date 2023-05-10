@@ -6,15 +6,15 @@ redis:
   db: 7
 
 webhook:
-  namespace: zerok-operator
-  service: zerok-operator
+  namespace: zerok-operator-system
+  service: zerok-operator-inject
   name: zerok-webhook
   path: /zk-injector
-  port: 8443
+  port: 8473
 
 zkcloud:
   restartPath: /restart
-  port: 8442
+  port: 8472
 
 logs:
   color: true

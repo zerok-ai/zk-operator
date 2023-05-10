@@ -3,11 +3,11 @@ package server
 import (
 	"bytes"
 	"fmt"
-	"io"
-	"log"
 	"github.com/zerok-ai/operator/internal/config"
 	"github.com/zerok-ai/operator/pkg/inject"
 	"github.com/zerok-ai/operator/pkg/storage"
+	"io"
+	"log"
 
 	"github.com/kataras/iris/v12"
 )

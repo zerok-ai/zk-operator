@@ -22,22 +22,22 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 
 	"flag"
-	"os"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/utils/env"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	operatorv1alpha1 "github.com/zerok-ai/operator/api/v1alpha1"
-	"github.com/zerok-ai/operator/controllers"
-	"flag"
 	"fmt"
 	"log"
 	"os"
+
+	operatorv1alpha1 "github.com/zerok-ai/operator/api/v1alpha1"
+	"github.com/zerok-ai/operator/controllers"
 
 	"github.com/ilyakaznacheev/cleanenv"
 
@@ -82,7 +82,7 @@ func main() {
 
 	var d time.Duration = 15 * time.Minute
 
-	fmt.Println("Starting injector.")
+	setupLog.Info("Starting injector.")
 	injectorMain()
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
@@ -94,17 +94,6 @@ func main() {
 		LeaderElectionID:       "96feec81.zerok.ai",
 		Namespace:              "",
 		SyncPeriod:             &d,
-		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily
-		// when the Manager ends. This requires the binary to immediately end when the
-		// Manager is stopped, otherwise, this setting is unsafe. Setting this significantly
-		// speeds up voluntary leader transitions as the new leader don't have to wait
-		// LeaseDuration time first.
-		//
-		// In the default scaffold provided, the program ends immediately after
-		// the manager stops, so would be fine to enable this option. However,
-		// if you are doing or is intended to do any operation such as perform cleanups
-		// after the manager stops then its usage might be unsafe.
-		// LeaderElectionReleaseOnCancel: true,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -144,14 +133,17 @@ func main() {
 // Unit testing.
 func injectorMain() {
 
-	fmt.Println("Running injector main.")
+	setupLog.Info("Running injector main.")
+
+	configPath := env.GetString("CONFIG_FILE", "")
+	if configPath == "" {
+		fmt.Println("Config yaml path not found.")
+		return
+	}
+
 	var cfg config.ZkInjectorConfig
-	args := ProcessArgs(&cfg)
 
-	// read configuration from the file and environment variables
-	log.Println("args.ConfigPath==", args.ConfigPath)
-
-	if err := cleanenv.ReadConfig(args.ConfigPath, &cfg); err != nil {
+	if err := cleanenv.ReadConfig(configPath, &cfg); err != nil {
 		log.Println(err)
 	}
 
@@ -191,6 +183,7 @@ func injectorMain() {
 		// start webhook server
 		go server.StartWebHookServer(app, cfg, cert, key, runtimeMap, irisConfig)
 	}
+	setupLog.Info("End of running injector main.")
 }
 
 func newApp() *iris.Application {
@@ -218,28 +211,4 @@ func newApp() *iris.Application {
 	app.AllowMethods(iris.MethodOptions)
 
 	return app
-}
-
-// Args command-line parameters
-type Args struct {
-	ConfigPath string
-}
-
-// ProcessArgs processes and handles CLI arguments
-func ProcessArgs(cfg interface{}) Args {
-	var a Args
-
-	f := flag.NewFlagSet("Example server", 1)
-	f.StringVar(&a.ConfigPath, "c", "config.yaml", "Path to configuration file")
-
-	fu := f.Usage
-	f.Usage = func() {
-		fu()
-		envHelp, _ := cleanenv.GetDescription(cfg, nil)
-		fmt.Fprintln(f.Output())
-		fmt.Fprintln(f.Output(), envHelp)
-	}
-
-	f.Parse(os.Args[1:])
-	return a
 }

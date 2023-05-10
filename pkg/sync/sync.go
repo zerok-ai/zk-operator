@@ -2,9 +2,9 @@ package sync
 
 import (
 	"fmt"
-	"time"
 	"github.com/zerok-ai/operator/internal/config"
 	"github.com/zerok-ai/operator/pkg/storage"
+	"time"
 )
 
 func UpdateOrchestration(imageRuntimeHandler *storage.ImageRuntimeHandler, cfg config.ZkInjectorConfig) {
