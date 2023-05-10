@@ -1,5 +1,8 @@
-# zerok-operator
-Zerok operator sets up the required zerok components on the cluster. 
+# Zerok-operator
+Zerok operator in responsible for instrumenting the pods coming up in the cluster. It achieves this by adding a mutatingadmissionwebhook in the cluster.
+
+# Pre-requisites
+It needs Redis to be up and running as it uses Redis to read language data for images. This data will be populated by the zerok-deamonset pod. The operator pod will sync the data from Redis based on the time interval specified in the config file.
 
 ### Quickstart
 
@@ -20,3 +23,6 @@ Zerok operator sets up the required zerok components on the cluster.
 ```sh
 make docker-build docker-push
 ```
+
+### Testing
+To test the webhook request coming from the control plane, you can test using the Webhook Request present in the zk-operator postman collection. 
