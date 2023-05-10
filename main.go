@@ -83,7 +83,10 @@ func main() {
 	var d time.Duration = 15 * time.Minute
 
 	setupLog.Info("Starting injector.")
-	injectorMain()
+	initInjector()
+
+	//Starting exception server
+	go server.StartExceptionServer()
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
@@ -131,7 +134,7 @@ func main() {
 // Add zklogger in the project.
 // Merge injector with operator.
 // Unit testing.
-func injectorMain() {
+func initInjector() {
 
 	setupLog.Info("Running injector main.")
 

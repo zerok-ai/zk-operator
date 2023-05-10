@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func StartServer() {
+func StartExceptionServer() {
 	var h http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Exception request received.")
 		requestBody, _ := io.ReadAll(r.Body)
