@@ -15,6 +15,7 @@ namePrefix: zk-operator-
 bases:
 - ../crd
 - ../rbac
+- ../configmap
 - ../manager
 - ../service
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in

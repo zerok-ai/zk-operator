@@ -26,6 +26,5 @@ RUN go build -a -o manager main.go
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
 COPY --from=builder /workspace/manager .
-COPY internal/config/config.yaml .
 USER 65532:65532
 ENTRYPOINT ["/manager"]

@@ -35,9 +35,12 @@ spec:
         - --leader-elect
         image: controller:latest
         imagePullPolicy: Always
+        volumeMounts:
+          - name: operator-config
+            mountPath: /opt
         env:
         - name: "CONFIG_FILE"
-          value: "config.yaml"
+          value: "/opt/operator-config.yaml"
         name: manager
         securityContext:
           allowPrivilegeEscalation: false
@@ -65,3 +68,7 @@ spec:
             memory: 64Mi
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
+      volumes:
+        - name: operator-config
+          configMap:
+            name: zk-operator-configmap
