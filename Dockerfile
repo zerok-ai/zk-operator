@@ -15,8 +15,6 @@ RUN go mod download
 COPY main.go main.go
 COPY api/ api/
 COPY controllers/ controllers/
-COPY opclients/ opclients/
-COPY server/ server/
 COPY internal/ internal/
 COPY pkg/ pkg/
 

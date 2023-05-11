@@ -6,9 +6,9 @@ redis:
   db: 7
 
 webhook:
-  namespace: zerok-injector
-  service: zerok-injector
-  name: zerok-webhook
+  namespace: zk-operator-system
+  service: zk-operator-inject
+  name: zk-webhook
   path: /zk-injector
   port: 8473
 

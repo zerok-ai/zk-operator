@@ -150,7 +150,7 @@ func initInjector() {
 	}
 
 	runtimeMap := &storage.ImageRuntimeHandler{}
-	runtimeMap.Init(cfg.Redis)
+	runtimeMap.Init(cfg)
 	go sync.UpdateOrchestration(runtimeMap, cfg)
 
 	app := newApp()

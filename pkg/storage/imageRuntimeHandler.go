@@ -14,7 +14,7 @@ import (
 type ImageRuntimeHandler struct {
 	ImageRuntimeMap   *sync.Map
 	RuntimeMapVersion int64
-	ImageStore        ImageStore
+	ImageStore        Store
 }
 
 func (h *ImageRuntimeHandler) SyncDataFromRedis() error {
@@ -25,7 +25,7 @@ func (h *ImageRuntimeHandler) SyncDataFromRedis() error {
 	}
 	if h.RuntimeMapVersion == -1 || h.RuntimeMapVersion != versionFromRedis {
 		h.RuntimeMapVersion = versionFromRedis
-		h.ImageRuntimeMap, err = h.ImageStore.LoadAllData(h.ImageRuntimeMap)
+		h.ImageRuntimeMap, err = h.ImageStore.LoadAllData()
 		if err != nil {
 			fmt.Printf("Error caught while loading all data from redis %v.\n", err)
 			return err
@@ -34,9 +34,9 @@ func (h *ImageRuntimeHandler) SyncDataFromRedis() error {
 	return nil
 }
 
-func (h *ImageRuntimeHandler) Init(redisConfig config.RedisConfig) {
+func (h *ImageRuntimeHandler) Init(config config.ZkInjectorConfig) {
 	//init ImageStore
-	h.ImageStore = *GetNewImageStore(redisConfig)
+	h.ImageStore = GetNewRedisStore(config)
 	h.RuntimeMapVersion = -1
 	h.ImageRuntimeMap = &sync.Map{}
 }

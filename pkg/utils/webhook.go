@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"reflect"
+
 	"github.com/zerok-ai/operator/internal/config"
 	"github.com/zerok-ai/operator/pkg/zkclient"
-	"reflect"
 
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -14,7 +15,7 @@ import (
 )
 
 var (
-	webhookName = "zerok-webhook"
+	webhookName = "zk-webhook"
 	webhookPath = "/zk-injector"
 )
 
