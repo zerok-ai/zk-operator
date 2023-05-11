@@ -129,8 +129,6 @@ func main() {
 }
 
 // TODO:
-// Complete TODO in sync.go file.
-// Create an interface for store package and limit interaction to the interface methods.
 // Add zklogger in the project.
 // Unit testing.
 func initInjector() {
