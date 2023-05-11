@@ -3,10 +3,12 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+
 	"github.com/zerok-ai/operator/internal/config"
+	zkhttp "github.com/zerok-ai/operator/pkg/common/zkhttp"
 	"github.com/zerok-ai/operator/pkg/server/models"
 	"github.com/zerok-ai/operator/pkg/zkclient"
-	"io"
 
 	"github.com/kataras/iris/v12"
 )
@@ -20,6 +22,7 @@ func (h *ZkCloudApiHandler) ServeHTTP(ctx iris.Context) {
 	fmt.Printf("Got a request from zk cloud.\n")
 
 	if err != nil {
+
 		zkCloudErrorResponse(err, ctx)
 		return
 	}
@@ -51,7 +54,9 @@ func (h *ZkCloudApiHandler) restartWorkloads(body []byte) error {
 
 func zkCloudErrorResponse(err error, ctx iris.Context) {
 	fmt.Printf("Error while restarting workloads %v\n", err)
-	ctx.StatusCode(iris.StatusInternalServerError)
+	zkReponse := zkhttp.ZkHttpResponseBuilder[any]{}.WithZkErrorType(zkhttp.ZK_ERROR_INTERNAL_SERVER).Build()
+	ctx.StatusCode(zkReponse.Status)
+	ctx.JSON(zkReponse)
 }
 
 func handleZkCloudRoutes(app *iris.Application, cfg config.ZkInjectorConfig) {
