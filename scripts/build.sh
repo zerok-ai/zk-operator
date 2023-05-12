@@ -5,7 +5,4 @@ source $THIS_DIR/variables.sh
 
 make -C ${ROOT_DIR} generate
 make -C ${ROOT_DIR} manifests
-if [ "$1" = "build" ]; then
-  make -C ${ROOT_DIR} gke docker-build docker-push
-fi
-make -C ${ROOT_DIR} deploy
+make -C ${ROOT_DIR} gke docker-build docker-push
