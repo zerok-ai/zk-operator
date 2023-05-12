@@ -8,7 +8,7 @@ import (
 
 	"os"
 
-	"github.com/zerok-ai/operator/pkg/common"
+	"github.com/zerok-ai/zk-operator/pkg/common"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -137,11 +137,13 @@ func GetAllMarkedNamespaces() (*corev1.NamespaceList, error) {
 	listOptions := metav1.ListOptions{
 		LabelSelector: labelSelector.String(),
 	}
+
 	namespaces, err := clientset.CoreV1().Namespaces().List(context.TODO(), listOptions)
 	if err != nil {
 		fmt.Printf("Error caught while getting list of namespacese %v.\n", err)
 		return nil, err
 	}
+
 	return namespaces, nil
 }
 
@@ -173,6 +175,7 @@ func GetDeploymentForPods(pod *corev1.Pod) (string, error) {
 			break
 		}
 	}
+
 	return deploymentName, nil
 }
 

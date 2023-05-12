@@ -36,17 +36,17 @@ import (
 	"log"
 	"os"
 
-	operatorv1alpha1 "github.com/zerok-ai/operator/api/v1alpha1"
-	"github.com/zerok-ai/operator/controllers"
+	operatorv1alpha1 "github.com/zerok-ai/zk-operator/api/v1alpha1"
+	"github.com/zerok-ai/zk-operator/controllers"
 
 	"github.com/ilyakaznacheev/cleanenv"
 
-	"github.com/zerok-ai/operator/internal/config"
-	"github.com/zerok-ai/operator/pkg/cert"
-	"github.com/zerok-ai/operator/pkg/server"
-	"github.com/zerok-ai/operator/pkg/storage"
-	"github.com/zerok-ai/operator/pkg/sync"
-	"github.com/zerok-ai/operator/pkg/utils"
+	"github.com/zerok-ai/zk-operator/internal/config"
+	"github.com/zerok-ai/zk-operator/pkg/cert"
+	"github.com/zerok-ai/zk-operator/pkg/server"
+	"github.com/zerok-ai/zk-operator/pkg/storage"
+	"github.com/zerok-ai/zk-operator/pkg/sync"
+	"github.com/zerok-ai/zk-operator/pkg/utils"
 
 	"github.com/kataras/iris/v12"
 )
@@ -160,29 +160,25 @@ func initInjector() {
 
 	go server.StartZkCloudServer(newApp(), cfg, irisConfig)
 
-	if cfg.Local {
-		//Creating debug webhook server which accepts http requests for running on local machine.
-		go server.StartDebugWebHookServer(app, cfg, runtimeMap, irisConfig)
-	} else {
-		// initialize certificates
-		caPEM, cert, key, err := cert.InitializeKeysAndCertificates(cfg.Webhook)
-		if err != nil {
-			msg := fmt.Sprintf("Failed to create keys and certificates for webhook %v. Stopping initialization of the pod.\n", err)
-			fmt.Println(msg)
-			return
-		}
-
-		// start mutating webhook
-		err = utils.CreateOrUpdateMutatingWebhookConfiguration(caPEM, cfg.Webhook)
-		if err != nil {
-			msg := fmt.Sprintf("Failed to create or update the mutating webhook configuration: %v. Stopping initialization of the pod.\n", err)
-			fmt.Println(msg)
-			return
-		}
-
-		// start webhook server
-		go server.StartWebHookServer(app, cfg, cert, key, runtimeMap, irisConfig)
+	// initialize certificates
+	caPEM, cert, key, err := cert.InitializeKeysAndCertificates(cfg.Webhook)
+	if err != nil {
+		msg := fmt.Sprintf("Failed to create keys and certificates for webhook %v. Stopping initialization of the pod.\n", err)
+		fmt.Println(msg)
+		return
 	}
+
+	// start mutating webhook
+	err = utils.CreateOrUpdateMutatingWebhookConfiguration(caPEM, cfg.Webhook)
+	if err != nil {
+		msg := fmt.Sprintf("Failed to create or update the mutating webhook configuration: %v. Stopping initialization of the pod.\n", err)
+		fmt.Println(msg)
+		return
+	}
+
+	// start webhook server
+	go server.StartWebHookServer(app, cfg, cert, key, runtimeMap, irisConfig)
+
 	setupLog.Info("End of running injector main.")
 }
 

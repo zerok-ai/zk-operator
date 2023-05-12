@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/zerok-ai/operator/internal/config"
-	"github.com/zerok-ai/operator/pkg/utils"
+	"github.com/zerok-ai/zk-operator/internal/config"
+	"github.com/zerok-ai/zk-operator/pkg/utils"
 
 	"github.com/go-redis/redis"
 )

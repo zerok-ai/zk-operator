@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/zerok-ai/operator/internal/config"
-	"github.com/zerok-ai/operator/pkg/zkclient"
+	"github.com/zerok-ai/zk-operator/internal/config"
+	"github.com/zerok-ai/zk-operator/pkg/zkclient"
 
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -36,18 +36,23 @@ func CreateOrUpdateMutatingWebhookConfiguration(caPEM *bytes.Buffer, cfg config.
 
 	existingWebhookConfig, err := mutatingWebhookConfigV1Client.MutatingWebhookConfigurations().Get(context.TODO(), webhookName, metav1.GetOptions{})
 	if err != nil && apierrors.IsNotFound(err) {
+
 		//Scenario where there is not existing webhook. So we are creating a new webhook.
 		if _, err := mutatingWebhookConfigV1Client.MutatingWebhookConfigurations().Create(context.TODO(), mutatingWebhookConfig, metav1.CreateOptions{}); err != nil {
 			fmt.Printf("Failed to create the mutatingwebhookconfiguration: %s\n", webhookName)
 			return err
 		}
 		fmt.Printf("Created mutatingwebhookconfiguration: %s\n", webhookName)
+
 	} else if err != nil {
+
 		//Scenario where we failed to check if there was any existing webhook.
 		fmt.Printf("Failed to check the mutatingwebhookconfiguration: %s\n", webhookName)
 		fmt.Printf("The error is %v\n", err.Error())
 		return err
+
 	} else if !areWebHooksSame(existingWebhookConfig, mutatingWebhookConfig) {
+
 		//Scenario where we have to update the existing webhook.
 		mutatingWebhookConfig.ObjectMeta.ResourceVersion = existingWebhookConfig.ObjectMeta.ResourceVersion
 		if _, err := mutatingWebhookConfigV1Client.MutatingWebhookConfigurations().Update(context.TODO(), mutatingWebhookConfig, metav1.UpdateOptions{}); err != nil {
@@ -55,9 +60,12 @@ func CreateOrUpdateMutatingWebhookConfiguration(caPEM *bytes.Buffer, cfg config.
 			return err
 		}
 		fmt.Printf("Updated the mutatingwebhookconfiguration: %s\n", webhookName)
+
 	} else {
+
 		//Scenario where there is no need to update the existing webhook.
 		fmt.Printf("The mutatingwebhookconfiguration: %s already exists and has no change\n", webhookName)
+
 	}
 
 	return nil

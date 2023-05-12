@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/zerok-ai/operator/internal/config"
-	zkhttp "github.com/zerok-ai/operator/pkg/common/zkhttp"
-	"github.com/zerok-ai/operator/pkg/server/models"
-	"github.com/zerok-ai/operator/pkg/zkclient"
+	"github.com/zerok-ai/zk-operator/internal/config"
+	zkhttp "github.com/zerok-ai/zk-operator/pkg/common/zkhttp"
+	"github.com/zerok-ai/zk-operator/pkg/server/models"
+	"github.com/zerok-ai/zk-operator/pkg/zkclient"
 
 	"github.com/kataras/iris/v12"
 )

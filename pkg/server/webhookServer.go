@@ -3,11 +3,11 @@ package server
 import (
 	"bytes"
 	"fmt"
-	"github.com/zerok-ai/operator/internal/config"
-	"github.com/zerok-ai/operator/pkg/inject"
-	"github.com/zerok-ai/operator/pkg/storage"
 	"io"
-	"log"
+
+	"github.com/zerok-ai/zk-operator/internal/config"
+	"github.com/zerok-ai/zk-operator/pkg/inject"
+	"github.com/zerok-ai/zk-operator/pkg/storage"
 
 	"github.com/kataras/iris/v12"
 )
@@ -38,7 +38,7 @@ func (h *WebhookRequestHandler) ServeHTTP(ctx iris.Context) {
 }
 
 func webhookErrorResponse(err error, ctx iris.Context, message string) {
-	log.Printf("%v with error %v.\n", message, err)
+	fmt.Printf("%v with error %v.\n", message, err)
 	ctx.StatusCode(iris.StatusInternalServerError)
 }
 
@@ -52,9 +52,4 @@ func handleRoutes(app *iris.Application, cfg config.ZkInjectorConfig, runtimeMap
 func StartWebHookServer(app *iris.Application, cfg config.ZkInjectorConfig, cert *bytes.Buffer, key *bytes.Buffer, runtimeMap *storage.ImageRuntimeHandler, config iris.Configurator) {
 	handleRoutes(app, cfg, runtimeMap)
 	app.Run(iris.TLS(":"+cfg.Webhook.Port, cert.String(), key.String()), config)
-}
-
-func StartDebugWebHookServer(app *iris.Application, cfg config.ZkInjectorConfig, runtimeMap *storage.ImageRuntimeHandler, irisConfig iris.Configurator) {
-	handleRoutes(app, cfg, runtimeMap)
-	app.Run(iris.Addr(":"+cfg.Webhook.Port), irisConfig)
 }

@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/zerok-ai/operator/internal/config"
-	"github.com/zerok-ai/operator/pkg/storage"
-	"github.com/zerok-ai/operator/pkg/zkclient"
+	"github.com/zerok-ai/zk-operator/internal/config"
+	"github.com/zerok-ai/zk-operator/pkg/storage"
+	"github.com/zerok-ai/zk-operator/pkg/zkclient"
+	v1 "k8s.io/api/core/v1"
 )
 
 func UpdateOrchestration(imageRuntimeHandler *storage.ImageRuntimeHandler, cfg config.ZkInjectorConfig) {
@@ -32,20 +33,18 @@ func restartMarkedNamespacesIfNeeded() error {
 	}
 
 	for _, namespace := range namespaces.Items {
-		deployments := make(map[string]bool)
+
 		pods, err := zkclient.GetNotOrchestratedPods(namespace.ObjectMeta.Name)
 		if err != nil {
 			fmt.Printf("Error caught while getting all non orchestrated pods %v.\n", err)
 			return err
 		}
-		for _, pod := range pods {
-			deploymentName, err := zkclient.GetDeploymentForPods(&pod)
-			if err != nil {
-				fmt.Printf("Error caught while getting all deployment for pod %v with error %v.\n", deploymentName, err)
-				return err
-			}
-			deployments[deploymentName] = true
+
+		deployments, err := getDeploymentsForPods(pods)
+		if err != nil {
+			return err
 		}
+
 		for deploymentName := range deployments {
 			err = zkclient.RestartDeployment(namespace.ObjectMeta.Name, deploymentName)
 			if err != nil {
@@ -55,4 +54,17 @@ func restartMarkedNamespacesIfNeeded() error {
 		}
 	}
 	return nil
+}
+
+func getDeploymentsForPods(pods []v1.Pod) (map[string]bool, error) {
+	deployments := make(map[string]bool)
+	for _, pod := range pods {
+		deploymentName, err := zkclient.GetDeploymentForPods(&pod)
+		if err != nil {
+			fmt.Printf("Error caught while getting all deployment for pod %v with error %v.\n", deploymentName, err)
+			return deployments, err
+		}
+		deployments[deploymentName] = true
+	}
+	return deployments, nil
 }

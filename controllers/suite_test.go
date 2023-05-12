@@ -27,11 +27,12 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
+
 	//"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	operatorv1alpha1 "github.com/zerok-ai/operator/api/v1alpha1"
+	operatorv1alpha1 "github.com/zerok-ai/zk-operator/api/v1alpha1"
 	//+kubebuilder:scaffold:imports
 )
 

@@ -8,14 +8,14 @@ It needs Redis to be up and running as it uses Redis to read language data for i
 
 1. To create a new build and install the controller on the cluster.
 ```
-./buildAndInstall.sh
+./buildAndInstall.sh build
 ```
 
 ### Running on the cluster
-1. Install the operator on a running cluster.
+1. Install the operator on a running cluster with out rebuild.
 
 ```
-./install.sh
+./buildAndInstall.sh
 ```
 
 2. Build and push your image. The variables for creating the file are present in the Makefile.

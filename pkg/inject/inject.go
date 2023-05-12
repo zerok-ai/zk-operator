@@ -3,13 +3,12 @@ package inject
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strconv"
 	"time"
 
-	common "github.com/zerok-ai/operator/pkg/common"
-	"github.com/zerok-ai/operator/pkg/storage"
-	"github.com/zerok-ai/operator/pkg/utils"
+	common "github.com/zerok-ai/zk-operator/pkg/common"
+	"github.com/zerok-ai/zk-operator/pkg/storage"
+	"github.com/zerok-ai/zk-operator/pkg/utils"
 
 	v1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -102,7 +101,7 @@ func (h *Injector) Inject(body []byte) ([]byte, error) {
 		}
 	}
 
-	log.Printf("resp: %s\n", string(responseBody))
+	fmt.Printf("resp: %s\n", string(responseBody))
 
 	return responseBody, nil
 }

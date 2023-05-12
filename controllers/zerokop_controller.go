@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -26,7 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	operatorv1alpha1 "github.com/zerok-ai/operator/api/v1alpha1"
+	operatorv1alpha1 "github.com/zerok-ai/zk-operator/api/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 )
 
@@ -55,10 +54,7 @@ type ZerokopReconciler struct {
 func (r *ZerokopReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 
-	zerokop := &operatorv1alpha1.Zerokop{}
-	fmt.Printf("Test2!!! %v\n", zerokop.GetCreationTimestamp())
-	fmt.Printf("Test3!!! %v\n", zerokop.GetDeletionTimestamp())
-	fmt.Printf("Test4!!! %v\n", zerokop.GetDeletionGracePeriodSeconds())
+	//zerokop := &operatorv1alpha1.Zerokop{}
 
 	//Install zerok components
 	// yamlPath := env.GetString("ZK_YAML_PATH", "")
