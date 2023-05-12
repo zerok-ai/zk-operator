@@ -16,6 +16,13 @@ data:
     zkcloud:
       restartPath: /restart
       port: 8472
+    rules_sync:
+      host: zkdev02.getanton.com
+      path: /v1/o/cluster/rules
+      port: 80
+      pollingInterval: 300
+      db: 1
+      key: rules_list
     logs:
       color: true
       level: DEBUG

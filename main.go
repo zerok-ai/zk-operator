@@ -160,6 +160,10 @@ func initInjector() {
 
 	go server.StartZkCloudServer(newApp(), cfg, irisConfig)
 
+	syncRules := sync.InitSyncRules(cfg)
+	//Staring rule sync from zk api server
+	go syncRules.SyncRulesFromZkCloud(cfg)
+
 	// initialize certificates
 	caPEM, cert, key, err := cert.InitializeKeysAndCertificates(cfg.Webhook)
 	if err != nil {

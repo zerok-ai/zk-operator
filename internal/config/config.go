@@ -8,6 +8,15 @@ type RedisConfig struct {
 	DB              int    `yaml:"db"`
 }
 
+type RulesSyncConfig struct {
+	Host            string `yaml:"host"`
+	Port            string `yaml:"port"`
+	Path            string `yaml:"path"`
+	PollingInterval int    `yaml:"pollingInterval"`
+	DB              int    `yaml:"db"`
+	Key             string `yaml:"key"`
+}
+
 type WebhookConfig struct {
 	Namespace string `yaml:"namespace"`
 	Service   string `yaml:"service"`
@@ -22,7 +31,8 @@ type ZkCloudConfig struct {
 }
 
 type ZkInjectorConfig struct {
-	Redis   RedisConfig   `yaml:"redis"`
-	Webhook WebhookConfig `yaml:"webhook"`
-	ZkCloud ZkCloudConfig `yaml:"zkcloud"`
+	ZkCloud   ZkCloudConfig   `yaml:"zkcloud"`
+	Redis     RedisConfig     `yaml:"redis"`
+	Webhook   WebhookConfig   `yaml:"webhook"`
+	RulesSync RulesSyncConfig `yaml:"rules_sync"`
 }
