@@ -2,19 +2,18 @@ package utils
 
 import (
 	"encoding/json"
-
 	"github.com/zerok-ai/zk-operator/pkg/common"
+	"os"
 
 	corev1 "k8s.io/api/core/v1"
 )
 
-func GetContainerRuntime(data string) (*common.ContainerRuntime, error) {
-	var runtimeDetails common.ContainerRuntime
-	err := json.Unmarshal([]byte(data), &runtimeDetails)
+func UnmarshalFromString(data string, out interface{}) error {
+	err := json.Unmarshal([]byte(data), out)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return &runtimeDetails, nil
+	return nil
 }
 
 func ToJsonString(iInstance interface{}) *string {
@@ -36,4 +35,9 @@ func GetIndexOfEnv(envVars []corev1.EnvVar, targetEnv string) int {
 		}
 	}
 	return -1
+}
+
+func GetCurrentNamespace() string {
+	podNamespace := os.Getenv(common.NamespaceEnvVariable)
+	return podNamespace
 }

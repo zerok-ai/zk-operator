@@ -41,6 +41,10 @@ spec:
         env:
         - name: "CONFIG_FILE"
           value: "/opt/operator-config.yaml"
+        - name: "POD_NAMESPACE"
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         name: manager
         securityContext:
           allowPrivilegeEscalation: false

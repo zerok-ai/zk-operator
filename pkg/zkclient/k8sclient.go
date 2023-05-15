@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/zerok-ai/zk-operator/pkg/utils"
+	"k8s.io/client-go/util/retry"
+	"sync"
 	"time"
 
 	"os"
@@ -11,6 +14,7 @@ import (
 	"github.com/zerok-ai/zk-operator/pkg/common"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
@@ -40,7 +44,7 @@ func RestartDeployment(namespace string, deployment string) error {
 	return nil
 }
 
-func RestartAllDeplomentsInNamespace(namespace string) error {
+func RestartAllDeploymentsInNamespace(namespace string) error {
 	k8sClient, err := GetK8sClient()
 	if err != nil {
 		return err
@@ -238,4 +242,70 @@ func GetK8sClient() (*kubernetes.Clientset, error) {
 	}
 
 	return clientset, nil
+}
+
+func CreateOrUpdateConfigMap(namespace, name string, imageMap *sync.Map) error {
+
+	clientSet, err := GetK8sClient()
+	if err != nil {
+		fmt.Printf(" Error while getting k8s client.\n")
+		return err
+	}
+
+	configMaps := clientSet.CoreV1().ConfigMaps(namespace)
+
+	data := make(map[string]string)
+	jsonString := utils.ToJsonString(imageMap)
+	if jsonString == nil {
+		fmt.Printf("Error while converting sync.Map to string.")
+	}
+	data[common.ZkConfigMapKey] = *jsonString
+
+	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		configMap, err := configMaps.Get(context.TODO(), name, metav1.GetOptions{})
+		if err != nil {
+			// If the ConfigMap doesn't exist, create it
+			if errors.IsNotFound(err) {
+				newConfigMap := &corev1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: namespace,
+						Name:      name,
+					},
+					Data: data,
+				}
+				_, err = configMaps.Create(context.TODO(), newConfigMap, metav1.CreateOptions{})
+				return err
+			}
+			return err
+		}
+
+		configMap.Data = data
+		_, err = configMaps.Update(context.TODO(), configMap, metav1.UpdateOptions{})
+		return err
+	})
+}
+
+func GetDataFromConfigMap(namespace, name string) (*sync.Map, error) {
+	clientSet, err := GetK8sClient()
+	if err != nil {
+		fmt.Printf(" Error while getting k8s client.\n")
+		return nil, err
+	}
+
+	configMaps := clientSet.CoreV1().ConfigMaps(namespace)
+
+	configMap, err := configMaps.Get(context.TODO(), name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	var imageMap *sync.Map
+
+	err = utils.UnmarshalFromString(configMap.Data[common.ZkConfigMapKey], imageMap)
+	if err != nil {
+		fmt.Printf("Error caught while unmarshalling the data from configmap %v.\n", err)
+		return nil, err
+	}
+
+	return imageMap, nil
 }

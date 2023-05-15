@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"github.com/zerok-ai/zk-operator/pkg/common"
 	"sync"
 	"time"
 
@@ -66,7 +67,8 @@ func (zkRedis *RedisStore) SyncDataFromRedis(currMap *sync.Map) {
 		for i := 0; i < len(data); i += 2 {
 			key := data[i]
 			value := data[i+1]
-			serializedValue, err := utils.GetContainerRuntime(value)
+			var serializedValue *common.ContainerRuntime
+			err := utils.UnmarshalFromString(value, serializedValue)
 			if err != nil {
 				fmt.Printf("Error caught while serializing the value from redis %v for key %v.\n", err, key)
 				continue

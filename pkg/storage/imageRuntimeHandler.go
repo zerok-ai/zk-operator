@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"github.com/zerok-ai/zk-operator/pkg/zkclient"
 	"sync"
 
 	"github.com/zerok-ai/zk-operator/internal/config"
@@ -26,6 +27,11 @@ func (h *ImageRuntimeHandler) SyncDataFromRedis() error {
 	if h.RuntimeMapVersion == -1 || h.RuntimeMapVersion != versionFromRedis {
 		h.RuntimeMapVersion = versionFromRedis
 		h.ImageStore.SyncDataFromRedis(h.ImageRuntimeMap)
+		err := zkclient.CreateOrUpdateConfigMap(utils.GetCurrentNamespace(), common.ZkConfigMapName, h.ImageRuntimeMap)
+		if err != nil {
+			fmt.Printf("Error while create/update confimap %v.\n", err)
+			return err
+		}
 	}
 	return nil
 }
@@ -34,7 +40,12 @@ func (h *ImageRuntimeHandler) Init(config config.ZkInjectorConfig) {
 	//init ImageStore
 	h.ImageStore = GetNewRedisStore(config)
 	h.RuntimeMapVersion = -1
-	h.ImageRuntimeMap = &sync.Map{}
+	var err error
+	h.ImageRuntimeMap, err = zkclient.GetDataFromConfigMap(utils.GetCurrentNamespace(), common.ZkConfigMapName)
+	if err != nil {
+		h.ImageRuntimeMap = &sync.Map{}
+		fmt.Printf("Error while reading image map from config Map %v.\n", err)
+	}
 }
 
 func (h *ImageRuntimeHandler) getRuntimeForImage(imageID string) *common.ContainerRuntime {

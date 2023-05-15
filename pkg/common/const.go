@@ -14,4 +14,9 @@ const (
 	ZkInjectionValue = "enabled"
 
 	ZkAutoRestartKey = "zk-auto-restart"
+
+	ZkConfigMapName = "zk-image-configmap"
+	ZkConfigMapKey  = "zk-image-map"
+
+	NamespaceEnvVariable = "POD_NAMESPACE"
 )

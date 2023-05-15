@@ -45,7 +45,7 @@ func (h *ZkCloudApiHandler) restartWorkloads(body []byte) error {
 	namespace := restartRequestObj.Namespace
 	all := restartRequestObj.All
 	if all {
-		return zkclient.RestartAllDeplomentsInNamespace(namespace)
+		return zkclient.RestartAllDeploymentsInNamespace(namespace)
 	} else {
 		deployment := restartRequestObj.Deployment
 		return zkclient.RestartDeployment(namespace, deployment)
