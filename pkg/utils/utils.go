@@ -8,7 +8,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func FromJsonString(data string) (*common.ContainerRuntime, error) {
+func GetContainerRuntime(data string) (*common.ContainerRuntime, error) {
 	var runtimeDetails common.ContainerRuntime
 	err := json.Unmarshal([]byte(data), &runtimeDetails)
 	if err != nil {

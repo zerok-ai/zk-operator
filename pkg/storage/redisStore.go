@@ -51,11 +51,9 @@ func GetNewRedisStore(config config.ZkInjectorConfig) Store {
 	return imgRedis
 }
 
-func (zkRedis *RedisStore) LoadAllData() (*sync.Map, error) {
+func (zkRedis *RedisStore) SyncDataFromRedis(currMap *sync.Map) {
 	var cursor uint64
 	var data []string
-
-	tempMap := &sync.Map{}
 
 	for {
 		var err error
@@ -63,29 +61,25 @@ func (zkRedis *RedisStore) LoadAllData() (*sync.Map, error) {
 		data, cursor, err = zkRedis.redisClient.HScan(hashSetName, cursor, "*", 10).Result()
 		if err != nil {
 			fmt.Printf("Error while scan from redis %v\n", err)
-			return nil, err
 		}
 
 		for i := 0; i < len(data); i += 2 {
 			key := data[i]
 			value := data[i+1]
-			serializedValue, err := utils.FromJsonString(value)
+			serializedValue, err := utils.GetContainerRuntime(value)
 			if err != nil {
-				fmt.Printf("Error caught while serializing the value from redis %v.\n", err)
-				//Abandoning load from redis, since data doesn't match expected type.
-				return nil, err
+				fmt.Printf("Error caught while serializing the value from redis %v for key %v.\n", err, key)
+				continue
 			}
 			fmt.Println(key, value)
-			//Saving data to a tempe Map, and this map will be written to main Map.
-			tempMap.Store(key, serializedValue)
+			//Updating data in the map.
+			currMap.Store(key, serializedValue)
 		}
 
 		if cursor == 0 {
 			break
 		}
 	}
-
-	return tempMap, nil
 }
 
 func (zkRedis *RedisStore) GetString(key string) (*string, error) {

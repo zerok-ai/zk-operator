@@ -1,11 +1,9 @@
 package storage
 
-import (
-	"sync"
-)
+import "sync"
 
 type Store interface {
 	GetHashSetVersion() (int64, error)
-	LoadAllData() (*sync.Map, error)
+	SyncDataFromRedis(currMap *sync.Map)
 	GetString(key string) (*string, error)
 }
