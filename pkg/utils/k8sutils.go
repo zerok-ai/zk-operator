@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"k8s.io/client-go/util/retry"
 	"sync"
 	"time"
 
@@ -254,34 +253,35 @@ func CreateOrUpdateConfigMap(namespace, name string, imageMap *sync.Map) error {
 	configMaps := clientSet.CoreV1().ConfigMaps(namespace)
 
 	data := make(map[string]string)
-	jsonString := ToJsonString(imageMap)
-	if jsonString == nil {
-		fmt.Printf("Error while converting sync.Map to string.")
+	fmt.Println(imageMap)
+	jsonString, err := SyncMapToString(imageMap)
+	if err != nil {
+		fmt.Printf("Error while converting sync.Map to string %v.\n", err)
 	}
-	data[common.ZkConfigMapKey] = *jsonString
 
-	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		configMap, err := configMaps.Get(context.TODO(), name, metav1.GetOptions{})
-		if err != nil {
-			// If the ConfigMap doesn't exist, create it
-			if errors.IsNotFound(err) {
-				newConfigMap := &corev1.ConfigMap{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: namespace,
-						Name:      name,
-					},
-					Data: data,
-				}
-				_, err = configMaps.Create(context.TODO(), newConfigMap, metav1.CreateOptions{})
-				return err
+	fmt.Printf("The json string is %v.\n", jsonString)
+	data[common.ZkConfigMapKey] = jsonString
+
+	configMap, err := configMaps.Get(context.TODO(), name, metav1.GetOptions{})
+	if err != nil {
+		// If the ConfigMap doesn't exist, create it
+		if errors.IsNotFound(err) {
+			newConfigMap := &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: namespace,
+					Name:      name,
+				},
+				Data: data,
 			}
+			_, err = configMaps.Create(context.TODO(), newConfigMap, metav1.CreateOptions{})
 			return err
 		}
-
-		configMap.Data = data
-		_, err = configMaps.Update(context.TODO(), configMap, metav1.UpdateOptions{})
 		return err
-	})
+	}
+
+	configMap.Data = data
+	_, err = configMaps.Update(context.TODO(), configMap, metav1.UpdateOptions{})
+	return err
 }
 
 func GetDataFromConfigMap(namespace, name string) (*sync.Map, error) {
@@ -298,9 +298,7 @@ func GetDataFromConfigMap(namespace, name string) (*sync.Map, error) {
 		return nil, err
 	}
 
-	var imageMap *sync.Map
-
-	err = UnmarshalFromString(configMap.Data[common.ZkConfigMapKey], imageMap)
+	imageMap, err := StringToSyncMap(configMap.Data[common.ZkConfigMapKey])
 	if err != nil {
 		fmt.Printf("Error caught while unmarshalling the data from configmap %v.\n", err)
 		return nil, err

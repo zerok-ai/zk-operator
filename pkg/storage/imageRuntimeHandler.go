@@ -26,6 +26,7 @@ func (h *ImageRuntimeHandler) SyncDataFromRedis() error {
 	if h.RuntimeMapVersion == -1 || h.RuntimeMapVersion != versionFromRedis {
 		h.RuntimeMapVersion = versionFromRedis
 		h.ImageStore.SyncDataFromRedis(h.ImageRuntimeMap)
+		fmt.Println("Updating config map.")
 		err := utils.CreateOrUpdateConfigMap(utils.GetCurrentNamespace(), common.ZkConfigMapName, h.ImageRuntimeMap)
 		if err != nil {
 			fmt.Printf("Error while create/update confimap %v.\n", err)
@@ -41,6 +42,7 @@ func (h *ImageRuntimeHandler) Init(config config.ZkInjectorConfig) {
 	h.RuntimeMapVersion = -1
 	var err error
 	h.ImageRuntimeMap, err = utils.GetDataFromConfigMap(utils.GetCurrentNamespace(), common.ZkConfigMapName)
+	fmt.Printf("ImageMap from configMap is %v.\n", h.ImageRuntimeMap)
 	if err != nil {
 		h.ImageRuntimeMap = &sync.Map{}
 		fmt.Printf("Error while reading image map from config Map %v.\n", err)
@@ -54,7 +56,6 @@ func (h *ImageRuntimeHandler) getRuntimeForImage(imageID string) *common.Contain
 	}
 	switch y := value.(type) {
 	case *common.ContainerRuntime:
-		fmt.Println("mk: Getting data for image id ", imageID, utils.ToJsonString(y))
 		return y
 	default:
 		return nil

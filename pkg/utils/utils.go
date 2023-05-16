@@ -2,32 +2,55 @@ package utils
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/zerok-ai/zk-operator/pkg/common"
-	"os"
-
 	corev1 "k8s.io/api/core/v1"
+	"os"
+	"sync"
 )
 
-func UnmarshalFromString(data string, out interface{}) error {
-	err := json.Unmarshal([]byte(data), out)
+func GetContainerRuntime(data string) (*common.ContainerRuntime, error) {
+	var runtimeDetails common.ContainerRuntime
+	err := json.Unmarshal([]byte(data), &runtimeDetails)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return &runtimeDetails, nil
 }
 
-func ToJsonString(iInstance interface{}) *string {
-	if iInstance == nil {
-		return nil
-	}
-	bytes, err := json.Marshal(iInstance)
+func SyncMapToString(m *sync.Map) (string, error) {
+	resultMap := make(map[string]interface{})
+
+	m.Range(func(key, value interface{}) bool {
+		resultMap[fmt.Sprintf("%v", key)] = value
+		return true
+	})
+
+	fmt.Println(resultMap)
+
+	mapBytes, err := json.Marshal(resultMap)
 	if err != nil {
-		return nil
+		return "", err
 	}
-	iString := string(bytes)
-	return &iString
+
+	return string(mapBytes), nil
 }
 
+func StringToSyncMap(str string) (*sync.Map, error) {
+	var resultMap map[string]interface{}
+
+	err := json.Unmarshal([]byte(str), &resultMap)
+	if err != nil {
+		return nil, err
+	}
+
+	newMap := &sync.Map{}
+	for key, value := range resultMap {
+		newMap.Store(key, value)
+	}
+
+	return newMap, nil
+}
 func GetIndexOfEnv(envVars []corev1.EnvVar, targetEnv string) int {
 	for index, envVar := range envVars {
 		if envVar.Name == targetEnv {
