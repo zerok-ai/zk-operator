@@ -3,14 +3,13 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/zerok-ai/zk-operator/pkg/utils"
 	"io"
 
+	"github.com/kataras/iris/v12"
 	"github.com/zerok-ai/zk-operator/internal/config"
 	zkhttp "github.com/zerok-ai/zk-operator/pkg/common/zkhttp"
 	"github.com/zerok-ai/zk-operator/pkg/server/models"
-	"github.com/zerok-ai/zk-operator/pkg/zkclient"
-
-	"github.com/kataras/iris/v12"
 )
 
 type ZkCloudApiHandler struct {
@@ -45,10 +44,10 @@ func (h *ZkCloudApiHandler) restartWorkloads(body []byte) error {
 	namespace := restartRequestObj.Namespace
 	all := restartRequestObj.All
 	if all {
-		return zkclient.RestartAllDeploymentsInNamespace(namespace)
+		return utils.RestartAllDeploymentsInNamespace(namespace)
 	} else {
 		deployment := restartRequestObj.Deployment
-		return zkclient.RestartDeployment(namespace, deployment)
+		return utils.RestartDeployment(namespace, deployment)
 	}
 }
 

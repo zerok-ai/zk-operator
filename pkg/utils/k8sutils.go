@@ -1,10 +1,9 @@
-package zkclient
+package utils
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/zerok-ai/zk-operator/pkg/utils"
 	"k8s.io/client-go/util/retry"
 	"sync"
 	"time"
@@ -255,7 +254,7 @@ func CreateOrUpdateConfigMap(namespace, name string, imageMap *sync.Map) error {
 	configMaps := clientSet.CoreV1().ConfigMaps(namespace)
 
 	data := make(map[string]string)
-	jsonString := utils.ToJsonString(imageMap)
+	jsonString := ToJsonString(imageMap)
 	if jsonString == nil {
 		fmt.Printf("Error while converting sync.Map to string.")
 	}
@@ -301,7 +300,7 @@ func GetDataFromConfigMap(namespace, name string) (*sync.Map, error) {
 
 	var imageMap *sync.Map
 
-	err = utils.UnmarshalFromString(configMap.Data[common.ZkConfigMapKey], imageMap)
+	err = UnmarshalFromString(configMap.Data[common.ZkConfigMapKey], imageMap)
 	if err != nil {
 		fmt.Printf("Error caught while unmarshalling the data from configmap %v.\n", err)
 		return nil, err

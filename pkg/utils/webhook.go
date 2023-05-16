@@ -7,8 +7,6 @@ import (
 	"reflect"
 
 	"github.com/zerok-ai/zk-operator/internal/config"
-	"github.com/zerok-ai/zk-operator/pkg/zkclient"
-
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -21,7 +19,7 @@ var (
 
 func CreateOrUpdateMutatingWebhookConfiguration(caPEM *bytes.Buffer, cfg config.WebhookConfig) error {
 
-	clientset, err := zkclient.GetK8sClient()
+	clientset, err := GetK8sClient()
 	if err != nil {
 		return err
 	}
