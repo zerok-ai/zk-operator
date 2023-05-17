@@ -3,13 +3,12 @@ package server
 import (
 	"bytes"
 	"fmt"
+	"github.com/zerok-ai/zk-operator/internal/inject"
+	"github.com/zerok-ai/zk-operator/internal/storage"
 	"io"
 
-	"github.com/zerok-ai/zk-operator/internal/config"
-	"github.com/zerok-ai/zk-operator/pkg/inject"
-	"github.com/zerok-ai/zk-operator/pkg/storage"
-
 	"github.com/kataras/iris/v12"
+	"github.com/zerok-ai/zk-operator/internal/config"
 )
 
 type WebhookRequestHandler struct {

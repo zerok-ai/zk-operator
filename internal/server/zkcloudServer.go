@@ -3,13 +3,13 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/zerok-ai/zk-operator/pkg/utils"
+	zkhttp "github.com/zerok-ai/zk-operator/internal/common/zkhttp"
+	"github.com/zerok-ai/zk-operator/internal/server/models"
+	"github.com/zerok-ai/zk-operator/internal/utils"
 	"io"
 
 	"github.com/kataras/iris/v12"
 	"github.com/zerok-ai/zk-operator/internal/config"
-	zkhttp "github.com/zerok-ai/zk-operator/pkg/common/zkhttp"
-	"github.com/zerok-ai/zk-operator/pkg/server/models"
 )
 
 type ZkCloudApiHandler struct {

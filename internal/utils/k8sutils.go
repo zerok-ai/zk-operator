@@ -4,12 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/zerok-ai/zk-operator/internal/common"
 	"sync"
 	"time"
 
 	"os"
-
-	"github.com/zerok-ai/zk-operator/pkg/common"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"

@@ -22,6 +22,11 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 
 	"flag"
+	"github.com/zerok-ai/zk-operator/internal/cert"
+	server "github.com/zerok-ai/zk-operator/internal/server"
+	"github.com/zerok-ai/zk-operator/internal/storage"
+	sync "github.com/zerok-ai/zk-operator/internal/sync"
+	"github.com/zerok-ai/zk-operator/internal/utils"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -41,14 +46,8 @@ import (
 
 	"github.com/ilyakaznacheev/cleanenv"
 
-	"github.com/zerok-ai/zk-operator/internal/config"
-	"github.com/zerok-ai/zk-operator/pkg/cert"
-	"github.com/zerok-ai/zk-operator/pkg/server"
-	"github.com/zerok-ai/zk-operator/pkg/storage"
-	"github.com/zerok-ai/zk-operator/pkg/sync"
-	"github.com/zerok-ai/zk-operator/pkg/utils"
-
 	"github.com/kataras/iris/v12"
+	"github.com/zerok-ai/zk-operator/internal/config"
 )
 
 var (

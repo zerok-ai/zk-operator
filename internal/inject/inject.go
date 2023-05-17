@@ -3,12 +3,11 @@ package inject
 import (
 	"encoding/json"
 	"fmt"
+	common "github.com/zerok-ai/zk-operator/internal/common"
+	"github.com/zerok-ai/zk-operator/internal/storage"
+	"github.com/zerok-ai/zk-operator/internal/utils"
 	"strconv"
 	"time"
-
-	common "github.com/zerok-ai/zk-operator/pkg/common"
-	"github.com/zerok-ai/zk-operator/pkg/storage"
-	"github.com/zerok-ai/zk-operator/pkg/utils"
 
 	v1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"

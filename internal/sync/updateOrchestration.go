@@ -2,11 +2,11 @@ package sync
 
 import (
 	"fmt"
-	"github.com/zerok-ai/zk-operator/pkg/utils"
+	"github.com/zerok-ai/zk-operator/internal/storage"
+	"github.com/zerok-ai/zk-operator/internal/utils"
 	"time"
 
 	"github.com/zerok-ai/zk-operator/internal/config"
-	"github.com/zerok-ai/zk-operator/pkg/storage"
 	v1 "k8s.io/api/core/v1"
 )
 

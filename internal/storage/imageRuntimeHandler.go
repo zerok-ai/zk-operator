@@ -2,12 +2,11 @@ package storage
 
 import (
 	"fmt"
+	common "github.com/zerok-ai/zk-operator/internal/common"
+	utils "github.com/zerok-ai/zk-operator/internal/utils"
 	"sync"
 
 	"github.com/zerok-ai/zk-operator/internal/config"
-	"github.com/zerok-ai/zk-operator/pkg/common"
-	"github.com/zerok-ai/zk-operator/pkg/utils"
-
 	corev1 "k8s.io/api/core/v1"
 )
 

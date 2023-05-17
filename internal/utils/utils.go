@@ -3,7 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/zerok-ai/zk-operator/pkg/common"
+	common "github.com/zerok-ai/zk-operator/internal/common"
 	corev1 "k8s.io/api/core/v1"
 	"os"
 	"sync"
