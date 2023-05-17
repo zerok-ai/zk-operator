@@ -30,9 +30,20 @@ type ZkCloudConfig struct {
 	Port        string `yaml:"port"`
 }
 
+type InitContainerConfig struct {
+	Image string `yaml:"image"`
+	Tag   string `yaml:"tag"`
+}
+
+type JavaToolOptionsConfig struct {
+	OtelArgument string `yaml:"otelArgument"`
+}
+
 type ZkInjectorConfig struct {
-	ZkCloud   ZkCloudConfig   `yaml:"zkcloud"`
-	Redis     RedisConfig     `yaml:"redis"`
-	Webhook   WebhookConfig   `yaml:"webhook"`
-	RulesSync RulesSyncConfig `yaml:"rules_sync"`
+	ZkCloud         ZkCloudConfig         `yaml:"zkcloud"`
+	Redis           RedisConfig           `yaml:"redis"`
+	Webhook         WebhookConfig         `yaml:"webhook"`
+	RulesSync       RulesSyncConfig       `yaml:"rules_sync"`
+	InitContainer   InitContainerConfig   `yaml:"init_container"`
+	JavaToolOptions JavaToolOptionsConfig `yaml:"java_tool_options"`
 }

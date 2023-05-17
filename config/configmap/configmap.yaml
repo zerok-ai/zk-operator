@@ -26,6 +26,11 @@ data:
     logs:
       color: true
       level: DEBUG
+    init_container:
+      image: us-west1-docker.pkg.dev/zerok-dev/stage/init-container
+      tag: test
+    java_tool_options:
+      otelArgument: -javaagent:/opt/zerok/opentelemetry-javaagent.jar -Dotel.javaagent.extensions=/opt/zerok/zk-otel-extension.jar -Dotel.traces.exporter=zerok
     local: false
 kind: ConfigMap
 metadata:

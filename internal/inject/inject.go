@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	common "github.com/zerok-ai/zk-operator/internal/common"
+	"github.com/zerok-ai/zk-operator/internal/config"
 	"github.com/zerok-ai/zk-operator/internal/storage"
 	"github.com/zerok-ai/zk-operator/internal/utils"
 	"strconv"
@@ -17,6 +18,7 @@ import (
 // Injector is a struct that implements an admission controller webhook for Kubernetes pods.
 type Injector struct {
 	ImageRuntimeHandler *storage.ImageRuntimeHandler
+	Config              config.ZkInjectorConfig
 }
 
 // GetEmptyResponse returns an empty admission response as a JSON byte array.
@@ -141,7 +143,7 @@ func (h *Injector) getContainerPatches(pod *corev1.Pod) []map[string]interface{}
 		switch language {
 		case common.JavaProgrammingLanguage:
 			//Adding env variable patch in case the prog language is java.
-			javaToolsPatch := modifyJavaToolsEnvVariablePatch(container, index)
+			javaToolsPatch := h.modifyJavaToolsEnvVariablePatch(container, index)
 			patches = append(patches, javaToolsPatch...)
 			orchLabelPatch := getZerokLabelPatch(common.ZkOrchOrchestrated)
 			patches = append(patches, orchLabelPatch)
@@ -163,7 +165,7 @@ func (h *Injector) getContainerPatches(pod *corev1.Pod) []map[string]interface{}
 	return patches
 }
 
-func modifyJavaToolsEnvVariablePatch(container *corev1.Container, containerIndex int) []map[string]interface{} {
+func (h *Injector) modifyJavaToolsEnvVariablePatch(container *corev1.Container, containerIndex int) []map[string]interface{} {
 	envVars := container.Env
 	envIndex := -1
 	patches := []map[string]interface{}{}
@@ -188,7 +190,7 @@ func modifyJavaToolsEnvVariablePatch(container *corev1.Container, containerIndex
 			"path": fmt.Sprintf("/spec/containers/%v/env/-", containerIndex),
 			"value": corev1.EnvVar{
 				Name:  common.JavalToolOptions,
-				Value: common.OtelArgument,
+				Value: h.Config.JavaToolOptions.OtelArgument,
 			},
 		}
 
@@ -199,7 +201,7 @@ func modifyJavaToolsEnvVariablePatch(container *corev1.Container, containerIndex
 			"path": fmt.Sprintf("/spec/containers/%v/env/%v", containerIndex, envIndex),
 			"value": corev1.EnvVar{
 				Name:  common.JavalToolOptions,
-				Value: container.Env[envIndex].Value + common.OtelArgument,
+				Value: container.Env[envIndex].Value + h.Config.JavaToolOptions.OtelArgument,
 			},
 		}
 	}
@@ -261,7 +263,7 @@ func (h *Injector) getInitContainerPatches(pod *corev1.Pod) []map[string]interfa
 		"value": &corev1.Container{
 			Name:            "zerok-init",
 			Command:         []string{"cp", "-r", "/opt/zerok/.", "/opt/temp"},
-			Image:           "us-west1-docker.pkg.dev/zerok-dev/stage/init-container:test",
+			Image:           h.Config.InitContainer.Image + ":" + h.Config.InitContainer.Tag,
 			ImagePullPolicy: corev1.PullAlways,
 			VolumeMounts: []corev1.VolumeMount{
 				{
