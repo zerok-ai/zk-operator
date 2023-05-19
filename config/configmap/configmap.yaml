@@ -2,13 +2,13 @@ apiVersion: v1
 data:
   operator-config.yaml: |+
     redis:
-      host: redis.redis.svc.cluster.local
+      host: redis.zk-client.svc.cluster.local
       port: 6379
       readTimeout: 20
       pollingInterval: 30 #seconds
       db: 7
     webhook:
-      namespace: zk-operator-system
+      namespace: zk-client
       service: zk-operator-inject
       name: zk-webhook
       path: /zk-injector
@@ -34,4 +34,4 @@ data:
     local: false
 kind: ConfigMap
 metadata:
-  name: configmap
+  name: operator-configmap

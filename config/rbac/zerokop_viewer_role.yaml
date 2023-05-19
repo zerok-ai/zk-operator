@@ -2,7 +2,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: zerokop-viewer-role
+  name: operator-viewer-role
 rules:
 - apiGroups:
   - operator.zerok.ai

@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    name: zerok-operator-service
+    name: operator
   name: service
 spec:
   type: ClusterIP
@@ -20,7 +20,7 @@ kind: Service
 metadata:
   labels:
     name: zk-operator-injector
-  name: inject
+  name: operator-inject
 spec:
   publishNotReadyAddresses: true
   ports:
