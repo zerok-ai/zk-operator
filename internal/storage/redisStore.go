@@ -2,18 +2,14 @@ package storage
 
 import (
 	"fmt"
-	"github.com/zerok-ai/zk-operator/internal/utils"
 	"sync"
 	"time"
 
-	"github.com/go-redis/redis"
-	"github.com/zerok-ai/zk-operator/internal/config"
-)
+	"github.com/zerok-ai/zk-operator/internal/utils"
 
-const (
-	defaultExpiry     time.Duration = time.Hour * 24 * 30
-	hashSetName       string        = "zk_img_proc_map"
-	hashSetVersionKey string        = "zk_img_proc_version"
+	"github.com/go-redis/redis"
+	"github.com/zerok-ai/zk-operator/internal/common"
+	"github.com/zerok-ai/zk-operator/internal/config"
 )
 
 type RedisStore struct {
@@ -22,7 +18,7 @@ type RedisStore struct {
 }
 
 func (zkRedis *RedisStore) GetHashSetVersion() (int64, error) {
-	data, err := zkRedis.redisClient.Get(hashSetVersionKey).Int64()
+	data, err := zkRedis.redisClient.Get(common.HashSetVersionKey).Int64()
 	if err != nil {
 		fmt.Printf("Error caught while getting hash set version from redis %v.\n ", err)
 		return -1, err
@@ -44,7 +40,7 @@ func GetNewRedisStore(config config.ZkInjectorConfig) Store {
 
 	imgRedis := &RedisStore{
 		redisClient: _redisClient,
-		hashSetName: hashSetName,
+		hashSetName: common.HashSetName,
 	}
 
 	return imgRedis
@@ -57,7 +53,7 @@ func (zkRedis *RedisStore) SyncDataFromRedis(currMap *sync.Map) {
 	for {
 		var err error
 		//Getting 10 fields at once.
-		data, cursor, err = zkRedis.redisClient.HScan(hashSetName, cursor, "*", 10).Result()
+		data, cursor, err = zkRedis.redisClient.HScan(common.HashSetName, cursor, "*", 10).Result()
 		if err != nil {
 			fmt.Printf("Error while scan from redis %v\n", err)
 		}

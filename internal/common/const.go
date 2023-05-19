@@ -19,4 +19,7 @@ const (
 	ZkConfigMapKey  = "zk-image-map"
 
 	NamespaceEnvVariable = "POD_NAMESPACE"
+
+	HashSetName       string = "zk_img_proc_map"
+	HashSetVersionKey string = "zk_img_proc_version"
 )
