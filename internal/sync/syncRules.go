@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -8,10 +9,20 @@ import (
 
 	"github.com/go-redis/redis"
 	"github.com/zerok-ai/zk-operator/internal/config"
+	"github.com/zerok-ai/zk-utils-go/rules/model"
 )
 
 type SyncRules struct {
 	redisClient *redis.Client
+}
+
+type RulesApiResponse struct {
+	Payload FilterRulesObj `json:"payload"`
+}
+
+type FilterRulesObj struct {
+	Rules   []model.FilterRule `json:"rules"`
+	Deleted []string           `json:"deleted,omitempty"`
 }
 
 func (h *SyncRules) createNewRedisClient(config config.ZkInjectorConfig) {
@@ -48,14 +59,14 @@ func (h *SyncRules) SyncRulesFromZkCloud(cfg config.ZkInjectorConfig) {
 			fmt.Printf("Error while getting rules from zkcloud %v.\n", err)
 			continue
 		}
-		err = h.saveRulesInRedis(cfg.RulesSync.Key, rules)
+		err = h.saveRulesInRedis(rules)
 		if err != nil {
 			fmt.Printf("Error while savign rules to redis %v.\n", err)
 		}
 	}
 }
 
-func (h *SyncRules) getRulesFromZkCloud(cfg config.ZkInjectorConfig) (string, error) {
+func (h *SyncRules) getRulesFromZkCloud(cfg config.ZkInjectorConfig) (*RulesApiResponse, error) {
 
 	fmt.Println("Get rules from zk cloud.")
 
@@ -63,7 +74,7 @@ func (h *SyncRules) getRulesFromZkCloud(cfg config.ZkInjectorConfig) (string, er
 	req, err := http.NewRequest("GET", endpoint, nil)
 	if err != nil {
 		fmt.Println("Error creating request:", err)
-		return "", err
+		return nil, err
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -71,24 +82,34 @@ func (h *SyncRules) getRulesFromZkCloud(cfg config.ZkInjectorConfig) (string, er
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		fmt.Println("Error sending request for rules api :", err)
-		return "", err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("Error reading response from rules api :", err)
-		return "", err
+		return nil, err
 	}
 
-	return string(body), nil
+	var apiResponse RulesApiResponse
+
+	err = json.Unmarshal(body, &apiResponse)
+
+	if err != nil {
+		fmt.Println("Error while unmarshalling rules api response :", err)
+		return nil, err
+	}
+
+	return &apiResponse, nil
 }
 
-func (h *SyncRules) saveRulesInRedis(key string, value string) error {
-	err := h.redisClient.Set(key, value, 0).Err()
-	if err != nil {
-		fmt.Println("Error setting value to  Redis:", err)
-		return err
+func (h *SyncRules) saveRulesInRedis(rulesApiResponse *RulesApiResponse) error {
+	payload := rulesApiResponse.Payload
+	for _, filterRule := range payload.Rules {
+		fmt.Println("Printing filter rule.")
+		fmt.Println(filterRule.FilterId)
+		fmt.Println(filterRule.Workloads)
 	}
 	return nil
 }

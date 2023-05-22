@@ -6,7 +6,8 @@ data:
       port: 6379
       readTimeout: 20
       pollingInterval: 30 #seconds
-      db: 7
+      image_db: 7
+      version_db: 6
     webhook:
       namespace: zk-client
       service: zk-operator-inject
@@ -17,11 +18,11 @@ data:
       restartPath: /restart
       port: 8472
     rules_sync:
-      host: zkdev02.getanton.com
+      host: a541aaac-d1d2-47e5-b20f-9e57ce0e875c.mock.pstmn.io
       path: /v1/o/cluster/rules
       port: 80
-      pollingInterval: 300
-      db: 1
+      pollingInterval: 30
+      db: 6
       key: rules_list
     logs:
       color: true

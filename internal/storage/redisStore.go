@@ -34,7 +34,7 @@ func GetNewRedisStore(config config.ZkInjectorConfig) Store {
 	_redisClient := redis.NewClient(&redis.Options{
 		Addr:        addr,
 		Password:    "",
-		DB:          redisConfig.DB,
+		DB:          redisConfig.ImageDB,
 		ReadTimeout: readTimeout,
 	})
 
