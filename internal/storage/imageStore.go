@@ -2,22 +2,20 @@ package storage
 
 import (
 	"fmt"
-	"sync"
-	"time"
-
 	"github.com/zerok-ai/zk-operator/internal/utils"
+	"sync"
 
 	"github.com/go-redis/redis"
 	"github.com/zerok-ai/zk-operator/internal/common"
 	"github.com/zerok-ai/zk-operator/internal/config"
 )
 
-type RedisStore struct {
+type ImageStore struct {
 	redisClient *redis.Client
 	hashSetName string
 }
 
-func (zkRedis *RedisStore) GetHashSetVersion() (int64, error) {
+func (zkRedis *ImageStore) GetHashSetVersion() (int64, error) {
 	data, err := zkRedis.redisClient.Get(common.HashSetVersionKey).Int64()
 	if err != nil {
 		fmt.Printf("Error caught while getting hash set version from redis %v.\n ", err)
@@ -26,19 +24,10 @@ func (zkRedis *RedisStore) GetHashSetVersion() (int64, error) {
 	return data, nil
 }
 
-func GetNewRedisStore(config config.ZkInjectorConfig) Store {
-	redisConfig := config.Redis
-	readTimeout := time.Duration(redisConfig.ReadTimeout) * time.Second
-	addr := fmt.Sprint(redisConfig.Host, ":", redisConfig.Port)
-	fmt.Printf("Address for redis is %v.\n", addr)
-	_redisClient := redis.NewClient(&redis.Options{
-		Addr:        addr,
-		Password:    "",
-		DB:          redisConfig.ImageDB,
-		ReadTimeout: readTimeout,
-	})
+func GetNewRedisStore(config config.ZkInjectorConfig) *ImageStore {
+	_redisClient := utils.GetRedisClient(config, config.Redis.ImageDB)
 
-	imgRedis := &RedisStore{
+	imgRedis := &ImageStore{
 		redisClient: _redisClient,
 		hashSetName: common.HashSetName,
 	}
@@ -46,7 +35,7 @@ func GetNewRedisStore(config config.ZkInjectorConfig) Store {
 	return imgRedis
 }
 
-func (zkRedis *RedisStore) SyncDataFromRedis(currMap *sync.Map) {
+func (zkRedis *ImageStore) SyncDataFromRedis(currMap *sync.Map) {
 	var cursor uint64
 	var data []string
 
@@ -78,7 +67,7 @@ func (zkRedis *RedisStore) SyncDataFromRedis(currMap *sync.Map) {
 	}
 }
 
-func (zkRedis *RedisStore) GetString(key string) (*string, error) {
+func (zkRedis *ImageStore) GetString(key string) (*string, error) {
 	output := zkRedis.redisClient.HGet(zkRedis.hashSetName, key)
 	err := output.Err()
 	if err != nil {

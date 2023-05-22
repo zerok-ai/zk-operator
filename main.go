@@ -151,6 +151,8 @@ func initInjector() {
 	runtimeMap.Init(cfg)
 	go sync.UpdateOrchestration(runtimeMap, cfg)
 
+	versionedStore := storage.GetVersionedStore(cfg)
+
 	app := newApp()
 
 	irisConfig := iris.WithConfiguration(iris.Configuration{
@@ -160,7 +162,7 @@ func initInjector() {
 
 	go server.StartZkCloudServer(newApp(), cfg, irisConfig)
 
-	syncRules := sync.InitSyncRules(cfg)
+	syncRules := sync.CreateSyncRules(versionedStore)
 	//Staring rule sync from zk api server
 	go syncRules.SyncRulesFromZkCloud(cfg)
 

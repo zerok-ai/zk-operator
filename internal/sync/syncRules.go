@@ -3,17 +3,17 @@ package sync
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/zerok-ai/zk-operator/internal/storage"
 	"io"
 	"net/http"
 	"time"
 
-	"github.com/go-redis/redis"
 	"github.com/zerok-ai/zk-operator/internal/config"
 	"github.com/zerok-ai/zk-utils-go/rules/model"
 )
 
 type SyncRules struct {
-	redisClient *redis.Client
+	VersionedStore *storage.VersionedStore
 }
 
 type RulesApiResponse struct {
@@ -25,25 +25,9 @@ type FilterRulesObj struct {
 	Deleted []string           `json:"deleted,omitempty"`
 }
 
-func (h *SyncRules) createNewRedisClient(config config.ZkInjectorConfig) {
-	rulesConfig := config.RulesSync
-	redisConfig := config.Redis
-	addr := fmt.Sprint(redisConfig.Host, ":", redisConfig.Port)
-	readTimeout := time.Duration(redisConfig.ReadTimeout) * time.Second
-	fmt.Printf("Address for redis is %v.\n", addr)
-	_redisClient := redis.NewClient(&redis.Options{
-		Addr:        addr,
-		Password:    "",
-		DB:          rulesConfig.DB,
-		ReadTimeout: readTimeout,
-	})
-
-	h.redisClient = _redisClient
-}
-
-func InitSyncRules(config config.ZkInjectorConfig) *SyncRules {
+func CreateSyncRules(VersionedStore *storage.VersionedStore) *SyncRules {
 	syncRules := SyncRules{}
-	syncRules.createNewRedisClient(config)
+	syncRules.VersionedStore = VersionedStore
 	return &syncRules
 }
 
@@ -107,9 +91,26 @@ func (h *SyncRules) getRulesFromZkCloud(cfg config.ZkInjectorConfig) (*RulesApiR
 func (h *SyncRules) saveRulesInRedis(rulesApiResponse *RulesApiResponse) error {
 	payload := rulesApiResponse.Payload
 	for _, filterRule := range payload.Rules {
-		fmt.Println("Printing filter rule.")
-		fmt.Println(filterRule.FilterId)
-		fmt.Println(filterRule.Workloads)
+		filterString, err := json.Marshal(filterRule)
+		if err != nil {
+			fmt.Printf("Error while converting filter rule to string %v", err)
+			return err
+		}
+		filterId := filterRule.FilterId
+		err = h.VersionedStore.SetValue(filterId, string(filterString))
+		if err != nil {
+			fmt.Printf("Error while setting filter rule to redis %v", err)
+			return err
+		}
 	}
+
+	for _, filterId := range payload.Deleted {
+		err := h.VersionedStore.Delete(filterId)
+		if err != nil {
+			fmt.Printf("Error while deleting filter id %v from redis %v", filterId, err)
+			return err
+		}
+	}
+
 	return nil
 }

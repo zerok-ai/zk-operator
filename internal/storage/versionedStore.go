@@ -1,10 +1,9 @@
 package storage
 
 import (
-	"fmt"
 	"github.com/go-redis/redis"
 	"github.com/zerok-ai/zk-operator/internal/config"
-	"time"
+	"github.com/zerok-ai/zk-operator/internal/utils"
 )
 
 type VersionedStore struct {
@@ -12,16 +11,9 @@ type VersionedStore struct {
 	versionHashSetName string
 }
 
-func GetVersionedStore(config config.ZkInjectorConfig, db int) *VersionedStore {
+func GetVersionedStore(config config.ZkInjectorConfig) *VersionedStore {
 
-	redisConfig := config.Redis
-	readTimeout := time.Duration(redisConfig.ReadTimeout) * time.Second
-	_redisClient := redis.NewClient(&redis.Options{
-		Addr:        fmt.Sprint(redisConfig.Host, ":", redisConfig.Port),
-		Password:    "",
-		DB:          db,
-		ReadTimeout: readTimeout,
-	})
+	_redisClient := utils.GetRedisClient(config, config.Redis.VersionDB)
 
 	versionStore := &VersionedStore{
 		redisClient:        _redisClient,

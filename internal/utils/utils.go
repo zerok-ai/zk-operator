@@ -3,10 +3,13 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/go-redis/redis"
 	common "github.com/zerok-ai/zk-operator/internal/common"
+	"github.com/zerok-ai/zk-operator/internal/config"
 	corev1 "k8s.io/api/core/v1"
 	"os"
 	"sync"
+	"time"
 )
 
 func GetContainerRuntime(data string) (*common.ContainerRuntime, error) {
@@ -63,4 +66,16 @@ func GetIndexOfEnv(envVars []corev1.EnvVar, targetEnv string) int {
 func GetCurrentNamespace() string {
 	podNamespace := os.Getenv(common.NamespaceEnvVariable)
 	return podNamespace
+}
+
+func GetRedisClient(config config.ZkInjectorConfig, db int) *redis.Client {
+	redisConfig := config.Redis
+	readTimeout := time.Duration(redisConfig.ReadTimeout) * time.Second
+	_redisClient := redis.NewClient(&redis.Options{
+		Addr:        fmt.Sprint(redisConfig.Host, ":", redisConfig.Port),
+		Password:    "",
+		DB:          db,
+		ReadTimeout: readTimeout,
+	})
+	return _redisClient
 }

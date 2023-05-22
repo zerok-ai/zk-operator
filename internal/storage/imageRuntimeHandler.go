@@ -13,7 +13,7 @@ import (
 type ImageRuntimeHandler struct {
 	ImageRuntimeMap   *sync.Map
 	RuntimeMapVersion int64
-	ImageStore        Store
+	ImageStore        *ImageStore
 }
 
 func (h *ImageRuntimeHandler) SyncDataFromRedis() error {
