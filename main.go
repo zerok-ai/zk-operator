@@ -22,12 +22,16 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 
 	"flag"
+	"fmt"
+	"log"
+	"os"
+	"time"
+
 	"github.com/zerok-ai/zk-operator/internal/cert"
 	server "github.com/zerok-ai/zk-operator/internal/server"
 	"github.com/zerok-ai/zk-operator/internal/storage"
 	sync "github.com/zerok-ai/zk-operator/internal/sync"
 	"github.com/zerok-ai/zk-operator/internal/utils"
-	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -36,10 +40,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-
-	"fmt"
-	"log"
-	"os"
 
 	operatorv1alpha1 "github.com/zerok-ai/zk-operator/api/v1alpha1"
 	"github.com/zerok-ai/zk-operator/controllers"
@@ -144,6 +144,7 @@ func initInjector() {
 
 	if err := cleanenv.ReadConfig(configPath, &cfg); err != nil {
 		log.Println(err)
+		return
 	}
 
 	runtimeMap := &storage.ImageRuntimeHandler{}
