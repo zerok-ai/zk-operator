@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"fmt"
 	"github.com/go-redis/redis"
 	"github.com/zerok-ai/zk-operator/internal/config"
 	"github.com/zerok-ai/zk-operator/internal/utils"
@@ -28,9 +29,10 @@ func (zkRedis VersionedStore) SetValue(key string, value string) error {
 
 	// get the old value
 	oldVal := rdb.Get(key)
-	if err := oldVal.Err(); err != nil {
-		return err
-	}
+	//if err := oldVal.Err(); err != nil {
+	//	fmt.Println("Old value is nil.")
+	//	return err
+	//}
 	oldString := oldVal.Val()
 
 	// return if old value is same as new value

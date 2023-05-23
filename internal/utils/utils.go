@@ -71,8 +71,11 @@ func GetCurrentNamespace() string {
 func GetRedisClient(config config.ZkInjectorConfig, db int) *redis.Client {
 	redisConfig := config.Redis
 	readTimeout := time.Duration(redisConfig.ReadTimeout) * time.Second
+	url := fmt.Sprint(redisConfig.Host, ":", redisConfig.Port)
+	fmt.Printf("Redis endpoint is %v.\n", url)
+	fmt.Println("Db is ", db)
 	_redisClient := redis.NewClient(&redis.Options{
-		Addr:        fmt.Sprint(redisConfig.Host, ":", redisConfig.Port),
+		Addr:        url,
 		Password:    "",
 		DB:          db,
 		ReadTimeout: readTimeout,

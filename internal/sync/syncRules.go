@@ -93,13 +93,13 @@ func (h *SyncRules) saveRulesInRedis(rulesApiResponse *RulesApiResponse) error {
 	for _, filterRule := range payload.Rules {
 		filterString, err := json.Marshal(filterRule)
 		if err != nil {
-			fmt.Printf("Error while converting filter rule to string %v", err)
+			fmt.Printf("Error while converting filter rule to string %v.\n", err)
 			return err
 		}
 		filterId := filterRule.FilterId
 		err = h.VersionedStore.SetValue(filterId, string(filterString))
 		if err != nil {
-			fmt.Printf("Error while setting filter rule to redis %v", err)
+			fmt.Printf("Error while setting filter rule to redis %v.\n", err)
 			return err
 		}
 	}
@@ -107,7 +107,7 @@ func (h *SyncRules) saveRulesInRedis(rulesApiResponse *RulesApiResponse) error {
 	for _, filterId := range payload.Deleted {
 		err := h.VersionedStore.Delete(filterId)
 		if err != nil {
-			fmt.Printf("Error while deleting filter id %v from redis %v", filterId, err)
+			fmt.Printf("Error while deleting filter id %v from redis %v.\n", filterId, err)
 			return err
 		}
 	}
