@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"fmt"
 	"github.com/go-redis/redis"
 	"github.com/zerok-ai/zk-operator/internal/config"
 	"github.com/zerok-ai/zk-operator/internal/utils"
@@ -27,17 +26,19 @@ func GetVersionedStore(config config.ZkInjectorConfig) *VersionedStore {
 func (zkRedis VersionedStore) SetValue(key string, value string) error {
 	rdb := zkRedis.redisClient
 
-	// get the old value
+	// get the old value and return if it matches the new value
 	oldVal := rdb.Get(key)
-	//if err := oldVal.Err(); err != nil {
-	//	fmt.Println("Old value is nil.")
-	//	return err
-	//}
-	oldString := oldVal.Val()
-
-	// return if old value is same as new value
-	if oldString == value {
-		return nil
+	err := oldVal.Err()
+	if err != nil {
+		if err != redis.Nil {
+			return err
+		}
+	} else {
+		// return if old value is same as new value
+		oldString := oldVal.Val()
+		if oldString == value {
+			return nil
+		}
 	}
 
 	// Create a Redis transaction: this doesn't support rollback
