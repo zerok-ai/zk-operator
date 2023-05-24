@@ -20,10 +20,13 @@ data:
     rules_sync:
       host: a541aaac-d1d2-47e5-b20f-9e57ce0e875c.mock.pstmn.io
       path: /v1/o/cluster/rules
-      port: 80
       pollingInterval: 30
       db: 6
       key: rules_list
+    operator_login:
+      host: a541aaac-d1d2-47e5-b20f-9e57ce0e875c.mock.pstmn.io
+      path: /v1/o/auth/login
+      kill_code: 525
     logs:
       color: true
       level: DEBUG

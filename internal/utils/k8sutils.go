@@ -305,3 +305,25 @@ func GetDataFromConfigMap(namespace, name string) (*sync.Map, error) {
 
 	return imageMap, nil
 }
+
+func GetSecretValue(namespace, secretName, dataKey string) (string, error) {
+	clientSet, err := GetK8sClient()
+	if err != nil {
+		fmt.Printf(" Error while getting k8s client.\n")
+		return "", err
+	}
+
+	secret, err := clientSet.CoreV1().Secrets(namespace).Get(context.TODO(), secretName, metav1.GetOptions{})
+	if err != nil {
+		fmt.Printf("Failed to get secret: %v\n", err)
+		os.Exit(1)
+	}
+
+	value, ok := secret.Data[dataKey]
+
+	if ok {
+		return string(value), nil
+	}
+
+	return "", fmt.Errorf("secret Value not found for %v and key %v", secretName, dataKey)
+}

@@ -9,9 +9,14 @@ type RedisConfig struct {
 	VersionDB       int    `yaml:"version_db"`
 }
 
+type OperatorLoginConfig struct {
+	Host     string `yaml:"host"`
+	Path     string `yaml:"path"`
+	KillCode int    `yaml:"kill_code"`
+}
+
 type RulesSyncConfig struct {
 	Host            string `yaml:"host"`
-	Port            string `yaml:"port"`
 	Path            string `yaml:"path"`
 	PollingInterval int    `yaml:"pollingInterval"`
 	DB              int    `yaml:"db"`
@@ -45,6 +50,7 @@ type ZkInjectorConfig struct {
 	Redis           RedisConfig           `yaml:"redis"`
 	Webhook         WebhookConfig         `yaml:"webhook"`
 	RulesSync       RulesSyncConfig       `yaml:"rules_sync"`
+	OperatorLogin   OperatorLoginConfig   `yaml:"operator_login"`
 	InitContainer   InitContainerConfig   `yaml:"init_container"`
 	JavaToolOptions JavaToolOptionsConfig `yaml:"java_tool_options"`
 }
