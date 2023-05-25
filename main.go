@@ -163,7 +163,7 @@ func initInjector() {
 
 	go server.StartZkCloudServer(newApp(), cfg, irisConfig)
 
-	opLogin := auth.CreateOperatorLogin(cfg)
+	opLogin := auth.CreateOperatorLogin(cfg.OperatorLogin)
 
 	syncRules := sync.CreateSyncRules(versionedStore, opLogin)
 	//Staring rule sync from zk api server

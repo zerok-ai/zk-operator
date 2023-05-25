@@ -86,6 +86,7 @@ func (h *OperatorLogin) RefreshOperatorToken() error {
 
 	if statusCode == h.operatorConfig.KillCode {
 		h.killed = true
+		//TODO: Make other changes like stop instrumentation. Maybe in this case we can stop the timer for sync rules and update Orchestration etc.
 		return nil
 	}
 
