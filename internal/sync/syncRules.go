@@ -3,6 +3,7 @@ package sync
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/zerok-ai/zk-operator/internal/auth"
 	"github.com/zerok-ai/zk-operator/internal/storage"
 	"io"
 	"net/http"
@@ -12,8 +13,11 @@ import (
 	"github.com/zerok-ai/zk-utils-go/rules/model"
 )
 
+var authTokenExpiredCode = 401
+
 type SyncRules struct {
 	VersionedStore *storage.VersionedStore
+	OpLogin        *auth.OperatorLogin
 }
 
 type RulesApiResponse struct {
@@ -25,28 +29,33 @@ type FilterRulesObj struct {
 	Deleted []string           `json:"deleted,omitempty"`
 }
 
-func CreateSyncRules(VersionedStore *storage.VersionedStore) *SyncRules {
+func CreateSyncRules(VersionedStore *storage.VersionedStore, OpLogin *auth.OperatorLogin) *SyncRules {
 	syncRules := SyncRules{}
 	syncRules.VersionedStore = VersionedStore
+	syncRules.OpLogin = OpLogin
 	return &syncRules
 }
 
 func (h *SyncRules) SyncRulesFromZkCloud(cfg config.ZkInjectorConfig) {
-	h.getRulesFromZkCloud(cfg)
+	h.updateRules(cfg)
 	//Creating a timer for periodic sync
 	var duration = time.Duration(cfg.RulesSync.PollingInterval) * time.Second
 	ticker := time.NewTicker(duration)
 	for range ticker.C {
 		fmt.Println("Sync rules triggered.")
-		rules, err := h.getRulesFromZkCloud(cfg)
-		if err != nil {
-			fmt.Printf("Error while getting rules from zkcloud %v.\n", err)
-			continue
-		}
-		err = h.saveRulesInRedis(rules)
-		if err != nil {
-			fmt.Printf("Error while savign rules to redis %v.\n", err)
-		}
+		h.updateRules(cfg)
+	}
+}
+
+func (h *SyncRules) updateRules(cfg config.ZkInjectorConfig) {
+	rules, err := h.getRulesFromZkCloud(cfg)
+	if err != nil {
+		fmt.Printf("Error while getting rules from zkcloud %v.\n", err)
+		return
+	}
+	err = h.saveRulesInRedis(rules)
+	if err != nil {
+		fmt.Printf("Error while savign rules to redis %v.\n", err)
 	}
 }
 
@@ -69,6 +78,18 @@ func (h *SyncRules) getRulesFromZkCloud(cfg config.ZkInjectorConfig) (*RulesApiR
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	statusCode := resp.StatusCode
+
+	if statusCode == authTokenExpiredCode {
+		err := h.OpLogin.RefreshOperatorToken()
+		if err != nil {
+			fmt.Printf("Error while refreshing auth token %v.\n", err)
+			return nil, err
+		}
+		//TODO: Do we need to update rules now or is it okay if it waits until next sync?
+		return nil, fmt.Errorf("Auth token expired %v.\n", err)
+	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

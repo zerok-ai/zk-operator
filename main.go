@@ -23,6 +23,7 @@ import (
 
 	"flag"
 	"fmt"
+	"github.com/zerok-ai/zk-operator/internal/auth"
 	"log"
 	"os"
 	"time"
@@ -162,7 +163,9 @@ func initInjector() {
 
 	go server.StartZkCloudServer(newApp(), cfg, irisConfig)
 
-	syncRules := sync.CreateSyncRules(versionedStore)
+	opLogin := auth.CreateOperatorLogin(cfg)
+
+	syncRules := sync.CreateSyncRules(versionedStore, opLogin)
 	//Staring rule sync from zk api server
 	go syncRules.SyncRulesFromZkCloud(cfg)
 

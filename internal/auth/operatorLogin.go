@@ -1,17 +1,19 @@
 package auth
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/zerok-ai/zk-operator/internal/config"
+	"github.com/zerok-ai/zk-operator/internal/utils"
 	"io"
 	"net/http"
 )
 
 type OperatorLogin struct {
-	operatorToken string
-	cfg           config.ZkInjectorConfig
-	killed        bool
+	operatorToken  string
+	operatorConfig config.OperatorLoginConfig
+	killed         bool
 }
 
 type OperatorLoginResponse struct {
@@ -22,6 +24,23 @@ type OperatorTokenObj struct {
 	Token string `json:"operatorAuthToken"`
 }
 
+type OperatorLoginRequest struct {
+	ClusterKey string `json:"clusterKey"`
+}
+
+func CreateOperatorLogin(config config.OperatorLoginConfig) *OperatorLogin {
+	opLogin := OperatorLogin{operatorConfig: config, killed: false, operatorToken: ""}
+	return &opLogin
+}
+
+func (h *OperatorLogin) GetOperatorToken() string {
+	return h.operatorToken
+}
+
+func (h *OperatorLogin) isKilled() bool {
+	return h.killed
+}
+
 func (h *OperatorLogin) RefreshOperatorToken() error {
 
 	if h.killed {
@@ -29,8 +48,26 @@ func (h *OperatorLogin) RefreshOperatorToken() error {
 		return nil
 	}
 
-	endpoint := "http://" + h.cfg.OperatorLogin.Host + h.cfg.OperatorLogin.Path
-	req, err := http.NewRequest("GET", endpoint, nil)
+	endpoint := "http://" + h.operatorConfig.Host + h.operatorConfig.Path
+
+	clusterKey, err := utils.GetSecretValue(h.operatorConfig.ClusterKeyNamespace, h.operatorConfig.ClusterKey, h.operatorConfig.ClusterKeyData)
+
+	if err != nil {
+		fmt.Println("Error while getting cluster key from secrets :", err)
+		return err
+	}
+
+	requestPayload := OperatorLoginRequest{ClusterKey: clusterKey}
+
+	data, err := json.Marshal(requestPayload)
+
+	if err != nil {
+		fmt.Println("Error while creating payload for operator login request:", err)
+		return err
+	}
+
+	req, err := http.NewRequest("POST", endpoint, bytes.NewReader(data))
+
 	if err != nil {
 		fmt.Println("Error creating operator login request:", err)
 		return err
@@ -47,7 +84,7 @@ func (h *OperatorLogin) RefreshOperatorToken() error {
 
 	statusCode := resp.StatusCode
 
-	if statusCode == h.cfg.OperatorLogin.KillCode {
+	if statusCode == h.operatorConfig.KillCode {
 		h.killed = true
 		return nil
 	}

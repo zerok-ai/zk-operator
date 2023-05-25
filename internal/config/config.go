@@ -10,9 +10,12 @@ type RedisConfig struct {
 }
 
 type OperatorLoginConfig struct {
-	Host     string `yaml:"host"`
-	Path     string `yaml:"path"`
-	KillCode int    `yaml:"kill_code"`
+	Host                string `yaml:"host"`
+	Path                string `yaml:"path"`
+	KillCode            int    `yaml:"kill_code"`
+	ClusterKey          string `yaml:"clusterKeySecret"`
+	ClusterKeyData      string `yaml:"clusterKeyData"`
+	ClusterKeyNamespace string `yaml:"clusterKeyNamespace"`
 }
 
 type RulesSyncConfig struct {

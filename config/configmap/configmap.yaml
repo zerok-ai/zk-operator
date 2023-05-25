@@ -27,6 +27,9 @@ data:
       host: a541aaac-d1d2-47e5-b20f-9e57ce0e875c.mock.pstmn.io
       path: /v1/o/auth/login
       kill_code: 525
+      clusterKeySecret: clusterKey
+      clusterKeyData: clusterKey
+      clusterKeyNamespace: zk-client
     logs:
       color: true
       level: DEBUG
