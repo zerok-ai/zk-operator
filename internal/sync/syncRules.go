@@ -82,12 +82,13 @@ func (h *SyncRules) getRulesFromZkCloud(cfg config.ZkInjectorConfig) (*RulesApiR
 	statusCode := resp.StatusCode
 
 	if statusCode == authTokenExpiredCode {
-		err := h.OpLogin.RefreshOperatorToken()
+		err := h.OpLogin.RefreshOperatorToken(func() {
+			h.updateRules(cfg)
+		})
 		if err != nil {
 			fmt.Printf("Error while refreshing auth token %v.\n", err)
 			return nil, err
 		}
-		//TODO: Do we need to update rules now or is it okay if it waits until next sync?
 		return nil, fmt.Errorf("Auth token expired %v.\n", err)
 	}
 
