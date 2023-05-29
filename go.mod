@@ -8,6 +8,7 @@ require (
 	github.com/kataras/iris/v12 v12.2.0
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.24.1
+	github.com/zerok-ai/zk-utils-go v0.4.5
 	k8s.io/api v0.26.0
 	k8s.io/apimachinery v0.26.0
 	k8s.io/client-go v0.26.0
@@ -46,7 +47,6 @@ require (
 	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/yosssi/ace v0.0.5 // indirect
-	github.com/zerok-ai/zk-utils-go v0.4.3 // indirect
 	golang.org/x/crypto v0.7.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	olympos.io/encoding/edn v0.0.0-20201019073823-d3554ca0b0a3 // indirect

@@ -1,9 +1,10 @@
-package utils
+package webhook
 
 import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/zerok-ai/zk-operator/internal/utils"
 	"reflect"
 
 	"github.com/zerok-ai/zk-operator/internal/config"
@@ -12,14 +13,38 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var (
-	webhookName = "zk-webhook"
-	webhookPath = "/zk-injector"
-)
+type WebhookHandler struct {
+	webhookConfig config.WebhookConfig
+	caPem         *bytes.Buffer
+}
 
-func CreateOrUpdateMutatingWebhookConfiguration(caPEM *bytes.Buffer, cfg config.WebhookConfig) error {
+func (h *WebhookHandler) Init(caPEM *bytes.Buffer) {
+	h.caPem = caPEM
+	err := h.CreateOrUpdateMutatingWebhookConfiguration()
+	if err != nil {
+		msg := fmt.Sprintf("Failed to create or update the mutating webhook configuration: %v. Stopping initialization of the pod.\n", err)
+		fmt.Println(msg)
+		return
+	}
+}
 
-	clientset, err := GetK8sClient()
+func (h *WebhookHandler) deleteMutatingWebhookConfiguration() error {
+	clientset, err := utils.GetK8sClient()
+	if err != nil {
+		return err
+	}
+	mutatingWebhookConfigV1Client := clientset.AdmissionregistrationV1()
+	err = mutatingWebhookConfigV1Client.MutatingWebhookConfigurations().Delete(context.TODO(), h.webhookConfig.Name, metav1.DeleteOptions{})
+	if err != nil {
+		fmt.Printf("Error while deleting operator webhook %v.", err)
+		return err
+	}
+	return nil
+}
+
+func (h *WebhookHandler) CreateOrUpdateMutatingWebhookConfiguration() error {
+
+	clientset, err := utils.GetK8sClient()
 	if err != nil {
 		return err
 	}
@@ -30,22 +55,22 @@ func CreateOrUpdateMutatingWebhookConfiguration(caPEM *bytes.Buffer, cfg config.
 
 	ignore := admissionregistrationv1.Ignore
 	sideEffect := admissionregistrationv1.SideEffectClassNone
-	mutatingWebhookConfig := createMutatingWebhook(sideEffect, caPEM, cfg.Service, cfg.Namespace, ignore)
+	mutatingWebhookConfig := h.createMutatingWebhook(sideEffect, h.caPem, ignore)
 
-	existingWebhookConfig, err := mutatingWebhookConfigV1Client.MutatingWebhookConfigurations().Get(context.TODO(), webhookName, metav1.GetOptions{})
+	existingWebhookConfig, err := mutatingWebhookConfigV1Client.MutatingWebhookConfigurations().Get(context.TODO(), h.webhookConfig.Name, metav1.GetOptions{})
 	if err != nil && apierrors.IsNotFound(err) {
 
 		//Scenario where there is not existing webhook. So we are creating a new webhook.
 		if _, err := mutatingWebhookConfigV1Client.MutatingWebhookConfigurations().Create(context.TODO(), mutatingWebhookConfig, metav1.CreateOptions{}); err != nil {
-			fmt.Printf("Failed to create the mutatingwebhookconfiguration: %s\n", webhookName)
+			fmt.Printf("Failed to create the mutatingwebhookconfiguration: %s\n", h.webhookConfig.Name)
 			return err
 		}
-		fmt.Printf("Created mutatingwebhookconfiguration: %s\n", webhookName)
+		fmt.Printf("Created mutatingwebhookconfiguration: %s\n", h.webhookConfig.Name)
 
 	} else if err != nil {
 
 		//Scenario where we failed to check if there was any existing webhook.
-		fmt.Printf("Failed to check the mutatingwebhookconfiguration: %s\n", webhookName)
+		fmt.Printf("Failed to check the mutatingwebhookconfiguration: %s\n", h.webhookConfig.Name)
 		fmt.Printf("The error is %v\n", err.Error())
 		return err
 
@@ -54,25 +79,25 @@ func CreateOrUpdateMutatingWebhookConfiguration(caPEM *bytes.Buffer, cfg config.
 		//Scenario where we have to update the existing webhook.
 		mutatingWebhookConfig.ObjectMeta.ResourceVersion = existingWebhookConfig.ObjectMeta.ResourceVersion
 		if _, err := mutatingWebhookConfigV1Client.MutatingWebhookConfigurations().Update(context.TODO(), mutatingWebhookConfig, metav1.UpdateOptions{}); err != nil {
-			fmt.Printf("Failed to update the mutatingwebhookconfiguration: %s", webhookName)
+			fmt.Printf("Failed to update the mutatingwebhookconfiguration: %s", h.webhookConfig.Name)
 			return err
 		}
-		fmt.Printf("Updated the mutatingwebhookconfiguration: %s\n", webhookName)
+		fmt.Printf("Updated the mutatingwebhookconfiguration: %s\n", h.webhookConfig.Name)
 
 	} else {
 
 		//Scenario where there is no need to update the existing webhook.
-		fmt.Printf("The mutatingwebhookconfiguration: %s already exists and has no change\n", webhookName)
+		fmt.Printf("The mutatingwebhookconfiguration: %s already exists and has no change\n", h.webhookConfig.Name)
 
 	}
 
 	return nil
 }
 
-func createMutatingWebhook(sideEffect admissionregistrationv1.SideEffectClass, caPEM *bytes.Buffer, webhookService string, webhookNamespace string, ignore admissionregistrationv1.FailurePolicyType) *admissionregistrationv1.MutatingWebhookConfiguration {
+func (h *WebhookHandler) createMutatingWebhook(sideEffect admissionregistrationv1.SideEffectClass, caPEM *bytes.Buffer, ignore admissionregistrationv1.FailurePolicyType) *admissionregistrationv1.MutatingWebhookConfiguration {
 	mutatingWebhookConfig := &admissionregistrationv1.MutatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: webhookName,
+			Name: h.webhookConfig.Name,
 		},
 		Webhooks: []admissionregistrationv1.MutatingWebhook{{
 			Name:                    "zk-webhook.zerok.ai",
@@ -81,9 +106,9 @@ func createMutatingWebhook(sideEffect admissionregistrationv1.SideEffectClass, c
 			ClientConfig: admissionregistrationv1.WebhookClientConfig{
 				CABundle: caPEM.Bytes(),
 				Service: &admissionregistrationv1.ServiceReference{
-					Name:      webhookService,
-					Namespace: webhookNamespace,
-					Path:      &webhookPath,
+					Name:      h.webhookConfig.Service,
+					Namespace: h.webhookConfig.Namespace,
+					Path:      &h.webhookConfig.Path,
 				},
 			},
 			Rules: []admissionregistrationv1.RuleWithOperations{
@@ -129,4 +154,8 @@ func areWebHooksSame(foundWebhookConfig *admissionregistrationv1.MutatingWebhook
 		}
 	}
 	return true
+}
+
+func (h *WebhookHandler) CleanUpOnkill() error {
+	return h.deleteMutatingWebhookConfiguration()
 }

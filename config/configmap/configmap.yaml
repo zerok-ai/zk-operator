@@ -22,9 +22,8 @@ data:
       path: /v1/o/cluster/rules
       pollingInterval: 30
       db: 6
-      key: rules_list
     operator_login:
-      host: a541aaac-d1d2-47e5-b20f-9e57ce0e875c.mock.pstmn.io
+      host: f37dde7c-4b05-442a-a6c5-7a0397cf774c.mock.pstmn.io
       path: /v1/o/auth/login
       kill_code: 525
       clusterKeySecret: clusterKey

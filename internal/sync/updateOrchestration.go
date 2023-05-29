@@ -10,21 +10,25 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-func UpdateOrchestration(imageRuntimeHandler *storage.ImageRuntimeHandler, cfg config.ZkInjectorConfig) {
+type OrchestrationHandler struct {
+	ticker *time.Ticker
+}
+
+func (h *OrchestrationHandler) UpdateOrchestration(imageRuntimeHandler *storage.ImageRuntimeHandler, cfg config.ZkInjectorConfig) {
 	//Sync first time on pod start
 	imageRuntimeHandler.SyncDataFromRedis()
 
 	//Creating a timer for periodic sync
 	var duration = time.Duration(cfg.Redis.PollingInterval) * time.Second
-	ticker := time.NewTicker(duration)
-	for range ticker.C {
+	h.ticker = time.NewTicker(duration)
+	for range h.ticker.C {
 		fmt.Println("Sync triggered.")
 		imageRuntimeHandler.SyncDataFromRedis()
-		restartMarkedNamespacesIfNeeded()
+		h.restartMarkedNamespacesIfNeeded()
 	}
 }
 
-func restartMarkedNamespacesIfNeeded() error {
+func (h *OrchestrationHandler) restartMarkedNamespacesIfNeeded() error {
 	namespaces, err := utils.GetAllMarkedNamespaces()
 
 	if err != nil || namespaces == nil {
@@ -40,7 +44,7 @@ func restartMarkedNamespacesIfNeeded() error {
 			return err
 		}
 
-		deployments, err := getDeploymentsForPods(pods)
+		deployments, err := h.getDeploymentsForPods(pods)
 		if err != nil {
 			return err
 		}
@@ -56,7 +60,7 @@ func restartMarkedNamespacesIfNeeded() error {
 	return nil
 }
 
-func getDeploymentsForPods(pods []v1.Pod) (map[string]bool, error) {
+func (h *OrchestrationHandler) getDeploymentsForPods(pods []v1.Pod) (map[string]bool, error) {
 	deployments := make(map[string]bool)
 	for _, pod := range pods {
 		deploymentName, err := utils.GetDeploymentForPods(&pod)
@@ -67,4 +71,9 @@ func getDeploymentsForPods(pods []v1.Pod) (map[string]bool, error) {
 		deployments[deploymentName] = true
 	}
 	return deployments, nil
+}
+
+func (h *OrchestrationHandler) CleanUpOnkill() error {
+	h.ticker.Stop()
+	return nil
 }

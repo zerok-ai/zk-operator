@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/zerok-ai/zk-operator/internal"
 	"github.com/zerok-ai/zk-operator/internal/config"
 	"github.com/zerok-ai/zk-operator/internal/utils"
 	"io"
@@ -26,6 +27,7 @@ type OperatorLogin struct {
 	operatorConfig  config.OperatorLoginConfig
 	killed          bool
 	refreshingToken bool
+	zkmodules       []internal.Zkmodule
 }
 
 type OperatorLoginResponse struct {
@@ -33,7 +35,8 @@ type OperatorLoginResponse struct {
 }
 
 type OperatorTokenObj struct {
-	Token string `json:"operatorAuthToken"`
+	Token  string `json:"operatorAuthToken"`
+	Killed bool   `json:"killed"`
 }
 
 type OperatorLoginRequest struct {
@@ -110,14 +113,6 @@ func (h *OperatorLogin) RefreshOperatorToken(callback RefreshTokenCallbackFunc) 
 	}
 	defer resp.Body.Close()
 
-	statusCode := resp.StatusCode
-
-	if statusCode == h.operatorConfig.KillCode {
-		h.killed = true
-		//TODO: Make other changes like stop instrumentation. Maybe in this case we can stop the timer for sync rules and update Orchestration etc.
-		return nil
-	}
-
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("Error reading response from operator login api :", err)
@@ -133,6 +128,14 @@ func (h *OperatorLogin) RefreshOperatorToken(callback RefreshTokenCallbackFunc) 
 	if err != nil {
 		fmt.Println("Error while unmarshalling rules operator login api response :", err)
 		return err
+	}
+
+	if apiResponse.Payload.Killed {
+		h.killed = true
+		for _, module := range h.zkmodules {
+			module.CleanUpOnkill()
+		}
+		return nil
 	}
 
 	h.operatorToken = apiResponse.Payload.Token
@@ -152,4 +155,8 @@ func (h *OperatorLogin) RefreshOperatorToken(callback RefreshTokenCallbackFunc) 
 	refreshTokenMutex.Unlock()
 
 	return nil
+}
+
+func (h *OperatorLogin) registerZkModules(modules []internal.Zkmodule) {
+	h.zkmodules = modules
 }

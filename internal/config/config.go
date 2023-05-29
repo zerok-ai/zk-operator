@@ -12,7 +12,6 @@ type RedisConfig struct {
 type OperatorLoginConfig struct {
 	Host                string `yaml:"host"`
 	Path                string `yaml:"path"`
-	KillCode            int    `yaml:"kill_code"`
 	ClusterKey          string `yaml:"clusterKeySecret"`
 	ClusterKeyData      string `yaml:"clusterKeyData"`
 	ClusterKeyNamespace string `yaml:"clusterKeyNamespace"`
@@ -23,7 +22,6 @@ type RulesSyncConfig struct {
 	Path            string `yaml:"path"`
 	PollingInterval int    `yaml:"pollingInterval"`
 	DB              int    `yaml:"db"`
-	Key             string `yaml:"key"`
 }
 
 type WebhookConfig struct {

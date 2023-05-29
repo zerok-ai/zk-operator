@@ -18,6 +18,7 @@ var authTokenExpiredCode = 401
 type SyncRules struct {
 	VersionedStore *storage.VersionedStore
 	OpLogin        *auth.OperatorLogin
+	ticker         *time.Ticker
 }
 
 type RulesApiResponse struct {
@@ -40,8 +41,8 @@ func (h *SyncRules) SyncRulesFromZkCloud(cfg config.ZkInjectorConfig) {
 	h.updateRules(cfg)
 	//Creating a timer for periodic sync
 	var duration = time.Duration(cfg.RulesSync.PollingInterval) * time.Second
-	ticker := time.NewTicker(duration)
-	for range ticker.C {
+	h.ticker = time.NewTicker(duration)
+	for range h.ticker.C {
 		fmt.Println("Sync rules triggered.")
 		h.updateRules(cfg)
 	}
@@ -53,7 +54,7 @@ func (h *SyncRules) updateRules(cfg config.ZkInjectorConfig) {
 		fmt.Printf("Error while getting rules from zkcloud %v.\n", err)
 		return
 	}
-	err = h.saveRulesInRedis(rules)
+	err = h.updateRulesInRedis(rules)
 	if err != nil {
 		fmt.Printf("Error while savign rules to redis %v.\n", err)
 	}
@@ -110,7 +111,7 @@ func (h *SyncRules) getRulesFromZkCloud(cfg config.ZkInjectorConfig) (*RulesApiR
 	return &apiResponse, nil
 }
 
-func (h *SyncRules) saveRulesInRedis(rulesApiResponse *RulesApiResponse) error {
+func (h *SyncRules) updateRulesInRedis(rulesApiResponse *RulesApiResponse) error {
 	payload := rulesApiResponse.Payload
 	for _, filterRule := range payload.Rules {
 		filterString, err := json.Marshal(filterRule)
@@ -134,5 +135,10 @@ func (h *SyncRules) saveRulesInRedis(rulesApiResponse *RulesApiResponse) error {
 		}
 	}
 
+	return nil
+}
+
+func (h *SyncRules) CleanUpOnkill() error {
+	h.ticker.Stop()
 	return nil
 }

@@ -23,17 +23,16 @@ import (
 
 	"flag"
 	"fmt"
+	"github.com/zerok-ai/zk-operator/internal"
 	"github.com/zerok-ai/zk-operator/internal/auth"
+	"github.com/zerok-ai/zk-operator/internal/webhook"
 	"log"
 	"os"
 	"time"
 
-	"github.com/zerok-ai/zk-operator/internal/cert"
 	server "github.com/zerok-ai/zk-operator/internal/server"
 	"github.com/zerok-ai/zk-operator/internal/storage"
 	sync "github.com/zerok-ai/zk-operator/internal/sync"
-	"github.com/zerok-ai/zk-operator/internal/utils"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -148,11 +147,16 @@ func initInjector() {
 		return
 	}
 
+	zkmodules := []internal.Zkmodule{}
+
 	runtimeMap := &storage.ImageRuntimeHandler{}
 	runtimeMap.Init(cfg)
-	go sync.UpdateOrchestration(runtimeMap, cfg)
 
-	versionedStore := storage.GetVersionedStore(cfg)
+	//Creating zerok modules
+	updateOrch := sync.OrchestrationHandler{}
+	go updateOrch.UpdateOrchestration(runtimeMap, cfg)
+
+	zkmodules = append(zkmodules, &updateOrch)
 
 	app := newApp()
 
@@ -165,12 +169,15 @@ func initInjector() {
 
 	opLogin := auth.CreateOperatorLogin(cfg.OperatorLogin)
 
+	versionedStore := storage.GetVersionedStore(cfg)
 	syncRules := sync.CreateSyncRules(versionedStore, opLogin)
 	//Staring rule sync from zk api server
 	go syncRules.SyncRulesFromZkCloud(cfg)
 
+	zkmodules = append(zkmodules, syncRules)
+
 	// initialize certificates
-	caPEM, cert, key, err := cert.InitializeKeysAndCertificates(cfg.Webhook)
+	caPEM, cert, key, err := webhook.InitializeKeysAndCertificates(cfg.Webhook)
 	if err != nil {
 		msg := fmt.Sprintf("Failed to create keys and certificates for webhook %v. Stopping initialization of the pod.\n", err)
 		fmt.Println(msg)
@@ -178,12 +185,10 @@ func initInjector() {
 	}
 
 	// start mutating webhook
-	err = utils.CreateOrUpdateMutatingWebhookConfiguration(caPEM, cfg.Webhook)
-	if err != nil {
-		msg := fmt.Sprintf("Failed to create or update the mutating webhook configuration: %v. Stopping initialization of the pod.\n", err)
-		fmt.Println(msg)
-		return
-	}
+	webhookHandler := webhook.WebhookHandler{}
+	webhookHandler.Init(caPEM)
+
+	zkmodules = append(zkmodules, &webhookHandler)
 
 	// start webhook server
 	go server.StartWebHookServer(app, cfg, cert, key, runtimeMap, irisConfig)
