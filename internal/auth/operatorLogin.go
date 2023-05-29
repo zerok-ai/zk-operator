@@ -44,7 +44,7 @@ type OperatorLoginRequest struct {
 }
 
 func CreateOperatorLogin(config config.OperatorLoginConfig) *OperatorLogin {
-	opLogin := OperatorLogin{operatorConfig: config, killed: false, operatorToken: ""}
+	opLogin := OperatorLogin{operatorConfig: config, killed: false, operatorToken: "", zkmodules: []internal.Zkmodule{}}
 	callbackFuncs = []RefreshTokenCallbackFunc{}
 	return &opLogin
 }
@@ -158,6 +158,6 @@ func (h *OperatorLogin) RefreshOperatorToken(callback RefreshTokenCallbackFunc) 
 	return nil
 }
 
-func (h *OperatorLogin) registerZkModules(modules []internal.Zkmodule) {
+func (h *OperatorLogin) RegisterZkModules(modules []internal.Zkmodule) {
 	h.zkmodules = modules
 }

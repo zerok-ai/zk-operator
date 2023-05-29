@@ -169,7 +169,6 @@ func initInjector() {
 	//Creating zerok modules
 	updateOrch := sync.OrchestrationHandler{}
 	updateOrch.Init(cfg)
-	go updateOrch.UpdateOrchestration(runtimeMap)
 
 	zkmodules = append(zkmodules, &updateOrch)
 
@@ -180,18 +179,23 @@ func initInjector() {
 		LogLevel:              "debug",
 	})
 
-	go server.StartZkCloudServer(newApp(), cfg, irisConfig)
-
 	opLogin := auth.CreateOperatorLogin(cfg.OperatorLogin)
 
 	versionedStore := storage.GetVersionedStore(cfg)
 
 	syncRules := sync.SyncRules{}
-	syncRules.Init(versionedStore, opLogin)
-	//Staring rule sync from zk api server
-	go syncRules.SyncRulesFromZkCloud(cfg)
+	syncRules.Init(versionedStore, opLogin, cfg)
 
 	zkmodules = append(zkmodules, &syncRules)
+
+	opLogin.RegisterZkModules(zkmodules)
+
+	go updateOrch.UpdateOrchestration(runtimeMap)
+
+	go server.StartZkCloudServer(newApp(), cfg, irisConfig)
+
+	//Staring rule sync from zk api server
+	go syncRules.SyncRulesFromZkCloud()
 
 	// start webhook server
 	go server.StartWebHookServer(app, cfg, cert, key, runtimeMap, irisConfig)
