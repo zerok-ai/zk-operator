@@ -149,12 +149,27 @@ func initInjector() {
 
 	zkmodules := []internal.Zkmodule{}
 
+	// initialize certificates
+	caPEM, cert, key, err := webhook.InitializeKeysAndCertificates(cfg.Webhook)
+	if err != nil {
+		msg := fmt.Sprintf("Failed to create keys and certificates for webhook %v. Stopping initialization of the pod.\n", err)
+		fmt.Println(msg)
+		return
+	}
+
+	// start mutating webhook
+	webhookHandler := webhook.WebhookHandler{}
+	webhookHandler.Init(caPEM, cfg.Webhook)
+
+	zkmodules = append(zkmodules, &webhookHandler)
+
 	runtimeMap := &storage.ImageRuntimeHandler{}
 	runtimeMap.Init(cfg)
 
 	//Creating zerok modules
 	updateOrch := sync.OrchestrationHandler{}
-	go updateOrch.UpdateOrchestration(runtimeMap, cfg)
+	updateOrch.Init(cfg)
+	go updateOrch.UpdateOrchestration(runtimeMap)
 
 	zkmodules = append(zkmodules, &updateOrch)
 
@@ -170,25 +185,13 @@ func initInjector() {
 	opLogin := auth.CreateOperatorLogin(cfg.OperatorLogin)
 
 	versionedStore := storage.GetVersionedStore(cfg)
-	syncRules := sync.CreateSyncRules(versionedStore, opLogin)
+
+	syncRules := sync.SyncRules{}
+	syncRules.Init(versionedStore, opLogin)
 	//Staring rule sync from zk api server
 	go syncRules.SyncRulesFromZkCloud(cfg)
 
-	zkmodules = append(zkmodules, syncRules)
-
-	// initialize certificates
-	caPEM, cert, key, err := webhook.InitializeKeysAndCertificates(cfg.Webhook)
-	if err != nil {
-		msg := fmt.Sprintf("Failed to create keys and certificates for webhook %v. Stopping initialization of the pod.\n", err)
-		fmt.Println(msg)
-		return
-	}
-
-	// start mutating webhook
-	webhookHandler := webhook.WebhookHandler{}
-	webhookHandler.Init(caPEM)
-
-	zkmodules = append(zkmodules, &webhookHandler)
+	zkmodules = append(zkmodules, &syncRules)
 
 	// start webhook server
 	go server.StartWebHookServer(app, cfg, cert, key, runtimeMap, irisConfig)

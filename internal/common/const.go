@@ -22,4 +22,6 @@ const (
 
 	HashSetName       string = "zk_img_proc_map"
 	HashSetVersionKey string = "zk_img_proc_version"
+
+	OperatorTokenHeaderKey string = "operator_auth_token"
 )

@@ -16,10 +16,12 @@ import (
 type WebhookHandler struct {
 	webhookConfig config.WebhookConfig
 	caPem         *bytes.Buffer
+	killed        bool
 }
 
-func (h *WebhookHandler) Init(caPEM *bytes.Buffer) {
+func (h *WebhookHandler) Init(caPEM *bytes.Buffer, config config.WebhookConfig) {
 	h.caPem = caPEM
+	h.webhookConfig = config
 	err := h.CreateOrUpdateMutatingWebhookConfiguration()
 	if err != nil {
 		msg := fmt.Sprintf("Failed to create or update the mutating webhook configuration: %v. Stopping initialization of the pod.\n", err)
@@ -157,5 +159,6 @@ func areWebHooksSame(foundWebhookConfig *admissionregistrationv1.MutatingWebhook
 }
 
 func (h *WebhookHandler) CleanUpOnkill() error {
+	fmt.Printf("Kill method in webhook.\n")
 	return h.deleteMutatingWebhookConfiguration()
 }

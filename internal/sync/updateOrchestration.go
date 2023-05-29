@@ -12,15 +12,20 @@ import (
 
 type OrchestrationHandler struct {
 	ticker *time.Ticker
+	//killed bool
 }
 
-func (h *OrchestrationHandler) UpdateOrchestration(imageRuntimeHandler *storage.ImageRuntimeHandler, cfg config.ZkInjectorConfig) {
-	//Sync first time on pod start
-	imageRuntimeHandler.SyncDataFromRedis()
+func (h *OrchestrationHandler) Init(cfg config.ZkInjectorConfig) {
+	//h.killed = false
 
 	//Creating a timer for periodic sync
 	var duration = time.Duration(cfg.Redis.PollingInterval) * time.Second
 	h.ticker = time.NewTicker(duration)
+}
+
+func (h *OrchestrationHandler) UpdateOrchestration(imageRuntimeHandler *storage.ImageRuntimeHandler) {
+	//Sync first time on pod start
+	imageRuntimeHandler.SyncDataFromRedis()
 	for range h.ticker.C {
 		fmt.Println("Sync triggered.")
 		imageRuntimeHandler.SyncDataFromRedis()
@@ -74,6 +79,7 @@ func (h *OrchestrationHandler) getDeploymentsForPods(pods []v1.Pod) (map[string]
 }
 
 func (h *OrchestrationHandler) CleanUpOnkill() error {
+	fmt.Printf("Kill method in update orchestration.\n")
 	h.ticker.Stop()
 	return nil
 }

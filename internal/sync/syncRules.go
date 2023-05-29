@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/zerok-ai/zk-operator/internal/auth"
+	"github.com/zerok-ai/zk-operator/internal/common"
 	"github.com/zerok-ai/zk-operator/internal/storage"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/zerok-ai/zk-operator/internal/config"
@@ -22,19 +24,18 @@ type SyncRules struct {
 }
 
 type RulesApiResponse struct {
-	Payload FilterRulesObj `json:"payload"`
+	Payload ScenariosObj `json:"payload"`
 }
 
-type FilterRulesObj struct {
-	Rules   []model.FilterRule `json:"rules"`
-	Deleted []string           `json:"deleted,omitempty"`
+type ScenariosObj struct {
+	Scenarios []model.Scenario `json:"scenarios"`
+	Deleted   []string         `json:"deleted,omitempty"`
 }
 
-func CreateSyncRules(VersionedStore *storage.VersionedStore, OpLogin *auth.OperatorLogin) *SyncRules {
-	syncRules := SyncRules{}
-	syncRules.VersionedStore = VersionedStore
-	syncRules.OpLogin = OpLogin
-	return &syncRules
+func (h *SyncRules) Init(VersionedStore *storage.VersionedStore, OpLogin *auth.OperatorLogin) {
+	h.VersionedStore = VersionedStore
+	h.OpLogin = OpLogin
+	//h.killed = false
 }
 
 func (h *SyncRules) SyncRulesFromZkCloud(cfg config.ZkInjectorConfig) {
@@ -71,7 +72,14 @@ func (h *SyncRules) getRulesFromZkCloud(cfg config.ZkInjectorConfig) (*RulesApiR
 		return nil, err
 	}
 
+	fmt.Printf("Current operator token is %v.\n", h.OpLogin.GetOperatorToken())
+
+	if h.OpLogin.GetOperatorToken() == "" {
+		return nil, h.refreshAuthToken(cfg)
+	}
+
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(common.OperatorTokenHeaderKey, h.OpLogin.GetOperatorToken())
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -83,14 +91,7 @@ func (h *SyncRules) getRulesFromZkCloud(cfg config.ZkInjectorConfig) (*RulesApiR
 	statusCode := resp.StatusCode
 
 	if statusCode == authTokenExpiredCode {
-		err := h.OpLogin.RefreshOperatorToken(func() {
-			h.updateRules(cfg)
-		})
-		if err != nil {
-			fmt.Printf("Error while refreshing auth token %v.\n", err)
-			return nil, err
-		}
-		return nil, fmt.Errorf("Auth token expired %v.\n", err)
+		return nil, h.refreshAuthToken(cfg)
 	}
 
 	body, err := io.ReadAll(resp.Body)
@@ -111,26 +112,48 @@ func (h *SyncRules) getRulesFromZkCloud(cfg config.ZkInjectorConfig) (*RulesApiR
 	return &apiResponse, nil
 }
 
+func (h *SyncRules) refreshAuthToken(cfg config.ZkInjectorConfig) error {
+	err := h.OpLogin.RefreshOperatorToken(func() {
+		h.updateRules(cfg)
+	})
+	if err != nil {
+		fmt.Printf("Error while refreshing auth token %v.\n", err)
+	}
+	return err
+}
+
 func (h *SyncRules) updateRulesInRedis(rulesApiResponse *RulesApiResponse) error {
 	payload := rulesApiResponse.Payload
-	for _, filterRule := range payload.Rules {
-		filterString, err := json.Marshal(filterRule)
+	latestVersion := "0"
+	for _, scenario := range payload.Scenarios {
+		ver1, err1 := strconv.ParseInt(latestVersion, 10, 64)
+		ver2, err2 := strconv.ParseInt(scenario.Version, 10, 64)
+		if err1 != nil || err2 != nil {
+			fmt.Printf("Error while converting versions to int64 for scenario %v.\n", scenario.ScenarioId)
+			continue
+		}
+
+		if ver2 > ver1 {
+			latestVersion = scenario.Version
+		}
+
+		scenarioString, err := json.Marshal(scenario)
 		if err != nil {
 			fmt.Printf("Error while converting filter rule to string %v.\n", err)
 			return err
 		}
-		filterId := filterRule.FilterId
-		err = h.VersionedStore.SetValue(filterId, string(filterString))
+		scenarioId := scenario.ScenarioId
+		err = h.VersionedStore.SetValue(scenarioId, string(scenarioString))
 		if err != nil {
 			fmt.Printf("Error while setting filter rule to redis %v.\n", err)
 			return err
 		}
 	}
 
-	for _, filterId := range payload.Deleted {
-		err := h.VersionedStore.Delete(filterId)
+	for _, scenarioId := range payload.Deleted {
+		err := h.VersionedStore.Delete(scenarioId)
 		if err != nil {
-			fmt.Printf("Error while deleting filter id %v from redis %v.\n", filterId, err)
+			fmt.Printf("Error while deleting filter id %v from redis %v.\n", scenarioId, err)
 			return err
 		}
 	}
@@ -139,6 +162,7 @@ func (h *SyncRules) updateRulesInRedis(rulesApiResponse *RulesApiResponse) error
 }
 
 func (h *SyncRules) CleanUpOnkill() error {
+	fmt.Printf("Kill method in sync rules.\n")
 	h.ticker.Stop()
 	return nil
 }

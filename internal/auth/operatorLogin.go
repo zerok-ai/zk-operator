@@ -58,7 +58,7 @@ func (h *OperatorLogin) isKilled() bool {
 }
 
 func (h *OperatorLogin) RefreshOperatorToken(callback RefreshTokenCallbackFunc) error {
-
+	fmt.Println("Request operator token.")
 	refreshTokenMutex.Lock()
 
 	callbackFuncs = append(callbackFuncs, callback)
@@ -131,6 +131,7 @@ func (h *OperatorLogin) RefreshOperatorToken(callback RefreshTokenCallbackFunc) 
 	}
 
 	if apiResponse.Payload.Killed {
+		fmt.Println("Api response came as killed.")
 		h.killed = true
 		for _, module := range h.zkmodules {
 			module.CleanUpOnkill()
