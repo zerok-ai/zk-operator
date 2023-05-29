@@ -157,21 +157,6 @@ func initInjector() {
 		return
 	}
 
-	// start mutating webhook
-	webhookHandler := webhook.WebhookHandler{}
-	webhookHandler.Init(caPEM, cfg.Webhook)
-
-	zkmodules = append(zkmodules, &webhookHandler)
-
-	runtimeMap := &storage.ImageRuntimeHandler{}
-	runtimeMap.Init(cfg)
-
-	//Creating zerok modules
-	updateOrch := sync.OrchestrationHandler{}
-	updateOrch.Init(cfg)
-
-	zkmodules = append(zkmodules, &updateOrch)
-
 	app := newApp()
 
 	irisConfig := iris.WithConfiguration(iris.Configuration{
@@ -179,20 +164,33 @@ func initInjector() {
 		LogLevel:              "debug",
 	})
 
+	// creating mutating webhook
+	webhookHandler := webhook.WebhookHandler{}
+	webhookHandler.Init(caPEM, cfg.Webhook)
+	zkmodules = append(zkmodules, &webhookHandler)
+
+	//creating in-memory <image,runtime> map handler.
+	runtimeMap := &storage.ImageRuntimeHandler{}
+	runtimeMap.Init(cfg)
+
+	//Creating module for restarting pods.
+	updateOrch := sync.OrchestrationHandler{}
+	updateOrch.Init(cfg)
+	zkmodules = append(zkmodules, &updateOrch)
+
+	//Creating operator login module
 	opLogin := auth.CreateOperatorLogin(cfg.OperatorLogin)
 
-	versionedStore := storage.GetVersionedStore(cfg)
-
+	//Module for syncing rules
 	syncRules := sync.SyncRules{}
+	versionedStore := storage.GetVersionedStore(cfg)
 	syncRules.Init(versionedStore, opLogin, cfg)
-
 	zkmodules = append(zkmodules, &syncRules)
 
 	opLogin.RegisterZkModules(zkmodules)
 
+	//Starting all the modules
 	go updateOrch.UpdateOrchestration(runtimeMap)
-
-	go server.StartZkCloudServer(newApp(), cfg, irisConfig)
 
 	//Staring rule sync from zk api server
 	go syncRules.SyncRulesFromZkCloud()

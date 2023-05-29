@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/zerok-ai/zk-operator/internal/common"
+	"github.com/zerok-ai/zk-operator/internal/server/models"
 	"sync"
 	"time"
 
@@ -327,4 +328,15 @@ func GetSecretValue(namespace, secretName, dataKey string) (string, error) {
 	//
 	//return "", fmt.Errorf("secret Value not found for %v and key %v", secretName, dataKey)
 	return "test_key", nil
+}
+
+func restartWorkloads(restartRequestObj models.RestartRequest) error {
+	namespace := restartRequestObj.Namespace
+	all := restartRequestObj.All
+	if all {
+		return RestartAllDeploymentsInNamespace(namespace)
+	} else {
+		deployment := restartRequestObj.Deployment
+		return RestartDeployment(namespace, deployment)
+	}
 }
