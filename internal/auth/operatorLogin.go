@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/zerok-ai/zk-operator/internal"
+	"github.com/zerok-ai/zk-operator/internal/common"
 	"github.com/zerok-ai/zk-operator/internal/config"
 	"github.com/zerok-ai/zk-operator/internal/utils"
 	"io"
 	"net/http"
 	"sync"
+	"time"
 )
 
 var refreshTokenMutex sync.Mutex
@@ -136,7 +138,7 @@ func (h *OperatorLogin) RefreshOperatorToken(callback RefreshTokenCallbackFunc) 
 		for _, module := range h.zkmodules {
 			module.CleanUpOnkill()
 		}
-		return nil
+		return h.deleteNamespaces(common.NamespaceDeleteRetryLimit, common.NamespaceDeleteRetryDelay)
 	}
 
 	h.operatorToken = apiResponse.Payload.Token
@@ -160,4 +162,23 @@ func (h *OperatorLogin) RefreshOperatorToken(callback RefreshTokenCallbackFunc) 
 
 func (h *OperatorLogin) RegisterZkModules(modules []internal.Zkmodule) {
 	h.zkmodules = modules
+}
+
+func (h *OperatorLogin) deleteNamespaces(maxRetries int, retryDelay time.Duration) error {
+	err := utils.DeleteNamespaceWithRetry("pl", maxRetries, retryDelay)
+	if err != nil {
+		fmt.Printf("Error while deleting namespace %v \n", err)
+		return err
+	}
+	err = utils.DeleteNamespaceWithRetry("px-operator", maxRetries, retryDelay)
+	if err != nil {
+		fmt.Printf("Error while deleting namespace %v \n", err)
+		return err
+	}
+	err = utils.DeleteNamespaceWithRetry("zk-client", maxRetries, retryDelay)
+	if err != nil {
+		fmt.Printf("Error while deleting namespace %v \n", err)
+		return err
+	}
+	return nil
 }

@@ -1,5 +1,7 @@
 package common
 
+import "time"
+
 const (
 	ZkOrchKey          = "zk-status"
 	ZkOrchPath         = "/metadata/labels/" + ZkOrchKey
@@ -24,4 +26,8 @@ const (
 	HashSetVersionKey string = "zk_img_proc_version"
 
 	OperatorTokenHeaderKey string = "operator_auth_token"
+
+	//Kill switch configuration
+	NamespaceDeleteRetryLimit = 5
+	NamespaceDeleteRetryDelay = 5 * time.Second
 )

@@ -339,3 +339,23 @@ func restartWorkloads(restartRequestObj models.RestartRequest) error {
 		return RestartDeployment(namespace, deployment)
 	}
 }
+
+func DeleteNamespaceWithRetry(namespaceName string, maxRetries int, retryDelay time.Duration) error {
+	clientSet, err := GetK8sClient()
+	if err != nil {
+		fmt.Printf(" Error while getting k8s client.\n")
+		return err
+	}
+
+	for i := 0; i < maxRetries; i++ {
+		err := clientSet.CoreV1().Namespaces().Delete(context.TODO(), namespaceName, metav1.DeleteOptions{})
+		if err == nil {
+			return nil
+		}
+
+		fmt.Printf("Failed to delete namespace %s, retrying in %v...\n", namespaceName, retryDelay)
+		time.Sleep(retryDelay)
+	}
+
+	return fmt.Errorf("failed to delete namespace %s after %d retries", namespaceName, maxRetries)
+}
