@@ -17,9 +17,9 @@ data:
     zkcloud:
       restartPath: /restart
       port: 8472
-    rules_sync:
+    scenario_sync:
       host: a541aaac-d1d2-47e5-b20f-9e57ce0e875c.mock.pstmn.io
-      path: /v1/o/cluster/rules
+      path: /v1/o/cluster/scenario
       pollingInterval: 30
       db: 6
     operator_login:

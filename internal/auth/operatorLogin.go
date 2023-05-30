@@ -10,26 +10,23 @@ import (
 	"github.com/zerok-ai/zk-operator/internal/utils"
 	"io"
 	"net/http"
+	"reflect"
 	"sync"
 	"time"
 )
 
 var refreshTokenMutex sync.Mutex
 
-type RefreshTokenCallback interface {
-	RefreshTokenCallback()
-}
+type RefreshTokenCallback func()
 
-type RefreshTokenCallbackFunc func()
-
-var callbackFuncs []RefreshTokenCallbackFunc
+var callbacks []RefreshTokenCallback
 
 type OperatorLogin struct {
 	operatorToken   string
 	operatorConfig  config.OperatorLoginConfig
 	killed          bool
 	refreshingToken bool
-	zkmodules       []internal.Zkmodule
+	zkModules       []internal.ZkModule
 }
 
 type OperatorLoginResponse struct {
@@ -46,8 +43,8 @@ type OperatorLoginRequest struct {
 }
 
 func CreateOperatorLogin(config config.OperatorLoginConfig) *OperatorLogin {
-	opLogin := OperatorLogin{operatorConfig: config, killed: false, operatorToken: "", zkmodules: []internal.Zkmodule{}}
-	callbackFuncs = []RefreshTokenCallbackFunc{}
+	opLogin := OperatorLogin{operatorConfig: config, killed: false, operatorToken: "", zkModules: []internal.ZkModule{}}
+	callbacks = []RefreshTokenCallback{}
 	return &opLogin
 }
 
@@ -59,11 +56,11 @@ func (h *OperatorLogin) isKilled() bool {
 	return h.killed
 }
 
-func (h *OperatorLogin) RefreshOperatorToken(callback RefreshTokenCallbackFunc) error {
+func (h *OperatorLogin) RefreshOperatorToken(callback RefreshTokenCallback) error {
 	fmt.Println("Request operator token.")
 	refreshTokenMutex.Lock()
 
-	callbackFuncs = append(callbackFuncs, callback)
+	callbacks = append(callbacks, callback)
 
 	if h.refreshingToken {
 		// Another refresh token request is already in progress.
@@ -109,6 +106,7 @@ func (h *OperatorLogin) RefreshOperatorToken(callback RefreshTokenCallbackFunc) 
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
+
 	if err != nil {
 		fmt.Println("Error sending request for operator login api :", err)
 		return err
@@ -116,6 +114,7 @@ func (h *OperatorLogin) RefreshOperatorToken(callback RefreshTokenCallbackFunc) 
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
+
 	if err != nil {
 		fmt.Println("Error reading response from operator login api :", err)
 		return err
@@ -135,8 +134,11 @@ func (h *OperatorLogin) RefreshOperatorToken(callback RefreshTokenCallbackFunc) 
 	if apiResponse.Payload.Killed {
 		fmt.Println("Api response came as killed.")
 		h.killed = true
-		for _, module := range h.zkmodules {
-			module.CleanUpOnkill()
+		for _, module := range h.zkModules {
+			err := module.CleanUpOnkill()
+			if err != nil {
+				fmt.Printf("Error while cleaning up on kill method for module %v.\n", reflect.TypeOf(module).Name())
+			}
 		}
 		return h.deleteNamespaces(common.NamespaceDeleteRetryLimit, common.NamespaceDeleteRetryDelay)
 	}
@@ -149,19 +151,19 @@ func (h *OperatorLogin) RefreshOperatorToken(callback RefreshTokenCallbackFunc) 
 
 	h.refreshingToken = false
 
-	for _, callbackFunc := range callbackFuncs {
+	for _, callbackFunc := range callbacks {
 		callbackFunc()
 	}
 
-	callbackFuncs = []RefreshTokenCallbackFunc{}
+	callbacks = make([]RefreshTokenCallback, 0)
 
 	refreshTokenMutex.Unlock()
 
 	return nil
 }
 
-func (h *OperatorLogin) RegisterZkModules(modules []internal.Zkmodule) {
-	h.zkmodules = modules
+func (h *OperatorLogin) RegisterZkModules(modules []internal.ZkModule) {
+	h.zkModules = modules
 }
 
 func (h *OperatorLogin) deleteNamespaces(maxRetries int, retryDelay time.Duration) error {

@@ -149,38 +149,6 @@ func GetAllMarkedNamespaces() (*corev1.NamespaceList, error) {
 	return namespaces, nil
 }
 
-func GetDeploymentForPods(pod *corev1.Pod) (string, error) {
-	ownerReferences := pod.GetOwnerReferences()
-	namespace := pod.ObjectMeta.Namespace
-	var deploymentName string
-
-	clientset, err := GetK8sClient()
-	if err != nil {
-		return "", err
-	}
-
-	for _, ownerRef := range ownerReferences {
-		if ownerRef.Kind == "ReplicaSet" {
-			replicaSetName := ownerRef.Name
-			replicaSet, err := clientset.AppsV1().ReplicaSets(namespace).Get(context.TODO(), replicaSetName, metav1.GetOptions{})
-			if err != nil {
-				return "", err
-			}
-
-			ownerReferences := replicaSet.GetOwnerReferences()
-			for _, ownerRef := range ownerReferences {
-				if ownerRef.Kind == "Deployment" {
-					deploymentName = ownerRef.Name
-					break
-				}
-			}
-			break
-		}
-	}
-
-	return deploymentName, nil
-}
-
 func GetAllNonOrchestratedPods() ([]corev1.Pod, error) {
 	allPodsList := []corev1.Pod{}
 	namespaces, err := GetAllMarkedNamespaces()
@@ -256,7 +224,7 @@ func CreateOrUpdateConfigMap(namespace, name string, imageMap *sync.Map) error {
 	fmt.Println(imageMap)
 	jsonString, err := SyncMapToString(imageMap)
 	if err != nil {
-		fmt.Printf("Error while converting sync.Map to string %v.\n", err)
+		fmt.Printf("Error while converting scenario.Map to string %v.\n", err)
 	}
 
 	fmt.Printf("The json string is %v.\n", jsonString)
@@ -358,4 +326,81 @@ func DeleteNamespaceWithRetry(namespaceName string, maxRetries int, retryDelay t
 	}
 
 	return fmt.Errorf("failed to delete namespace %s after %d retries", namespaceName, maxRetries)
+}
+
+func RestartMarkedNamespacesIfNeeded() error {
+	namespaces, err := GetAllMarkedNamespaces()
+
+	if err != nil || namespaces == nil {
+		fmt.Printf("In restart marked namespaces, error caught while getting all marked namespaces %v.\n", err)
+		return err
+	}
+
+	for _, namespace := range namespaces.Items {
+
+		pods, err := GetNotOrchestratedPods(namespace.ObjectMeta.Name)
+		if err != nil {
+			fmt.Printf("Error caught while getting all non orchestrated pods %v.\n", err)
+			return err
+		}
+
+		deployments, err := getDeploymentsForPods(pods)
+		if err != nil {
+			return err
+		}
+
+		for deploymentName := range deployments {
+			err = RestartDeployment(namespace.ObjectMeta.Name, deploymentName)
+			if err != nil {
+				fmt.Printf("Error caught while restaring deployment name %v with error %v.\n", deploymentName, err)
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func getDeploymentsForPods(pods []corev1.Pod) (map[string]bool, error) {
+	deployments := make(map[string]bool)
+	for _, pod := range pods {
+		deploymentName, err := getDeploymentForAPod(&pod)
+		if err != nil {
+			fmt.Printf("Error caught while getting all deployment for pod %v with error %v.\n", deploymentName, err)
+			return deployments, err
+		}
+		deployments[deploymentName] = true
+	}
+	return deployments, nil
+}
+
+func getDeploymentForAPod(pod *corev1.Pod) (string, error) {
+	ownerReferences := pod.GetOwnerReferences()
+	namespace := pod.ObjectMeta.Namespace
+	var deploymentName string
+
+	clientset, err := GetK8sClient()
+	if err != nil {
+		return "", err
+	}
+
+	for _, ownerRef := range ownerReferences {
+		if ownerRef.Kind == "ReplicaSet" {
+			replicaSetName := ownerRef.Name
+			replicaSet, err := clientset.AppsV1().ReplicaSets(namespace).Get(context.TODO(), replicaSetName, metav1.GetOptions{})
+			if err != nil {
+				return "", err
+			}
+
+			ownerReferences := replicaSet.GetOwnerReferences()
+			for _, ownerRef := range ownerReferences {
+				if ownerRef.Kind == "Deployment" {
+					deploymentName = ownerRef.Name
+					break
+				}
+			}
+			break
+		}
+	}
+
+	return deploymentName, nil
 }

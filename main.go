@@ -30,9 +30,9 @@ import (
 	"os"
 	"time"
 
+	sync "github.com/zerok-ai/zk-operator/internal/scenario"
 	server "github.com/zerok-ai/zk-operator/internal/server"
 	"github.com/zerok-ai/zk-operator/internal/storage"
-	sync "github.com/zerok-ai/zk-operator/internal/sync"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -81,8 +81,8 @@ func main() {
 
 	var d time.Duration = 15 * time.Minute
 
-	setupLog.Info("Starting injector.")
-	initInjector()
+	setupLog.Info("Starting Operator.")
+	initOperator()
 
 	//Starting exception server
 	go server.StartExceptionServer()
@@ -130,7 +130,7 @@ func main() {
 // TODO:
 // Add zklogger in the project.
 // Unit testing.
-func initInjector() {
+func initOperator() {
 
 	setupLog.Info("Running injector main.")
 
@@ -147,7 +147,7 @@ func initInjector() {
 		return
 	}
 
-	zkmodules := []internal.Zkmodule{}
+	zkModules := make([]internal.ZkModule, 0)
 
 	// initialize certificates
 	caPEM, cert, key, err := webhook.InitializeKeysAndCertificates(cfg.Webhook)
@@ -167,36 +167,32 @@ func initInjector() {
 	// creating mutating webhook
 	webhookHandler := webhook.WebhookHandler{}
 	webhookHandler.Init(caPEM, cfg.Webhook)
-	zkmodules = append(zkmodules, &webhookHandler)
+	zkModules = append(zkModules, &webhookHandler)
 
 	//creating in-memory <image,runtime> map handler.
-	runtimeMap := &storage.ImageRuntimeHandler{}
-	runtimeMap.Init(cfg)
-
-	//Creating module for restarting pods.
-	updateOrch := sync.OrchestrationHandler{}
-	updateOrch.Init(cfg)
-	zkmodules = append(zkmodules, &updateOrch)
+	imageRuntimeCache := &storage.ImageRuntimeCache{}
+	imageRuntimeCache.Init(cfg)
+	zkModules = append(zkModules, imageRuntimeCache)
 
 	//Creating operator login module
 	opLogin := auth.CreateOperatorLogin(cfg.OperatorLogin)
 
 	//Module for syncing rules
-	syncRules := sync.SyncRules{}
+	scenarioHandler := sync.ScenarioHandler{}
 	versionedStore := storage.GetVersionedStore(cfg)
-	syncRules.Init(versionedStore, opLogin, cfg)
-	zkmodules = append(zkmodules, &syncRules)
+	scenarioHandler.Init(versionedStore, opLogin, cfg)
+	zkModules = append(zkModules, &scenarioHandler)
 
-	opLogin.RegisterZkModules(zkmodules)
+	opLogin.RegisterZkModules(zkModules)
 
-	//Starting all the modules
-	go updateOrch.UpdateOrchestration(runtimeMap)
+	//Starting syncing of image,runtime data from redis
+	go imageRuntimeCache.StartPeriodicSync()
 
-	//Staring rule sync from zk api server
-	go syncRules.SyncRulesFromZkCloud()
+	//Staring syncing scenarios from zk cloud.
+	go scenarioHandler.StartPeriodicSync()
 
 	// start webhook server
-	go server.StartWebHookServer(app, cfg, cert, key, runtimeMap, irisConfig)
+	go server.StartWebHookServer(app, cfg, cert, key, imageRuntimeCache, irisConfig)
 
 	setupLog.Info("End of running injector main.")
 }

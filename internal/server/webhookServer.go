@@ -41,14 +41,14 @@ func webhookErrorResponse(err error, ctx iris.Context, message string) {
 	ctx.StatusCode(iris.StatusInternalServerError)
 }
 
-func handleRoutes(app *iris.Application, cfg config.ZkInjectorConfig, runtimeMap *storage.ImageRuntimeHandler) {
+func handleRoutes(app *iris.Application, cfg config.ZkInjectorConfig, runtimeMap *storage.ImageRuntimeCache) {
 	injectHandler := &WebhookRequestHandler{
 		injector: &inject.Injector{ImageRuntimeHandler: runtimeMap, Config: cfg},
 	}
 	app.Post(cfg.Webhook.Path, injectHandler.ServeHTTP)
 }
 
-func StartWebHookServer(app *iris.Application, cfg config.ZkInjectorConfig, cert *bytes.Buffer, key *bytes.Buffer, runtimeMap *storage.ImageRuntimeHandler, config iris.Configurator) {
+func StartWebHookServer(app *iris.Application, cfg config.ZkInjectorConfig, cert *bytes.Buffer, key *bytes.Buffer, runtimeMap *storage.ImageRuntimeCache, config iris.Configurator) {
 	handleRoutes(app, cfg, runtimeMap)
 	app.Run(iris.TLS(":"+cfg.Webhook.Port, cert.String(), key.String()), config)
 }

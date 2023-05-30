@@ -1,5 +1,5 @@
 package internal
 
-type Zkmodule interface {
+type ZkModule interface {
 	CleanUpOnkill() error
 }

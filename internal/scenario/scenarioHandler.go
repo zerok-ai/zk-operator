@@ -1,4 +1,4 @@
-package sync
+package scenario
 
 import (
 	"encoding/json"
@@ -17,7 +17,7 @@ import (
 
 var authTokenExpiredCode = 401
 
-type SyncRules struct {
+type ScenarioHandler struct {
 	VersionedStore *storage.VersionedStore
 	OpLogin        *auth.OperatorLogin
 	ticker         *time.Ticker
@@ -25,7 +25,7 @@ type SyncRules struct {
 	rulesVersion   string
 }
 
-type RulesApiResponse struct {
+type ScenariosApiResponse struct {
 	Payload ScenariosObj `json:"payload"`
 }
 
@@ -34,28 +34,28 @@ type ScenariosObj struct {
 	Deleted   []string         `json:"deleted,omitempty"`
 }
 
-func (h *SyncRules) Init(VersionedStore *storage.VersionedStore, OpLogin *auth.OperatorLogin, cfg config.ZkInjectorConfig) {
+func (h *ScenarioHandler) Init(VersionedStore *storage.VersionedStore, OpLogin *auth.OperatorLogin, cfg config.ZkInjectorConfig) {
 	h.VersionedStore = VersionedStore
 	h.OpLogin = OpLogin
 	h.config = cfg
 	h.rulesVersion = "0"
 
-	//Creating a timer for periodic sync
-	var duration = time.Duration(cfg.RulesSync.PollingInterval) * time.Second
+	//Creating a timer for periodic scenario
+	var duration = time.Duration(cfg.ScenarioSync.PollingInterval) * time.Second
 	h.ticker = time.NewTicker(duration)
 }
 
-func (h *SyncRules) SyncRulesFromZkCloud() {
-	h.updateRules(h.config)
+func (h *ScenarioHandler) StartPeriodicSync() {
+	h.updateScenarios(h.config)
 
 	for range h.ticker.C {
-		fmt.Println("Sync rules triggered.")
-		h.updateRules(h.config)
+		fmt.Println("Sync scenarios triggered.")
+		h.updateScenarios(h.config)
 	}
 }
 
-func (h *SyncRules) updateRules(cfg config.ZkInjectorConfig) {
-	rules, err := h.getRulesFromZkCloud(cfg)
+func (h *ScenarioHandler) updateScenarios(cfg config.ZkInjectorConfig) {
+	rules, err := h.getScenariosFromZkCloud(cfg)
 	if err != nil {
 		fmt.Printf("Error while getting rules from zkcloud %v.\n", err)
 		return
@@ -68,11 +68,11 @@ func (h *SyncRules) updateRules(cfg config.ZkInjectorConfig) {
 	}
 }
 
-func (h *SyncRules) getRulesFromZkCloud(cfg config.ZkInjectorConfig) (*RulesApiResponse, error) {
+func (h *ScenarioHandler) getScenariosFromZkCloud(cfg config.ZkInjectorConfig) (*ScenariosApiResponse, error) {
 
 	fmt.Println("Get rules from zk cloud.")
 
-	baseURL := "http://" + cfg.RulesSync.Host + cfg.RulesSync.Path
+	baseURL := "http://" + cfg.ScenarioSync.Host + cfg.ScenarioSync.Path
 
 	//Adding query params
 	url := fmt.Sprintf("%s?%s=%s", baseURL, "version", h.rulesVersion)
@@ -111,7 +111,7 @@ func (h *SyncRules) getRulesFromZkCloud(cfg config.ZkInjectorConfig) (*RulesApiR
 		return nil, err
 	}
 
-	var apiResponse RulesApiResponse
+	var apiResponse ScenariosApiResponse
 
 	err = json.Unmarshal(body, &apiResponse)
 
@@ -123,9 +123,9 @@ func (h *SyncRules) getRulesFromZkCloud(cfg config.ZkInjectorConfig) (*RulesApiR
 	return &apiResponse, nil
 }
 
-func (h *SyncRules) refreshAuthToken(cfg config.ZkInjectorConfig) error {
+func (h *ScenarioHandler) refreshAuthToken(cfg config.ZkInjectorConfig) error {
 	err := h.OpLogin.RefreshOperatorToken(func() {
-		h.updateRules(cfg)
+		h.updateScenarios(cfg)
 	})
 	if err != nil {
 		fmt.Printf("Error while refreshing auth token %v.\n", err)
@@ -134,7 +134,7 @@ func (h *SyncRules) refreshAuthToken(cfg config.ZkInjectorConfig) error {
 }
 
 // This method will parse rules and return the largest version found and any error caught.
-func (h *SyncRules) processScenarios(rulesApiResponse *RulesApiResponse) (string, error) {
+func (h *ScenarioHandler) processScenarios(rulesApiResponse *ScenariosApiResponse) (string, error) {
 	payload := rulesApiResponse.Payload
 	latestVersion := "0"
 	for _, scenario := range payload.Scenarios {
@@ -172,8 +172,8 @@ func (h *SyncRules) processScenarios(rulesApiResponse *RulesApiResponse) (string
 	return latestVersion, nil
 }
 
-func (h *SyncRules) CleanUpOnkill() error {
-	fmt.Printf("Kill method in sync rules.\n")
+func (h *ScenarioHandler) CleanUpOnkill() error {
+	fmt.Printf("Kill method in scenario rules.\n")
 	h.ticker.Stop()
 	return nil
 }

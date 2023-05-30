@@ -17,7 +17,7 @@ type OperatorLoginConfig struct {
 	ClusterKeyNamespace string `yaml:"clusterKeyNamespace"`
 }
 
-type RulesSyncConfig struct {
+type ScenarioSyncConfig struct {
 	Host            string `yaml:"host"`
 	Path            string `yaml:"path"`
 	PollingInterval int    `yaml:"pollingInterval"`
@@ -50,7 +50,7 @@ type ZkInjectorConfig struct {
 	ZkCloud         ZkCloudConfig         `yaml:"zkcloud"`
 	Redis           RedisConfig           `yaml:"redis"`
 	Webhook         WebhookConfig         `yaml:"webhook"`
-	RulesSync       RulesSyncConfig       `yaml:"rules_sync"`
+	ScenarioSync    ScenarioSyncConfig    `yaml:"scenario_sync"`
 	OperatorLogin   OperatorLoginConfig   `yaml:"operator_login"`
 	InitContainer   InitContainerConfig   `yaml:"init_container"`
 	JavaToolOptions JavaToolOptionsConfig `yaml:"java_tool_options"`

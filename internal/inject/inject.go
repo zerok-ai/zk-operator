@@ -17,7 +17,7 @@ import (
 
 // Injector is a struct that implements an admission controller webhook for Kubernetes pods.
 type Injector struct {
-	ImageRuntimeHandler *storage.ImageRuntimeHandler
+	ImageRuntimeHandler *storage.ImageRuntimeCache
 	Config              config.ZkInjectorConfig
 }
 
