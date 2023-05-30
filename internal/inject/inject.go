@@ -109,23 +109,19 @@ func (h *Injector) Inject(body []byte) ([]byte, error) {
 
 // This method returns all the patches to be applied on the pod.
 func (h *Injector) getPatches(pod *corev1.Pod) []map[string]interface{} {
+
 	patches := make([]map[string]interface{}, 0)
 
-	//These set of patches will inject the init container.
 	patches = append(patches, h.getInitContainerPatches(pod)...)
-
-	//This patch for adding volume mount. This allows the main container access to otel agent.
 	patches = append(patches, h.getVolumePatch())
-
-	//These patchs orchestraces the container based on language.
-	containerPatches := h.getContainerPatches(pod)
-	patches = append(patches, containerPatches...)
+	patches = append(patches, h.getContainerPatches(pod)...)
 
 	fmt.Printf("The patches created are %v.\n", patches)
 
 	return patches
 }
 
+// These patches orchestrate the container based on language.
 func (h *Injector) getContainerPatches(pod *corev1.Pod) []map[string]interface{} {
 
 	patches := make([]map[string]interface{}, 0)
@@ -230,6 +226,7 @@ func (*Injector) getVolumeMount(i int) map[string]interface{} {
 	return addVolumeMount
 }
 
+// This patch for adding volume mount. This allows the main container access to otel agent.
 func (h *Injector) getVolumePatch() map[string]interface{} {
 	addVolume := map[string]interface{}{
 		"op":   "add",
@@ -244,6 +241,7 @@ func (h *Injector) getVolumePatch() map[string]interface{} {
 	return addVolume
 }
 
+// This patch for adding volume mount. This allows the main container access to otel agent.
 func (h *Injector) getInitContainerPatches(pod *corev1.Pod) []map[string]interface{} {
 	p := make([]map[string]interface{}, 0)
 

@@ -17,3 +17,9 @@ type ContainerRuntime struct {
 	ImageID   string   `json:"imageId"`
 	Languages []string `json:"language"`
 }
+
+type RestartRequest struct {
+	Namespace  string `json:"namespace"`
+	Deployment string `json:"deployment,omitempty"`
+	All        bool   `json:"all"`
+}
