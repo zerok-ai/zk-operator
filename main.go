@@ -84,9 +84,6 @@ func main() {
 	setupLog.Info("Starting Operator.")
 	initOperator()
 
-	//Starting exception server
-	go server.StartExceptionServer()
-
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
@@ -132,17 +129,15 @@ func main() {
 // Unit testing.
 func initOperator() {
 
-	setupLog.Info("Running injector main.")
-
 	configPath := env.GetString("CONFIG_FILE", "")
 	if configPath == "" {
 		fmt.Println("Config yaml path not found.")
 		return
 	}
 
-	var cfg config.ZkInjectorConfig
+	var zkConfig config.ZkOperatorConfig
 
-	if err := cleanenv.ReadConfig(configPath, &cfg); err != nil {
+	if err := cleanenv.ReadConfig(configPath, &zkConfig); err != nil {
 		log.Println(err)
 		return
 	}
@@ -150,7 +145,7 @@ func initOperator() {
 	zkModules := make([]internal.ZkModule, 0)
 
 	// initialize certificates
-	caPEM, cert, key, err := webhook.InitializeKeysAndCertificates(cfg.Webhook)
+	caPEM, cert, key, err := webhook.InitializeKeysAndCertificates(zkConfig.Webhook)
 	if err != nil {
 		msg := fmt.Sprintf("Failed to create keys and certificates for webhook %v. Stopping initialization of the pod.\n", err)
 		fmt.Println(msg)
@@ -166,21 +161,21 @@ func initOperator() {
 
 	// creating mutating webhook
 	webhookHandler := webhook.WebhookHandler{}
-	webhookHandler.Init(caPEM, cfg.Webhook)
+	webhookHandler.Init(caPEM, zkConfig.Webhook)
 	zkModules = append(zkModules, &webhookHandler)
 
 	//creating in-memory <image,runtime> map handler.
 	imageRuntimeCache := &storage.ImageRuntimeCache{}
-	imageRuntimeCache.Init(cfg)
+	imageRuntimeCache.Init(zkConfig)
 	zkModules = append(zkModules, imageRuntimeCache)
 
 	//Creating operator login module
-	opLogin := auth.CreateOperatorLogin(cfg.OperatorLogin)
+	opLogin := auth.CreateOperatorLogin(zkConfig.OperatorLogin)
 
 	//Module for syncing rules
 	scenarioHandler := sync.ScenarioHandler{}
-	versionedStore := storage.GetVersionedStore(cfg)
-	scenarioHandler.Init(versionedStore, opLogin, cfg)
+	versionedStore := storage.GetVersionedStore(zkConfig)
+	scenarioHandler.Init(versionedStore, opLogin, zkConfig)
 	zkModules = append(zkModules, &scenarioHandler)
 
 	opLogin.RegisterZkModules(zkModules)
@@ -192,9 +187,11 @@ func initOperator() {
 	go scenarioHandler.StartPeriodicSync()
 
 	// start webhook server
-	go server.StartWebHookServer(app, cfg, cert, key, imageRuntimeCache, irisConfig)
+	go server.StartWebHookServer(app, zkConfig, cert, key, imageRuntimeCache, irisConfig)
 
-	setupLog.Info("End of running injector main.")
+	// start exception server
+	go server.StartExceptionServer(app, irisConfig, zkConfig.Exception)
+
 }
 
 func newApp() *iris.Application {

@@ -11,7 +11,7 @@ type VersionedStore struct {
 	versionHashSetName string
 }
 
-func GetVersionedStore(config config.ZkInjectorConfig) *VersionedStore {
+func GetVersionedStore(config config.ZkOperatorConfig) *VersionedStore {
 
 	_redisClient := utils.GetRedisClient(config, config.Redis.VersionDB)
 

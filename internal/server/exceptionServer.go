@@ -1,19 +1,15 @@
 package server
 
 import (
-	"fmt"
-	"io"
-	"net/http"
+	"github.com/kataras/iris/v12"
+	"github.com/zerok-ai/zk-operator/internal/config"
 )
 
-func StartExceptionServer() {
-	var h http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("Exception request received.")
-		requestBody, _ := io.ReadAll(r.Body)
-		fmt.Println("Request body is ", string(requestBody))
-		w.WriteHeader(200)
-		w.Write([]byte("Done"))
-	})
-	http.Handle("/exception", h)
-	http.ListenAndServe(":8127", nil)
+func dummyHandler(ctx iris.Context) {
+	ctx.StatusCode(iris.StatusOK)
+}
+
+func StartExceptionServer(app *iris.Application, config iris.Configurator, exceptionConfig config.ExceptionConfig) {
+	app.Post(exceptionConfig.Path, dummyHandler)
+	app.Run(iris.Addr(":"+exceptionConfig.Port), config)
 }

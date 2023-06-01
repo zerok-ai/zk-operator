@@ -32,6 +32,11 @@ type WebhookConfig struct {
 	Port      string `yaml:"port"`
 }
 
+type ExceptionConfig struct {
+	Path string `yaml:"path"`
+	Port string `yaml:"port"`
+}
+
 type ZkCloudConfig struct {
 	RestartPath string `yaml:"restartPath"`
 	Port        string `yaml:"port"`
@@ -46,10 +51,11 @@ type JavaToolOptionsConfig struct {
 	OtelArgument string `yaml:"otelArgument"`
 }
 
-type ZkInjectorConfig struct {
+type ZkOperatorConfig struct {
 	ZkCloud         ZkCloudConfig         `yaml:"zkcloud"`
 	Redis           RedisConfig           `yaml:"redis"`
 	Webhook         WebhookConfig         `yaml:"webhook"`
+	Exception       ExceptionConfig       `yaml:"exception"`
 	ScenarioSync    ScenarioSyncConfig    `yaml:"scenario_sync"`
 	OperatorLogin   OperatorLoginConfig   `yaml:"operator_login"`
 	InitContainer   InitContainerConfig   `yaml:"init_container"`

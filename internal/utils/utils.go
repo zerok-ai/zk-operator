@@ -68,7 +68,7 @@ func GetCurrentNamespace() string {
 	return podNamespace
 }
 
-func GetRedisClient(config config.ZkInjectorConfig, db int) *redis.Client {
+func GetRedisClient(config config.ZkOperatorConfig, db int) *redis.Client {
 	redisConfig := config.Redis
 	readTimeout := time.Duration(redisConfig.ReadTimeout) * time.Second
 	url := fmt.Sprint(redisConfig.Host, ":", redisConfig.Port)

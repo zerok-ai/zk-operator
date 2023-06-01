@@ -18,7 +18,7 @@ import (
 // Injector is a struct that implements an admission controller webhook for Kubernetes pods.
 type Injector struct {
 	ImageRuntimeHandler *storage.ImageRuntimeCache
-	Config              config.ZkInjectorConfig
+	Config              config.ZkOperatorConfig
 }
 
 // GetEmptyResponse returns an empty admission response as a JSON byte array.

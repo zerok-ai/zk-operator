@@ -228,7 +228,7 @@ func GetSecretValue(namespace, secretName, dataKey string) (string, error) {
 	secret, err := clientSet.CoreV1().Secrets(namespace).Get(context.TODO(), secretName, metav1.GetOptions{})
 	if err != nil {
 		fmt.Printf("Failed to get secret: %v\n", err)
-		os.Exit(1)
+		return "", err
 	}
 
 	value, ok := secret.Data[dataKey]

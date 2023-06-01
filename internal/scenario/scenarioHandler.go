@@ -21,7 +21,7 @@ type ScenarioHandler struct {
 	VersionedStore *storage.VersionedStore
 	OpLogin        *auth.OperatorLogin
 	ticker         *time.Ticker
-	config         config.ZkInjectorConfig
+	config         config.ZkOperatorConfig
 	rulesVersion   string
 }
 
@@ -34,7 +34,7 @@ type ScenariosObj struct {
 	Deleted   []string         `json:"deleted,omitempty"`
 }
 
-func (h *ScenarioHandler) Init(VersionedStore *storage.VersionedStore, OpLogin *auth.OperatorLogin, cfg config.ZkInjectorConfig) {
+func (h *ScenarioHandler) Init(VersionedStore *storage.VersionedStore, OpLogin *auth.OperatorLogin, cfg config.ZkOperatorConfig) {
 	h.VersionedStore = VersionedStore
 	h.OpLogin = OpLogin
 	h.config = cfg
@@ -54,7 +54,7 @@ func (h *ScenarioHandler) StartPeriodicSync() {
 	}
 }
 
-func (h *ScenarioHandler) updateScenarios(cfg config.ZkInjectorConfig) {
+func (h *ScenarioHandler) updateScenarios(cfg config.ZkOperatorConfig) {
 	rules, err := h.getScenariosFromZkCloud(cfg)
 	if err != nil {
 		fmt.Printf("Error while getting rules from zkcloud %v.\n", err)
@@ -68,7 +68,7 @@ func (h *ScenarioHandler) updateScenarios(cfg config.ZkInjectorConfig) {
 	}
 }
 
-func (h *ScenarioHandler) getScenariosFromZkCloud(cfg config.ZkInjectorConfig) (*ScenariosApiResponse, error) {
+func (h *ScenarioHandler) getScenariosFromZkCloud(cfg config.ZkOperatorConfig) (*ScenariosApiResponse, error) {
 
 	fmt.Println("Get rules from zk cloud.")
 
@@ -123,7 +123,7 @@ func (h *ScenarioHandler) getScenariosFromZkCloud(cfg config.ZkInjectorConfig) (
 	return &apiResponse, nil
 }
 
-func (h *ScenarioHandler) refreshAuthToken(cfg config.ZkInjectorConfig) error {
+func (h *ScenarioHandler) refreshAuthToken(cfg config.ZkOperatorConfig) error {
 	err := h.OpLogin.RefreshOperatorToken(func() {
 		h.updateScenarios(cfg)
 	})

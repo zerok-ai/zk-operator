@@ -64,7 +64,7 @@ func (h *OperatorLogin) RefreshOperatorToken(callback RefreshTokenCallback) erro
 
 	if h.refreshingToken {
 		// Another refresh token request is already in progress.
-		return nil
+		return fmt.Errorf("another refresh token request is already in progress")
 	}
 
 	h.refreshingToken = true
@@ -73,12 +73,16 @@ func (h *OperatorLogin) RefreshOperatorToken(callback RefreshTokenCallback) erro
 
 	if h.killed {
 		fmt.Println("Skipping refresh access token api since cluster is killed.")
-		return nil
+		return fmt.Errorf("cluster is killed")
 	}
 
 	endpoint := "http://" + h.operatorConfig.Host + h.operatorConfig.Path
 
+	fmt.Println("Endpoint is ", endpoint)
+
 	clusterKey, err := utils.GetSecretValue(h.operatorConfig.ClusterKeyNamespace, h.operatorConfig.ClusterKey, h.operatorConfig.ClusterKeyData)
+
+	fmt.Println("Clusterkey is ", clusterKey)
 
 	if err != nil {
 		fmt.Println("Error while getting cluster key from secrets :", err)

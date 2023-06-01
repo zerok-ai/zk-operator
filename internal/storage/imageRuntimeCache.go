@@ -56,7 +56,7 @@ func (h *ImageRuntimeCache) SyncDataFromRedis() error {
 	return nil
 }
 
-func (h *ImageRuntimeCache) Init(config config.ZkInjectorConfig) {
+func (h *ImageRuntimeCache) Init(config config.ZkOperatorConfig) {
 	//init ImageStore
 	h.ImageStore = GetNewRedisStore(config)
 	h.RuntimeMapVersion = -1
