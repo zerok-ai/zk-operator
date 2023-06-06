@@ -21,16 +21,17 @@ data:
       restartPath: /restart
       port: 8472
     scenario_sync:
-      host: a541aaac-d1d2-47e5-b20f-9e57ce0e875c.mock.pstmn.io
+      host: api.zkdev02.getanton.com
       path: /v1/o/cluster/scenario
       pollingInterval: 300
       db: 6
     operator_login:
-      host: f37dde7c-4b05-442a-a6c5-7a0397cf774c.mock.pstmn.io
+      host: api.zkdev02.getanton.com
       path: /v1/o/auth/login
       clusterKeySecret: cluster-key
       clusterKeyData: clusterKey
       clusterKeyNamespace: zk-client
+      maxRetries: 3
     logs:
       color: true
       level: DEBUG

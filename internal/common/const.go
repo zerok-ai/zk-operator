@@ -25,7 +25,7 @@ const (
 	HashSetName       string = "zk_img_proc_map"
 	HashSetVersionKey string = "zk_img_proc_version"
 
-	OperatorTokenHeaderKey string = "operator_auth_token"
+	OperatorTokenHeaderKey string = "Operator_auth_token"
 
 	//Kill switch configuration
 	NamespaceDeleteRetryLimit = 5

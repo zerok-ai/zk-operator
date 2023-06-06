@@ -46,16 +46,16 @@ func (h *ScenarioHandler) Init(VersionedStore *storage.VersionedStore, OpLogin *
 }
 
 func (h *ScenarioHandler) StartPeriodicSync() {
-	h.updateScenarios(h.config)
+	h.updateScenarios(h.config, true)
 
 	for range h.ticker.C {
 		fmt.Println("Sync scenarios triggered.")
-		h.updateScenarios(h.config)
+		h.updateScenarios(h.config, true)
 	}
 }
 
-func (h *ScenarioHandler) updateScenarios(cfg config.ZkOperatorConfig) {
-	rules, err := h.getScenariosFromZkCloud(cfg)
+func (h *ScenarioHandler) updateScenarios(cfg config.ZkOperatorConfig, refreshAuthToken bool) {
+	rules, err := h.getScenariosFromZkCloud(cfg, refreshAuthToken)
 	if err != nil {
 		fmt.Printf("Error while getting rules from zkcloud %v.\n", err)
 		return
@@ -68,7 +68,7 @@ func (h *ScenarioHandler) updateScenarios(cfg config.ZkOperatorConfig) {
 	}
 }
 
-func (h *ScenarioHandler) getScenariosFromZkCloud(cfg config.ZkOperatorConfig) (*ScenariosApiResponse, error) {
+func (h *ScenarioHandler) getScenariosFromZkCloud(cfg config.ZkOperatorConfig, refreshAuthToken bool) (*ScenariosApiResponse, error) {
 
 	fmt.Println("Get rules from zk cloud.")
 
@@ -86,7 +86,14 @@ func (h *ScenarioHandler) getScenariosFromZkCloud(cfg config.ZkOperatorConfig) (
 	fmt.Printf("Current operator token is %v.\n", h.OpLogin.GetOperatorToken())
 
 	if h.OpLogin.GetOperatorToken() == "" {
-		return nil, h.refreshAuthToken(cfg)
+		if refreshAuthToken {
+			fmt.Println("Operator auth token is expired. Refreshing the auth token.")
+			return nil, h.refreshAuthToken(cfg)
+		} else {
+			fmt.Println("Operator auth token is empty. Refresh auth token is false.")
+			return nil, fmt.Errorf("operator token is empty")
+		}
+
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -102,7 +109,13 @@ func (h *ScenarioHandler) getScenariosFromZkCloud(cfg config.ZkOperatorConfig) (
 	statusCode := resp.StatusCode
 
 	if statusCode == authTokenExpiredCode {
-		return nil, h.refreshAuthToken(cfg)
+		if refreshAuthToken {
+			fmt.Println("Operator auth token has expired. Refreshing the auth token.")
+			return nil, h.refreshAuthToken(cfg)
+		} else {
+			fmt.Println("Operator auth token has expired. Refresh auth token is false.")
+			return nil, fmt.Errorf("operator auth token has expired")
+		}
 	}
 
 	body, err := io.ReadAll(resp.Body)
@@ -110,6 +123,8 @@ func (h *ScenarioHandler) getScenariosFromZkCloud(cfg config.ZkOperatorConfig) (
 		fmt.Println("Error reading response from rules api :", err)
 		return nil, err
 	}
+
+	fmt.Println("Scenario response body ", body)
 
 	var apiResponse ScenariosApiResponse
 
@@ -125,7 +140,7 @@ func (h *ScenarioHandler) getScenariosFromZkCloud(cfg config.ZkOperatorConfig) (
 
 func (h *ScenarioHandler) refreshAuthToken(cfg config.ZkOperatorConfig) error {
 	err := h.OpLogin.RefreshOperatorToken(func() {
-		h.updateScenarios(cfg)
+		h.updateScenarios(cfg, false)
 	})
 	if err != nil {
 		fmt.Printf("Error while refreshing auth token %v.\n", err)
@@ -135,6 +150,10 @@ func (h *ScenarioHandler) refreshAuthToken(cfg config.ZkOperatorConfig) error {
 
 // This method will parse rules and return the largest version found and any error caught.
 func (h *ScenarioHandler) processScenarios(rulesApiResponse *ScenariosApiResponse) (string, error) {
+	if rulesApiResponse == nil {
+		fmt.Println("Rules Api response is nil.")
+		return "", fmt.Errorf("rules Api response is nil")
+	}
 	payload := rulesApiResponse.Payload
 	latestVersion := "0"
 	for _, scenario := range payload.Scenarios {
@@ -150,6 +169,7 @@ func (h *ScenarioHandler) processScenarios(rulesApiResponse *ScenariosApiRespons
 		}
 
 		scenarioString, err := json.Marshal(scenario)
+		fmt.Println("Scenario string ", string(scenarioString))
 		if err != nil {
 			fmt.Printf("Error while converting filter rule to string %v.\n", err)
 			return "", err

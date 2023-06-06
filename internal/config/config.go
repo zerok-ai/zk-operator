@@ -15,6 +15,7 @@ type OperatorLoginConfig struct {
 	ClusterKey          string `yaml:"clusterKeySecret"`
 	ClusterKeyData      string `yaml:"clusterKeyData"`
 	ClusterKeyNamespace string `yaml:"clusterKeyNamespace"`
+	MaxRetries          int    `yaml:"maxRetries"`
 }
 
 type ScenarioSyncConfig struct {

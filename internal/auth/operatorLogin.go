@@ -22,11 +22,12 @@ type RefreshTokenCallback func()
 var callbacks []RefreshTokenCallback
 
 type OperatorLogin struct {
-	operatorToken   string
-	operatorConfig  config.OperatorLoginConfig
-	killed          bool
-	refreshingToken bool
-	zkModules       []internal.ZkModule
+	operatorToken    string
+	operatorConfig   config.OperatorLoginConfig
+	killed           bool
+	refreshingToken  bool
+	zkModules        []internal.ZkModule
+	lastTokenRefresh time.Time
 }
 
 type OperatorLoginResponse struct {
@@ -76,6 +77,34 @@ func (h *OperatorLogin) RefreshOperatorToken(callback RefreshTokenCallback) erro
 		return fmt.Errorf("cluster is killed")
 	}
 
+	maxRetries := h.operatorConfig.MaxRetries
+	retryCount := 0
+
+	for retryCount <= maxRetries {
+		err2 := h.getOpTokenFromZkCloud()
+		if err2 != nil {
+			retryCount++
+		} else {
+			break
+		}
+	}
+
+	refreshTokenMutex.Lock()
+
+	h.refreshingToken = false
+
+	for _, callbackFunc := range callbacks {
+		callbackFunc()
+	}
+
+	callbacks = make([]RefreshTokenCallback, 0)
+
+	refreshTokenMutex.Unlock()
+
+	return nil
+}
+
+func (h *OperatorLogin) getOpTokenFromZkCloud() error {
 	endpoint := "http://" + h.operatorConfig.Host + h.operatorConfig.Path
 
 	fmt.Println("Endpoint is ", endpoint)
@@ -150,19 +179,6 @@ func (h *OperatorLogin) RefreshOperatorToken(callback RefreshTokenCallback) erro
 	h.operatorToken = apiResponse.Payload.Token
 
 	fmt.Println("Token is ", h.operatorToken)
-
-	refreshTokenMutex.Lock()
-
-	h.refreshingToken = false
-
-	for _, callbackFunc := range callbacks {
-		callbackFunc()
-	}
-
-	callbacks = make([]RefreshTokenCallback, 0)
-
-	refreshTokenMutex.Unlock()
-
 	return nil
 }
 
