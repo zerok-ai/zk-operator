@@ -21,7 +21,7 @@ data:
       restartPath: /restart
       port: 8472
     scenario_sync:
-      host: api.zkdev02.getanton.com
+      host: 957ef79f-f7f7-45ef-8d7c-86a1c35f226b.mock.pstmn.io
       path: /v1/o/cluster/scenario
       pollingInterval: 300
       db: 6

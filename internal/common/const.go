@@ -28,6 +28,6 @@ const (
 	OperatorTokenHeaderKey string = "Operator_auth_token"
 
 	//Kill switch configuration
-	NamespaceDeleteRetryLimit = 5
-	NamespaceDeleteRetryDelay = 5 * time.Second
+	NamespaceDeleteRetryLimit = 3
+	NamespaceDeleteRetryDelay = 2 * time.Second
 )
