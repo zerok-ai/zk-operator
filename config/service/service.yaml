@@ -22,7 +22,6 @@ metadata:
     name: zk-operator-injector
   name: operator-inject
 spec:
-  publishNotReadyAddresses: true
   ports:
     - port: 443
       targetPort: 8473

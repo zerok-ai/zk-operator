@@ -142,7 +142,7 @@ func initOperator() {
 		return
 	}
 
-	zkModules := make([]internal.ZkModule, 0)
+	zkModules := make([]internal.ZkOperatorModule, 0)
 
 	// initialize certificates
 	caPEM, cert, key, err := webhook.InitializeKeysAndCertificates(zkConfig.Webhook)

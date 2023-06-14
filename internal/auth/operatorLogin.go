@@ -26,7 +26,7 @@ type OperatorLogin struct {
 	operatorConfig   config.OperatorLoginConfig
 	killed           bool
 	refreshingToken  bool
-	zkModules        []internal.ZkModule
+	zkModules        []internal.ZkOperatorModule
 	lastTokenRefresh time.Time
 }
 
@@ -44,7 +44,7 @@ type OperatorLoginRequest struct {
 }
 
 func CreateOperatorLogin(config config.OperatorLoginConfig) *OperatorLogin {
-	opLogin := OperatorLogin{operatorConfig: config, killed: false, operatorToken: "", zkModules: []internal.ZkModule{}}
+	opLogin := OperatorLogin{operatorConfig: config, killed: false, operatorToken: "", zkModules: []internal.ZkOperatorModule{}}
 	callbacks = []RefreshTokenCallback{}
 	return &opLogin
 }
@@ -174,7 +174,7 @@ func (h *OperatorLogin) getOpTokenFromZkCloud() error {
 	return nil
 }
 
-func (h *OperatorLogin) RegisterZkModules(modules []internal.ZkModule) {
+func (h *OperatorLogin) RegisterZkModules(modules []internal.ZkOperatorModule) {
 	h.zkModules = modules
 }
 

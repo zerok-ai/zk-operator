@@ -99,7 +99,7 @@ func (h *ImageRuntimeCache) GetContainerLanguage(container *corev1.Container, po
 			return common.JavaProgrammingLanguage
 		}
 	}
-	return common.UknownLanguage
+	return common.UnknownLanguage
 }
 
 func (h *ImageRuntimeCache) CleanUpOnkill() error {

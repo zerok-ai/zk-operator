@@ -8,7 +8,7 @@ const (
 	GoProgrammingLanguage         ProgrammingLanguage = "go"
 	DotNetProgrammingLanguage     ProgrammingLanguage = "dotnet"
 	JavascriptProgrammingLanguage ProgrammingLanguage = "javascript"
-	UknownLanguage                ProgrammingLanguage = "unknown"
+	UnknownLanguage               ProgrammingLanguage = "unknown"
 	NotYetProcessed               ProgrammingLanguage = "notprocessed"
 )
 
