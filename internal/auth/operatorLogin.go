@@ -64,6 +64,7 @@ func (h *OperatorLogin) RefreshOperatorToken(callback RefreshTokenCallback) erro
 	callbacks = append(callbacks, callback)
 
 	if h.refreshingToken {
+		refreshTokenMutex.Unlock()
 		// Another refresh token request is already in progress.
 		return fmt.Errorf("another refresh token request is already in progress")
 	}
@@ -90,28 +91,26 @@ func (h *OperatorLogin) RefreshOperatorToken(callback RefreshTokenCallback) erro
 	}
 
 	refreshTokenMutex.Lock()
+	defer refreshTokenMutex.Unlock()
 
 	h.refreshingToken = false
+	h.executeCallbackMethods()
 
+	return nil
+}
+
+func (h *OperatorLogin) executeCallbackMethods() {
 	for _, callbackFunc := range callbacks {
 		callbackFunc()
 	}
 
 	callbacks = make([]RefreshTokenCallback, 0)
-
-	refreshTokenMutex.Unlock()
-
-	return nil
 }
 
 func (h *OperatorLogin) getOpTokenFromZkCloud() error {
 	endpoint := "http://" + h.operatorConfig.Host + h.operatorConfig.Path
 
-	fmt.Println("Endpoint is ", endpoint)
-
 	clusterKey, err := utils.GetSecretValue(h.operatorConfig.ClusterKeyNamespace, h.operatorConfig.ClusterKey, h.operatorConfig.ClusterKeyData)
-
-	fmt.Println("Clusterkey is ", clusterKey)
 
 	if err != nil {
 		fmt.Println("Error while getting cluster key from secrets :", err)
@@ -121,8 +120,6 @@ func (h *OperatorLogin) getOpTokenFromZkCloud() error {
 	requestPayload := OperatorLoginRequest{ClusterKey: clusterKey}
 
 	data, err := json.Marshal(requestPayload)
-
-	fmt.Println("Request payload ", string(data))
 
 	if err != nil {
 		fmt.Println("Error while creating payload for operator login request:", err)
@@ -153,10 +150,7 @@ func (h *OperatorLogin) getOpTokenFromZkCloud() error {
 		return err
 	}
 
-	fmt.Println("Operator response ", string(body))
-
 	var apiResponse OperatorLoginResponse
-
 	err = json.Unmarshal(body, &apiResponse)
 
 	if err != nil {
@@ -177,8 +171,6 @@ func (h *OperatorLogin) getOpTokenFromZkCloud() error {
 	}
 
 	h.operatorToken = apiResponse.Payload.Token
-
-	fmt.Println("Token is ", h.operatorToken)
 	return nil
 }
 

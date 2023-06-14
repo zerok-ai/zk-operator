@@ -102,8 +102,6 @@ func (h *Injector) Inject(body []byte) ([]byte, error) {
 		}
 	}
 
-	fmt.Printf("resp: %s\n", string(responseBody))
-
 	return responseBody, nil
 }
 

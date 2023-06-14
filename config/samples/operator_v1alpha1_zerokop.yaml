@@ -3,4 +3,3 @@ kind: Zerokop
 metadata:
   name: zerokop-sample
 spec:
-  size: 3

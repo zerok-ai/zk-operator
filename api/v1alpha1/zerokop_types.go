@@ -6,8 +6,6 @@ import (
 
 // ZerokopSpec defines the desired state of Zerokop
 type ZerokopSpec struct {
-	//This field is added for testing.
-	Size int32 `json:"size"`
 }
 
 // ZerokopStatus defines the observed state of Zerokop

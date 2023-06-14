@@ -57,7 +57,7 @@ func (h *WebhookHandler) CreateOrUpdateMutatingWebhookConfiguration() error {
 
 	ignore := admissionregistrationv1.Ignore
 	sideEffect := admissionregistrationv1.SideEffectClassNone
-	mutatingWebhookConfig := h.createMutatingWebhook(sideEffect, h.caPem, ignore)
+	mutatingWebhookConfig := h.createMutatingWebhookConfig(sideEffect, h.caPem, ignore)
 
 	existingWebhookConfig, err := mutatingWebhookConfigV1Client.MutatingWebhookConfigurations().Get(context.TODO(), h.webhookConfig.Name, metav1.GetOptions{})
 	if err != nil && apierrors.IsNotFound(err) {
@@ -76,7 +76,7 @@ func (h *WebhookHandler) CreateOrUpdateMutatingWebhookConfiguration() error {
 		fmt.Printf("The error is %v\n", err.Error())
 		return err
 
-	} else if !areWebHooksSame(existingWebhookConfig, mutatingWebhookConfig) {
+	} else if !areWebHookConfigsSame(existingWebhookConfig, mutatingWebhookConfig) {
 
 		//Scenario where we have to update the existing webhook.
 		mutatingWebhookConfig.ObjectMeta.ResourceVersion = existingWebhookConfig.ObjectMeta.ResourceVersion
@@ -96,7 +96,7 @@ func (h *WebhookHandler) CreateOrUpdateMutatingWebhookConfiguration() error {
 	return nil
 }
 
-func (h *WebhookHandler) createMutatingWebhook(sideEffect admissionregistrationv1.SideEffectClass, caPEM *bytes.Buffer, ignore admissionregistrationv1.FailurePolicyType) *admissionregistrationv1.MutatingWebhookConfiguration {
+func (h *WebhookHandler) createMutatingWebhookConfig(sideEffect admissionregistrationv1.SideEffectClass, caPEM *bytes.Buffer, ignore admissionregistrationv1.FailurePolicyType) *admissionregistrationv1.MutatingWebhookConfiguration {
 	mutatingWebhookConfig := &admissionregistrationv1.MutatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: h.webhookConfig.Name,
@@ -137,20 +137,21 @@ func (h *WebhookHandler) createMutatingWebhook(sideEffect admissionregistrationv
 	return mutatingWebhookConfig
 }
 
-func areWebHooksSame(foundWebhookConfig *admissionregistrationv1.MutatingWebhookConfiguration, mutatingWebhookConfig *admissionregistrationv1.MutatingWebhookConfiguration) bool {
+func areWebHookConfigsSame(foundWebhookConfig *admissionregistrationv1.MutatingWebhookConfiguration, mutatingWebhookConfig *admissionregistrationv1.MutatingWebhookConfiguration) bool {
 	if len(foundWebhookConfig.Webhooks) != len(mutatingWebhookConfig.Webhooks) {
 		return false
 	}
-	len := len(foundWebhookConfig.Webhooks)
-	for i := 0; i < len; i++ {
-		equal := foundWebhookConfig.Webhooks[i].Name == mutatingWebhookConfig.Webhooks[i].Name &&
-			reflect.DeepEqual(foundWebhookConfig.Webhooks[i].AdmissionReviewVersions, mutatingWebhookConfig.Webhooks[i].AdmissionReviewVersions) &&
-			reflect.DeepEqual(foundWebhookConfig.Webhooks[i].SideEffects, mutatingWebhookConfig.Webhooks[i].SideEffects) &&
-			reflect.DeepEqual(foundWebhookConfig.Webhooks[i].FailurePolicy, mutatingWebhookConfig.Webhooks[i].FailurePolicy) &&
-			reflect.DeepEqual(foundWebhookConfig.Webhooks[i].Rules, mutatingWebhookConfig.Webhooks[i].Rules) &&
-			reflect.DeepEqual(foundWebhookConfig.Webhooks[i].NamespaceSelector, mutatingWebhookConfig.Webhooks[i].NamespaceSelector) &&
-			reflect.DeepEqual(foundWebhookConfig.Webhooks[i].ClientConfig.CABundle, mutatingWebhookConfig.Webhooks[i].ClientConfig.CABundle) &&
-			reflect.DeepEqual(foundWebhookConfig.Webhooks[i].ClientConfig.Service, mutatingWebhookConfig.Webhooks[i].ClientConfig.Service)
+
+	for i, foundWebhookConfig := range foundWebhookConfig.Webhooks {
+		mutatingWebhookConfig := mutatingWebhookConfig.Webhooks[i]
+		equal := foundWebhookConfig.Name == mutatingWebhookConfig.Name &&
+			reflect.DeepEqual(foundWebhookConfig.AdmissionReviewVersions, mutatingWebhookConfig.AdmissionReviewVersions) &&
+			reflect.DeepEqual(foundWebhookConfig.SideEffects, mutatingWebhookConfig.SideEffects) &&
+			reflect.DeepEqual(foundWebhookConfig.FailurePolicy, mutatingWebhookConfig.FailurePolicy) &&
+			reflect.DeepEqual(foundWebhookConfig.Rules, mutatingWebhookConfig.Rules) &&
+			reflect.DeepEqual(foundWebhookConfig.NamespaceSelector, mutatingWebhookConfig.NamespaceSelector) &&
+			reflect.DeepEqual(foundWebhookConfig.ClientConfig.CABundle, mutatingWebhookConfig.ClientConfig.CABundle) &&
+			reflect.DeepEqual(foundWebhookConfig.ClientConfig.Service, mutatingWebhookConfig.ClientConfig.Service)
 		if !equal {
 			return false
 		}
