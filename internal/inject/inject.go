@@ -54,52 +54,52 @@ func (h *Injector) Inject(body []byte) ([]byte, error) {
 
 	var pod *corev1.Pod
 
-	responseBody := []byte{}
 	admissionRequest := admissionReviewObj.Request
 	admissionResponse := v1.AdmissionResponse{}
 	emptyResponse, _ := h.GetEmptyResponse(admissionReviewObj)
 
-	if admissionRequest != nil {
+	if admissionRequest == nil {
+		return emptyResponse, fmt.Errorf("admission request is nil")
+	}
 
-		if err := json.Unmarshal(admissionRequest.Object.Raw, &pod); err != nil {
-			return nil, fmt.Errorf("unable unmarshal pod json object %v", err)
-		}
+	if err := json.Unmarshal(admissionRequest.Object.Raw, &pod); err != nil {
+		return nil, fmt.Errorf("unable unmarshal pod json object %v", err)
+	}
 
-		fmt.Printf("Got a request for POD = %s\n", pod.Name)
+	fmt.Printf("Got a request for POD = %s\n", pod.Name)
 
-		admissionResponse.UID = admissionRequest.UID
+	admissionResponse.UID = admissionRequest.UID
 
-		dt := time.Now()
-		fmt.Println("Got request with uid ", admissionRequest.UID, " at time ", dt.String())
-		admissionResponse.Allowed = true
+	dt := time.Now()
+	fmt.Println("Got request with uid ", admissionRequest.UID, " at time ", dt.String())
+	admissionResponse.Allowed = true
 
-		patchType := v1.PatchTypeJSONPatch
-		admissionResponse.PatchType = &patchType
+	patchType := v1.PatchTypeJSONPatch
+	admissionResponse.PatchType = &patchType
 
-		//Creating the patches to be applied on the pod.
-		patches := h.getPatches(pod)
+	//Creating the patches to be applied on the pod.
+	patches := h.getPatches(pod)
 
-		var err error
-		//Creating json patch to send in admission response.
-		admissionResponse.Patch, err = json.Marshal(patches)
+	var err error
+	//Creating json patch to send in admission response.
+	admissionResponse.Patch, err = json.Marshal(patches)
 
-		if err != nil {
-			fmt.Printf("Error caught while marshalling the patches %v.\n", err)
-			//Sending empty response to let the pod creation happen without instrumentation.
-			return emptyResponse, err
-		}
+	if err != nil {
+		fmt.Printf("Error caught while marshalling the patches %v.\n", err)
+		//Sending empty response to let the pod creation happen without instrumentation.
+		return emptyResponse, err
+	}
 
-		admissionResponse.Result = &metav1.Status{
-			Status: "Success",
-		}
+	admissionResponse.Result = &metav1.Status{
+		Status: "Success",
+	}
 
-		admissionReviewObj.Response = &admissionResponse
+	admissionReviewObj.Response = &admissionResponse
 
-		responseBody, err = json.Marshal(admissionReviewObj)
-		if err != nil {
-			//Sending empty response to let the pod creation happen without instrumentation.
-			return emptyResponse, err
-		}
+	responseBody, err := json.Marshal(admissionReviewObj)
+	if err != nil {
+		//Sending empty response to let the pod creation happen without instrumentation.
+		return emptyResponse, err
 	}
 
 	return responseBody, nil
