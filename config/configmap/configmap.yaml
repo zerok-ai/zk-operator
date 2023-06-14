@@ -43,4 +43,4 @@ data:
     local: false
 kind: ConfigMap
 metadata:
-  name: operator-configmap
+  name: zk-operator-configmap

@@ -2,8 +2,8 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    name: operator
-  name: service
+    name: zk-operator
+  name: zk-operator-service
 spec:
   type: ClusterIP
   selector:
@@ -19,13 +19,13 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    name: zk-operator-injector
-  name: operator-inject
+    name: zk-operator-inject
+  name: zk-operator-inject
 spec:
   ports:
     - port: 443
       targetPort: 8473
-      name: webhook
+      name: zk-webhook
     - port: 8472
       targetPort: 8472
       name: zkcloud

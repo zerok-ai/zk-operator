@@ -3,13 +3,12 @@ kind: Namespace
 metadata:
   labels:
     control-plane: controller-manager
-  name: client
+  name: zk-client
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: operator
-  namespace: client
+  name: zk-operator
   labels:
     control-plane: controller-manager
 spec:
@@ -36,7 +35,7 @@ spec:
         image: controller:latest
         imagePullPolicy: Always
         volumeMounts:
-          - name: operator-config
+          - name: zk-operator-config
             mountPath: /opt
         env:
         - name: "CONFIG_FILE"
@@ -70,9 +69,9 @@ spec:
           requests:
             cpu: 10m
             memory: 64Mi
-      serviceAccountName: operator
+      serviceAccountName: zk-operator
       terminationGracePeriodSeconds: 10
       volumes:
-        - name: operator-config
+        - name: zk-operator-config
           configMap:
             name: zk-operator-configmap
