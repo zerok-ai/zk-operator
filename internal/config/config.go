@@ -1,13 +1,6 @@
 package config
 
-type RedisConfig struct {
-	Host            string `yaml:"host" env:"REDIS_HOST" env-description:"Database host"`
-	Port            string `yaml:"port" env:"REDIS_PORT" env-description:"Database port"`
-	ReadTimeout     int    `yaml:"readTimeout"`
-	PollingInterval int    `yaml:"pollingInterval"`
-	ImageDB         int    `yaml:"image_db"`
-	VersionDB       int    `yaml:"version_db"`
-}
+import "github.com/zerok-ai/zk-utils-go/storage/redis/config"
 
 type OperatorLoginConfig struct {
 	Host                string `yaml:"host"`
@@ -48,17 +41,19 @@ type InitContainerConfig struct {
 	Tag   string `yaml:"tag"`
 }
 
-type JavaToolOptionsConfig struct {
-	OtelArgument string `yaml:"otelArgument"`
+type InstrumentationConfig struct {
+	OtelArgument    string `yaml:"otelArgument"`
+	PollingInterval int    `yaml:"pollingInterval"`
 }
 
 type ZkOperatorConfig struct {
 	ZkCloud         ZkCloudConfig         `yaml:"zkcloud"`
-	Redis           RedisConfig           `yaml:"redis"`
+	Redis           config.RedisConfig    `yaml:"redis"`
 	Webhook         WebhookConfig         `yaml:"webhook"`
 	Exception       ExceptionConfig       `yaml:"exception"`
 	ScenarioSync    ScenarioSyncConfig    `yaml:"scenario_sync"`
 	OperatorLogin   OperatorLoginConfig   `yaml:"operator_login"`
 	InitContainer   InitContainerConfig   `yaml:"init_container"`
-	JavaToolOptions JavaToolOptionsConfig `yaml:"java_tool_options"`
+	Instrumentation InstrumentationConfig `yaml:"instrumentation"`
+	LogLevel        string                `yaml:"logLevel"`
 }

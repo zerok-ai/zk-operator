@@ -25,7 +25,7 @@ func (zkRedis *ImageStore) GetHashSetVersion() (int64, error) {
 }
 
 func GetNewRedisStore(config config.ZkOperatorConfig) *ImageStore {
-	_redisClient := utils.GetRedisClient(config, config.Redis.ImageDB)
+	_redisClient := utils.GetRedisClient(config, config.Redis.DBs[common.RedisImageDbName])
 
 	imgRedis := &ImageStore{
 		redisClient: _redisClient,

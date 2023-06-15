@@ -10,8 +10,6 @@ const (
 	ZkOrchInProcess    = "in-process"
 
 	JavalToolOptions = "JAVA_TOOL_OPTIONS"
-	OtelArgument     = " -javaagent:/opt/zerok/opentelemetry-javaagent.jar -Dotel.javaagent.extensions=/opt/zerok/zk-otel-extension.jar"
-
 	ZkInjectionKey   = "zk-injection"
 	ZkInjectionValue = "enabled"
 
@@ -30,4 +28,7 @@ const (
 	//Kill switch configuration
 	NamespaceDeleteRetryLimit = 3
 	NamespaceDeleteRetryDelay = 2 * time.Second
+
+	RedisImageDbName   = "image_db"
+	RedisVersionDbName = "version_db"
 )

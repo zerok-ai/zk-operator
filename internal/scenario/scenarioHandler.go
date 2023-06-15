@@ -5,20 +5,31 @@ import (
 	"fmt"
 	"github.com/zerok-ai/zk-operator/internal/auth"
 	"github.com/zerok-ai/zk-operator/internal/common"
-	"github.com/zerok-ai/zk-operator/internal/storage"
+	"github.com/zerok-ai/zk-utils-go/interfaces"
+	"github.com/zerok-ai/zk-utils-go/scenario/model"
 	"io"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/zerok-ai/zk-operator/internal/config"
-	"github.com/zerok-ai/zk-utils-go/rules/model"
+	zkredis "github.com/zerok-ai/zk-utils-go/storage/redis"
 )
+
+type ScenarioString string
+
+func (t ScenarioString) Equals(other interfaces.ZKComparable) bool {
+	otherScenario, ok := other.(ScenarioString)
+	if ok {
+		return otherScenario == t
+	}
+	return false
+}
 
 var authTokenExpiredCode = 401
 
 type ScenarioHandler struct {
-	VersionedStore *storage.VersionedStore
+	VersionedStore *zkredis.VersionedStore[ScenarioString]
 	OpLogin        *auth.OperatorLogin
 	ticker         *time.Ticker
 	config         config.ZkOperatorConfig
@@ -34,7 +45,7 @@ type ScenariosObj struct {
 	Deleted   []string         `json:"deleted,omitempty"`
 }
 
-func (h *ScenarioHandler) Init(VersionedStore *storage.VersionedStore, OpLogin *auth.OperatorLogin, cfg config.ZkOperatorConfig) {
+func (h *ScenarioHandler) Init(VersionedStore *zkredis.VersionedStore[ScenarioString], OpLogin *auth.OperatorLogin, cfg config.ZkOperatorConfig) {
 	h.VersionedStore = VersionedStore
 	h.OpLogin = OpLogin
 	h.config = cfg
@@ -175,7 +186,7 @@ func (h *ScenarioHandler) processScenarios(rulesApiResponse *ScenariosApiRespons
 			return "", err
 		}
 		scenarioId := scenario.ScenarioId
-		err = h.VersionedStore.SetValue(scenarioId, string(scenarioString))
+		err = h.VersionedStore.SetValue(scenarioId, ScenarioString(scenarioString))
 		if err != nil {
 			fmt.Printf("Error while setting filter rule to redis %v.\n", err)
 			return "", err

@@ -5,9 +5,9 @@ data:
       host: redis.zk-client.svc.cluster.local
       port: 6379
       readTimeout: 20
-      pollingInterval: 30 #seconds
-      image_db: 7
-      version_db: 6
+      dbs:
+        image_db: 7
+        version_db: 6
     webhook:
       namespace: zk-client
       service: zk-operator-inject
@@ -38,9 +38,10 @@ data:
     init_container:
       image: us-west1-docker.pkg.dev/zerok-dev/stage/init-container
       tag: test
-    java_tool_options:
-      otelArgument: -javaagent:/opt/zerok/opentelemetry-javaagent.jar -Dotel.javaagent.extensions=/opt/zerok/zk-otel-extension.jar -Dotel.traces.exporter=zerok
-    local: false
+    instrumentation:
+      otelArgument: -javaagent:/opt/zerok/opentelemetry-javaagent-1.27.0.jar -Dotel.javaagent.extensions=/opt/zerok/zk-otel-extension-1.0.jar -Dotel.traces.exporter=zerok
+      pollingInterval: 30 #seconds
+    logLevel: DEBUG
 kind: ConfigMap
 metadata:
   name: zk-operator-configmap

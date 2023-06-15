@@ -25,14 +25,15 @@ import (
 	"fmt"
 	"github.com/zerok-ai/zk-operator/internal"
 	"github.com/zerok-ai/zk-operator/internal/auth"
+	"github.com/zerok-ai/zk-operator/internal/common"
 	"github.com/zerok-ai/zk-operator/internal/webhook"
 	"log"
-	"os"
 	"time"
 
-	sync "github.com/zerok-ai/zk-operator/internal/scenario"
+	scenario "github.com/zerok-ai/zk-operator/internal/scenario"
 	server "github.com/zerok-ai/zk-operator/internal/server"
 	"github.com/zerok-ai/zk-operator/internal/storage"
+	zkredis "github.com/zerok-ai/zk-utils-go/storage/redis"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -54,6 +55,8 @@ var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
 )
+
+var LOG_TAG = "Main"
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
@@ -96,7 +99,7 @@ func main() {
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
-		os.Exit(1)
+		panic("unable to start manager")
 	}
 
 	if err = (&controllers.ZerokopReconciler{
@@ -104,23 +107,23 @@ func main() {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Zerokop")
-		os.Exit(1)
+		panic("unable to create controller")
 	}
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
-		os.Exit(1)
+		panic("unable to set up health check")
 	}
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up ready check")
-		os.Exit(1)
+		panic("unable to set up ready check")
 	}
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
-		os.Exit(1)
+		panic("problem running manager")
 	}
 }
 
@@ -156,7 +159,7 @@ func initOperator() {
 
 	irisConfig := iris.WithConfiguration(iris.Configuration{
 		DisablePathCorrection: true,
-		LogLevel:              "debug",
+		LogLevel:              zkConfig.LogLevel,
 	})
 
 	// creating mutating webhook
@@ -173,8 +176,12 @@ func initOperator() {
 	opLogin := auth.CreateOperatorLogin(zkConfig.OperatorLogin)
 
 	//Module for syncing rules
-	scenarioHandler := sync.ScenarioHandler{}
-	versionedStore := storage.GetVersionedStore(zkConfig)
+	scenarioHandler := scenario.ScenarioHandler{}
+	versionedStore, err := zkredis.GetVersionedStore[scenario.ScenarioString](&zkConfig.Redis, common.RedisVersionDbName, true, "")
+	if err != nil {
+		//logger.ZkLogger.Err(LOG_TAG, "Error while creating versionedStore ", err.Error())
+		return
+	}
 	scenarioHandler.Init(versionedStore, opLogin, zkConfig)
 	zkModules = append(zkModules, &scenarioHandler)
 

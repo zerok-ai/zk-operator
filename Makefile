@@ -115,7 +115,6 @@ test: manifests generate fmt vet envtest ## Run tests.
 .PHONY: build
 build: generate manifests fmt vet ## Build manager binary.
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o bin/manager main.go
-	$(MAKE) gke docker-build docker-push
 
 .PHONY: buildAndPush
 buildAndPush: build

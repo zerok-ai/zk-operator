@@ -184,7 +184,7 @@ func (h *Injector) modifyJavaToolsEnvVariablePatch(container *corev1.Container, 
 			"path": fmt.Sprintf("/spec/containers/%v/env/-", containerIndex),
 			"value": corev1.EnvVar{
 				Name:  common.JavalToolOptions,
-				Value: h.Config.JavaToolOptions.OtelArgument,
+				Value: h.Config.Instrumentation.OtelArgument,
 			},
 		}
 
@@ -195,7 +195,7 @@ func (h *Injector) modifyJavaToolsEnvVariablePatch(container *corev1.Container, 
 			"path": fmt.Sprintf("/spec/containers/%v/env/%v", containerIndex, envIndex),
 			"value": corev1.EnvVar{
 				Name:  common.JavalToolOptions,
-				Value: container.Env[envIndex].Value + h.Config.JavaToolOptions.OtelArgument,
+				Value: container.Env[envIndex].Value + h.Config.Instrumentation.OtelArgument,
 			},
 		}
 	}
