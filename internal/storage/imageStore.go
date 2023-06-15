@@ -52,7 +52,7 @@ func (zkRedis *ImageStore) SyncDataFromRedis(currMap *sync.Map) {
 		for i := 0; i < len(data); i += 2 {
 			key := data[i]
 			value := data[i+1]
-			logger.Error(LOG_TAG_STORE, "Key and value are ", key, value)
+			logger.Debug(LOG_TAG_STORE, "Key and value are ", key, value)
 			serializedValue, err := utils.GetContainerRuntime(value)
 			if err != nil {
 				logger.Error(LOG_TAG_STORE, "Error caught while serializing the value from redis ", err, " for key ", key)

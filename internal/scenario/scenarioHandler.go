@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/zerok-ai/zk-operator/internal/auth"
 	"github.com/zerok-ai/zk-operator/internal/common"
-	"github.com/zerok-ai/zk-utils-go/interfaces"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
 	"github.com/zerok-ai/zk-utils-go/scenario/model"
 	"io"
@@ -19,20 +18,10 @@ import (
 
 var LOG_TAG = "ScenarioHandler"
 
-type ScenarioString string
-
-func (t ScenarioString) Equals(other interfaces.ZKComparable) bool {
-	otherScenario, ok := other.(ScenarioString)
-	if ok {
-		return otherScenario == t
-	}
-	return false
-}
-
 var authTokenExpiredCode = 401
 
 type ScenarioHandler struct {
-	VersionedStore *zkredis.VersionedStore[ScenarioString]
+	VersionedStore *zkredis.VersionedStore[model.Scenario]
 	OpLogin        *auth.OperatorLogin
 	ticker         *time.Ticker
 	config         config.ZkOperatorConfig
@@ -48,7 +37,7 @@ type ScenariosObj struct {
 	Deleted   []string         `json:"deleted,omitempty"`
 }
 
-func (h *ScenarioHandler) Init(VersionedStore *zkredis.VersionedStore[ScenarioString], OpLogin *auth.OperatorLogin, cfg config.ZkOperatorConfig) {
+func (h *ScenarioHandler) Init(VersionedStore *zkredis.VersionedStore[model.Scenario], OpLogin *auth.OperatorLogin, cfg config.ZkOperatorConfig) {
 	h.VersionedStore = VersionedStore
 	h.OpLogin = OpLogin
 	h.config = cfg
@@ -180,14 +169,11 @@ func (h *ScenarioHandler) processScenarios(rulesApiResponse *ScenariosApiRespons
 			latestVersion = scenario.Version
 		}
 
-		scenarioString, err := json.Marshal(scenario)
-		logger.Error(LOG_TAG, "Scenario string ", string(scenarioString))
-		if err != nil {
-			logger.Error(LOG_TAG, "Error while converting filter rule to string ", err)
-			return "", err
-		}
+		logger.Debug(LOG_TAG, "Scenario string ", scenario)
+
 		scenarioId := scenario.ScenarioId
-		err = h.VersionedStore.SetValue(scenarioId, ScenarioString(scenarioString))
+
+		err := h.VersionedStore.SetValue(scenarioId, scenario)
 		if err != nil {
 			logger.Error(LOG_TAG, "Error while setting filter rule to redis ", err)
 			return "", err

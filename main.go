@@ -27,6 +27,7 @@ import (
 	"github.com/zerok-ai/zk-operator/internal/auth"
 	"github.com/zerok-ai/zk-operator/internal/common"
 	"github.com/zerok-ai/zk-operator/internal/webhook"
+	"github.com/zerok-ai/zk-utils-go/scenario/model"
 	"time"
 
 	scenario "github.com/zerok-ai/zk-operator/internal/scenario"
@@ -178,7 +179,7 @@ func initOperator() {
 
 	//Module for syncing rules
 	scenarioHandler := scenario.ScenarioHandler{}
-	versionedStore, err := zkredis.GetVersionedStore[scenario.ScenarioString](&zkConfig.Redis, common.RedisVersionDbName, true, "")
+	versionedStore, err := zkredis.GetVersionedStore[model.Scenario](&zkConfig.Redis, common.RedisVersionDbName, true, model.Scenario{})
 	if err != nil {
 		//logger.ZkLogger.Err(LOG_TAG, "Error while creating versionedStore ", err.Error())
 		return
