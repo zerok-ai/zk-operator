@@ -117,6 +117,10 @@ build: generate manifests fmt vet ## Build manager binary.
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o bin/manager main.go
 	$(MAKE) gke docker-build docker-push
 
+.PHONY: buildAndPush
+buildAndPush: build
+	$(MAKE) gke docker-build docker-push
+
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./main.go

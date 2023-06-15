@@ -15,7 +15,7 @@ make install
 2. To create a new build of the operator and push to gke.
 
 ```
-make build
+make buildAndPush
 ```
 
 3. Uninstall operator
