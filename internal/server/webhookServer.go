@@ -2,14 +2,16 @@ package server
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/zerok-ai/zk-operator/internal/inject"
 	"github.com/zerok-ai/zk-operator/internal/storage"
+	logger "github.com/zerok-ai/zk-utils-go/logs"
 	"io"
 
 	"github.com/kataras/iris/v12"
 	"github.com/zerok-ai/zk-operator/internal/config"
 )
+
+var LOG_TAG string = "WebhookServer"
 
 type WebhookRequestHandler struct {
 	injector *inject.Injector
@@ -18,7 +20,7 @@ type WebhookRequestHandler struct {
 func (h *WebhookRequestHandler) ServeHTTP(ctx iris.Context) {
 	body, err := io.ReadAll(ctx.Request().Body)
 
-	fmt.Printf("Got a request from webhook")
+	logger.Info(LOG_TAG, "Got a request from webhook")
 
 	if err != nil {
 		webhookErrorResponse(err, ctx, "Failed to ready body of webhook request.")
@@ -28,7 +30,7 @@ func (h *WebhookRequestHandler) ServeHTTP(ctx iris.Context) {
 	response, err := h.injector.Inject(body)
 
 	if err != nil {
-		fmt.Printf("Error while injecting zk agent %v\n", err)
+		logger.Error(LOG_TAG, "Error while injecting zk agent ", err)
 	}
 
 	// Sending http status as OK, even when injection failed to not disturb the pods in cluster.
@@ -37,7 +39,7 @@ func (h *WebhookRequestHandler) ServeHTTP(ctx iris.Context) {
 }
 
 func webhookErrorResponse(err error, ctx iris.Context, message string) {
-	fmt.Printf("%v with error %v.\n", message, err)
+	logger.Error(LOG_TAG, message, " with error ", err)
 	ctx.StatusCode(iris.StatusInternalServerError)
 }
 

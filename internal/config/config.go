@@ -1,6 +1,7 @@
 package config
 
 import "github.com/zerok-ai/zk-utils-go/storage/redis/config"
+import logsConfig "github.com/zerok-ai/zk-utils-go/logs/config"
 
 type OperatorLoginConfig struct {
 	Host                string `yaml:"host"`
@@ -55,5 +56,5 @@ type ZkOperatorConfig struct {
 	OperatorLogin   OperatorLoginConfig   `yaml:"operator_login"`
 	InitContainer   InitContainerConfig   `yaml:"init_container"`
 	Instrumentation InstrumentationConfig `yaml:"instrumentation"`
-	LogLevel        string                `yaml:"logLevel"`
+	LogsConfig      logsConfig.LogsConfig `yaml:"logs"`
 }

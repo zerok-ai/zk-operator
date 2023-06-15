@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/zerok-ai/zk-operator/internal/utils"
+	logger "github.com/zerok-ai/zk-utils-go/logs"
 	"reflect"
 
 	"github.com/zerok-ai/zk-operator/internal/config"
@@ -12,6 +13,8 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+var LOG_TAG = "WebhookHandler"
 
 type WebhookHandler struct {
 	webhookConfig config.WebhookConfig
@@ -25,7 +28,7 @@ func (h *WebhookHandler) Init(caPEM *bytes.Buffer, config config.WebhookConfig) 
 	err := h.CreateOrUpdateMutatingWebhookConfiguration()
 	if err != nil {
 		msg := fmt.Sprintf("Failed to create or update the mutating webhook configuration: %v. Stopping initialization of the pod.\n", err)
-		fmt.Println(msg)
+		logger.Error(LOG_TAG, msg)
 		return
 	}
 }
@@ -38,7 +41,7 @@ func (h *WebhookHandler) deleteMutatingWebhookConfiguration() error {
 	mutatingWebhookConfigV1Client := clientset.AdmissionregistrationV1()
 	err = mutatingWebhookConfigV1Client.MutatingWebhookConfigurations().Delete(context.TODO(), h.webhookConfig.Name, metav1.DeleteOptions{})
 	if err != nil {
-		fmt.Printf("Error while deleting operator webhook %v.", err)
+		logger.Error(LOG_TAG, "Error while deleting operator webhook ", err)
 		return err
 	}
 	return nil
@@ -53,7 +56,7 @@ func (h *WebhookHandler) CreateOrUpdateMutatingWebhookConfiguration() error {
 
 	mutatingWebhookConfigV1Client := clientset.AdmissionregistrationV1()
 
-	fmt.Printf("Creating or updating the mutatingwebhookconfiguration\n")
+	logger.Info(LOG_TAG, "Creating or updating the mutatingwebhookconfiguration.")
 
 	ignore := admissionregistrationv1.Ignore
 	sideEffect := admissionregistrationv1.SideEffectClassNone
@@ -64,16 +67,16 @@ func (h *WebhookHandler) CreateOrUpdateMutatingWebhookConfiguration() error {
 
 		//Scenario where there is not existing webhook. So we are creating a new webhook.
 		if _, err := mutatingWebhookConfigV1Client.MutatingWebhookConfigurations().Create(context.TODO(), mutatingWebhookConfig, metav1.CreateOptions{}); err != nil {
-			fmt.Printf("Failed to create the mutatingwebhookconfiguration: %s\n", h.webhookConfig.Name)
+			logger.Error(LOG_TAG, "Failed to create the mutatingwebhookconfiguration: ", h.webhookConfig.Name)
 			return err
 		}
-		fmt.Printf("Created mutatingwebhookconfiguration: %s\n", h.webhookConfig.Name)
+		logger.Info(LOG_TAG, "Created mutatingwebhookconfiguration: ", h.webhookConfig.Name)
 
 	} else if err != nil {
 
 		//Scenario where we failed to check if there was any existing webhook.
-		fmt.Printf("Failed to check the mutatingwebhookconfiguration: %s\n", h.webhookConfig.Name)
-		fmt.Printf("The error is %v\n", err.Error())
+		logger.Error(LOG_TAG, "Failed to check the mutatingwebhookconfiguration: ", h.webhookConfig.Name)
+		logger.Error(LOG_TAG, "The error is ", err.Error())
 		return err
 
 	} else if !areWebHookConfigsSame(existingWebhookConfig, mutatingWebhookConfig) {
@@ -81,15 +84,15 @@ func (h *WebhookHandler) CreateOrUpdateMutatingWebhookConfiguration() error {
 		//Scenario where we have to update the existing webhook.
 		mutatingWebhookConfig.ObjectMeta.ResourceVersion = existingWebhookConfig.ObjectMeta.ResourceVersion
 		if _, err := mutatingWebhookConfigV1Client.MutatingWebhookConfigurations().Update(context.TODO(), mutatingWebhookConfig, metav1.UpdateOptions{}); err != nil {
-			fmt.Printf("Failed to update the mutatingwebhookconfiguration: %s", h.webhookConfig.Name)
+			logger.Error(LOG_TAG, "Failed to update the mutatingwebhookconfiguration: ", h.webhookConfig.Name)
 			return err
 		}
-		fmt.Printf("Updated the mutatingwebhookconfiguration: %s\n", h.webhookConfig.Name)
+		logger.Info(LOG_TAG, "Updated the mutatingwebhookconfiguration: ", h.webhookConfig.Name)
 
 	} else {
 
 		//Scenario where there is no need to update the existing webhook.
-		fmt.Printf("The mutatingwebhookconfiguration: %s already exists and has no change\n", h.webhookConfig.Name)
+		logger.Info(LOG_TAG, "The mutatingwebhookconfiguration: %s already exists and has no change ", h.webhookConfig.Name)
 
 	}
 
@@ -160,6 +163,6 @@ func areWebHookConfigsSame(foundWebhookConfig *admissionregistrationv1.MutatingW
 }
 
 func (h *WebhookHandler) CleanUpOnkill() error {
-	fmt.Printf("Kill method in webhook.\n")
+	logger.Info(LOG_TAG, "Kill method in webhook.")
 	return h.deleteMutatingWebhookConfiguration()
 }

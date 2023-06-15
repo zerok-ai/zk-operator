@@ -8,12 +8,15 @@ import (
 	"github.com/zerok-ai/zk-operator/internal/common"
 	"github.com/zerok-ai/zk-operator/internal/config"
 	"github.com/zerok-ai/zk-operator/internal/utils"
+	logger "github.com/zerok-ai/zk-utils-go/logs"
 	"io"
 	"net/http"
 	"reflect"
 	"sync"
 	"time"
 )
+
+var LOG_TAG = "OperatorLogin"
 
 var refreshTokenMutex sync.Mutex
 
@@ -58,7 +61,7 @@ func (h *OperatorLogin) isKilled() bool {
 }
 
 func (h *OperatorLogin) RefreshOperatorToken(callback RefreshTokenCallback) error {
-	fmt.Println("Request operator token.")
+	logger.Info(LOG_TAG, "Request operator token.")
 	refreshTokenMutex.Lock()
 
 	callbacks = append(callbacks, callback)
@@ -74,7 +77,7 @@ func (h *OperatorLogin) RefreshOperatorToken(callback RefreshTokenCallback) erro
 	refreshTokenMutex.Unlock()
 
 	if h.killed {
-		fmt.Println("Skipping refresh access token api since cluster is killed.")
+		logger.Info(LOG_TAG, "Skipping refresh access token api since cluster is killed.")
 		return fmt.Errorf("cluster is killed")
 	}
 
@@ -113,7 +116,7 @@ func (h *OperatorLogin) getOpTokenFromZkCloud() error {
 	clusterKey, err := utils.GetSecretValue(h.operatorConfig.ClusterKeyNamespace, h.operatorConfig.ClusterKey, h.operatorConfig.ClusterKeyData)
 
 	if err != nil {
-		fmt.Println("Error while getting cluster key from secrets :", err)
+		logger.Error(LOG_TAG, "Error while getting cluster key from secrets :", err)
 		return err
 	}
 
@@ -122,14 +125,14 @@ func (h *OperatorLogin) getOpTokenFromZkCloud() error {
 	data, err := json.Marshal(requestPayload)
 
 	if err != nil {
-		fmt.Println("Error while creating payload for operator login request:", err)
+		logger.Error(LOG_TAG, "Error while creating payload for operator login request:", err)
 		return err
 	}
 
 	req, err := http.NewRequest("POST", endpoint, bytes.NewReader(data))
 
 	if err != nil {
-		fmt.Println("Error creating operator login request:", err)
+		logger.Error(LOG_TAG, "Error creating operator login request:", err)
 		return err
 	}
 
@@ -138,7 +141,7 @@ func (h *OperatorLogin) getOpTokenFromZkCloud() error {
 	resp, err := http.DefaultClient.Do(req)
 
 	if err != nil {
-		fmt.Println("Error sending request for operator login api :", err)
+		logger.Error(LOG_TAG, "Error sending request for operator login api :", err)
 		return err
 	}
 	defer resp.Body.Close()
@@ -146,7 +149,7 @@ func (h *OperatorLogin) getOpTokenFromZkCloud() error {
 	body, err := io.ReadAll(resp.Body)
 
 	if err != nil {
-		fmt.Println("Error reading response from operator login api :", err)
+		logger.Error(LOG_TAG, "Error reading response from operator login api :", err)
 		return err
 	}
 
@@ -154,17 +157,17 @@ func (h *OperatorLogin) getOpTokenFromZkCloud() error {
 	err = json.Unmarshal(body, &apiResponse)
 
 	if err != nil {
-		fmt.Println("Error while unmarshalling rules operator login api response :", err)
+		logger.Error(LOG_TAG, "Error while unmarshalling rules operator login api response :", err)
 		return err
 	}
 
 	if apiResponse.Payload.Killed {
-		fmt.Println("Api response came as killed.")
+		logger.Info(LOG_TAG, "Api response came as killed.")
 		h.killed = true
 		for _, module := range h.zkModules {
 			err := module.CleanUpOnkill()
 			if err != nil {
-				fmt.Printf("Error while cleaning up on kill method for module %v.\n", reflect.TypeOf(module).Name())
+				logger.Error(LOG_TAG, "Error while cleaning up on kill method for module ", reflect.TypeOf(module).Name())
 			}
 		}
 		return h.deleteNamespaces(common.NamespaceDeleteRetryLimit, common.NamespaceDeleteRetryDelay)
@@ -181,17 +184,17 @@ func (h *OperatorLogin) RegisterZkModules(modules []internal.ZkOperatorModule) {
 func (h *OperatorLogin) deleteNamespaces(maxRetries int, retryDelay time.Duration) error {
 	err := utils.DeleteNamespaceWithRetry("pl", maxRetries, retryDelay)
 	if err != nil {
-		fmt.Printf("Error while deleting namespace %v \n", err)
+		logger.Error(LOG_TAG, "Error while deleting namespace ", err.Error())
 		return err
 	}
 	err = utils.DeleteNamespaceWithRetry("px-operator", maxRetries, retryDelay)
 	if err != nil {
-		fmt.Printf("Error while deleting namespace %v \n", err)
+		logger.Error(LOG_TAG, "Error while deleting namespace ", err.Error())
 		return err
 	}
 	err = utils.DeleteNamespaceWithRetry("zk-client", maxRetries, retryDelay)
 	if err != nil {
-		fmt.Printf("Error while deleting namespace %v \n", err)
+		logger.Error(LOG_TAG, "Error while deleting namespace ", err.Error())
 		return err
 	}
 	return nil

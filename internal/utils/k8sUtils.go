@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/zerok-ai/zk-operator/internal/common"
+	logger "github.com/zerok-ai/zk-utils-go/logs"
 	"sync"
 	"time"
 
@@ -25,6 +26,8 @@ type patchStringValue struct {
 	Path  string `json:"path"`
 	Value string `json:"value"`
 }
+
+var LOG_TAG = "k8sutils"
 
 func getPodsWithSelector(selector string, namespace string) (*corev1.PodList, error) {
 	clientset, err := GetK8sClient()
@@ -49,7 +52,7 @@ func GetPodsWithLabel(labelKey, labelValue, namespace string) (*corev1.PodList, 
 func GetPodsWithoutLabel(labelKey string, namespace string) (*corev1.PodList, error) {
 	pods, err := getPodsWithSelector("!"+labelKey, namespace)
 	if err != nil {
-		fmt.Printf("Error while getting pods without label %v.\n", err)
+		logger.Error(LOG_TAG, "Error while getting pods without label ", err)
 		return nil, err
 	}
 	return pods, nil
@@ -64,7 +67,7 @@ func RestartDeployment(namespace string, deployment string) error {
 	data := fmt.Sprintf(`{"spec": {"template": {"metadata": {"annotations": {"zk-operator/restartedAt": "%s"}}}}}`, time.Now().Format("20060102150405"))
 	_, err = deploymentsClient.Patch(context.TODO(), deployment, types.StrategicMergePatchType, []byte(data), metav1.PatchOptions{})
 	if err != nil {
-		fmt.Printf("Error caught while restarting deployment %v.\n", err)
+		logger.Error(LOG_TAG, "Error caught while restarting deployment ", err)
 		return err
 	}
 	return nil
@@ -77,12 +80,12 @@ func RestartAllDeploymentsInNamespace(namespace string) error {
 	}
 	deployments, err := k8sClient.AppsV1().Deployments(namespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
-		fmt.Printf("Error getting deployments: %v\n", err)
+		logger.Error(LOG_TAG, "Error getting deployments: ", err)
 		return err
 	}
 
 	for _, deployment := range deployments.Items {
-		fmt.Printf("Restarting Deployment: %s\n", deployment.ObjectMeta.Name)
+		logger.Error(LOG_TAG, "Restarting Deployment: ", deployment.ObjectMeta.Name)
 		RestartDeployment(namespace, deployment.ObjectMeta.Name)
 	}
 	return nil
@@ -91,7 +94,7 @@ func RestartAllDeploymentsInNamespace(namespace string) error {
 func GetAllMarkedNamespaces() (*corev1.NamespaceList, error) {
 	clientset, err := GetK8sClient()
 	if err != nil {
-		fmt.Printf(" Error while getting client.")
+		logger.Error(LOG_TAG, " Error while getting client.")
 		return nil, err
 	}
 
@@ -106,7 +109,7 @@ func GetAllMarkedNamespaces() (*corev1.NamespaceList, error) {
 
 	namespaces, err := clientset.CoreV1().Namespaces().List(context.TODO(), listOptions)
 	if err != nil {
-		fmt.Printf("Error caught while getting list of namespacese %v.\n", err)
+		logger.Error(LOG_TAG, "Error caught while getting list of namespaces ", err)
 		return nil, err
 	}
 
@@ -157,20 +160,20 @@ func CreateOrUpdateConfigMap(namespace, name string, imageMap *sync.Map) error {
 
 	clientSet, err := GetK8sClient()
 	if err != nil {
-		fmt.Printf(" Error while getting k8s client.\n")
+		logger.Error(LOG_TAG, " Error while getting k8s client.")
 		return err
 	}
 
 	configMaps := clientSet.CoreV1().ConfigMaps(namespace)
 
 	data := make(map[string]string)
-	fmt.Println(imageMap)
+	logger.Debug(LOG_TAG, imageMap)
 	jsonString, err := SyncMapToString(imageMap)
 	if err != nil {
-		fmt.Printf("Error while converting scenario.Map to string %v.\n", err)
+		logger.Error(LOG_TAG, "Error while converting scenario.Map to string ", err)
 	}
 
-	fmt.Printf("The json string is %v.\n", jsonString)
+	logger.Debug(LOG_TAG, "The json string is ", jsonString)
 	data[common.ZkConfigMapKey] = jsonString
 
 	configMap, err := configMaps.Get(context.TODO(), name, metav1.GetOptions{})
@@ -198,7 +201,7 @@ func CreateOrUpdateConfigMap(namespace, name string, imageMap *sync.Map) error {
 func GetDataFromConfigMap(namespace, name string) (*sync.Map, error) {
 	clientSet, err := GetK8sClient()
 	if err != nil {
-		fmt.Printf(" Error while getting k8s client.\n")
+		logger.Error(LOG_TAG, " Error while getting k8s client.")
 		return nil, err
 	}
 
@@ -211,7 +214,7 @@ func GetDataFromConfigMap(namespace, name string) (*sync.Map, error) {
 
 	imageMap, err := StringToSyncMap(configMap.Data[common.ZkConfigMapKey])
 	if err != nil {
-		fmt.Printf("Error caught while unmarshalling the data from configmap %v.\n", err)
+		logger.Error(LOG_TAG, "Error caught while unmarshalling the data from configmap ", err)
 		return nil, err
 	}
 
@@ -221,13 +224,13 @@ func GetDataFromConfigMap(namespace, name string) (*sync.Map, error) {
 func GetSecretValue(namespace, secretName, dataKey string) (string, error) {
 	clientSet, err := GetK8sClient()
 	if err != nil {
-		fmt.Printf(" Error while getting k8s client.\n")
+		logger.Error(LOG_TAG, " Error while getting k8s client.")
 		return "", err
 	}
 
 	secret, err := clientSet.CoreV1().Secrets(namespace).Get(context.TODO(), secretName, metav1.GetOptions{})
 	if err != nil {
-		fmt.Printf("Failed to get secret: %v\n", err)
+		logger.Error(LOG_TAG, "Failed to get secret: ", err)
 		return "", err
 	}
 
@@ -243,7 +246,7 @@ func GetSecretValue(namespace, secretName, dataKey string) (string, error) {
 func DeleteNamespaceWithRetry(namespaceName string, maxRetries int, retryDelay time.Duration) error {
 	clientSet, err := GetK8sClient()
 	if err != nil {
-		fmt.Printf(" Error while getting k8s client.\n")
+		logger.Error(LOG_TAG, " Error while getting k8s client.")
 		return err
 	}
 
@@ -253,7 +256,7 @@ func DeleteNamespaceWithRetry(namespaceName string, maxRetries int, retryDelay t
 			return nil
 		}
 
-		fmt.Printf("Failed to delete namespace %s, retrying in %v...\n", namespaceName, retryDelay)
+		logger.Error(LOG_TAG, "Failed to delete namespace ", namespaceName, " retrying in ", retryDelay)
 		time.Sleep(retryDelay)
 	}
 
@@ -264,7 +267,7 @@ func RestartMarkedNamespacesIfNeeded() error {
 	namespaces, err := GetAllMarkedNamespaces()
 
 	if err != nil || namespaces == nil {
-		fmt.Printf("In restart marked namespaces, error caught while getting all marked namespaces %v.\n", err)
+		logger.Error(LOG_TAG, "In restart marked namespaces, error caught while getting all marked namespaces ", err)
 		return err
 	}
 
@@ -272,7 +275,7 @@ func RestartMarkedNamespacesIfNeeded() error {
 
 		pods, err := GetNotOrchestratedPods(namespace.ObjectMeta.Name)
 		if err != nil {
-			fmt.Printf("Error caught while getting all non orchestrated pods %v.\n", err)
+			logger.Error(LOG_TAG, "Error caught while getting all non orchestrated pods ", err)
 			return err
 		}
 
@@ -284,7 +287,7 @@ func RestartMarkedNamespacesIfNeeded() error {
 		for deploymentName := range deployments {
 			err = RestartDeployment(namespace.ObjectMeta.Name, deploymentName)
 			if err != nil {
-				fmt.Printf("Error caught while restaring deployment name %v with error %v.\n", deploymentName, err)
+				logger.Error(LOG_TAG, "Error caught while restaring deployment name ", deploymentName, " with error ", err)
 				return err
 			}
 		}
@@ -297,7 +300,7 @@ func getDeploymentsForPods(pods []corev1.Pod) (map[string]bool, error) {
 	for _, pod := range pods {
 		deploymentName, err := getDeploymentForAPod(&pod)
 		if err != nil {
-			fmt.Printf("Error caught while getting all deployment for pod %v with error %v.\n", deploymentName, err)
+			logger.Error(LOG_TAG, "Error caught while getting all deployment for pod ", pod.Name, " with error ", err)
 			return deployments, err
 		}
 		deployments[deploymentName] = true
@@ -362,10 +365,10 @@ func LabelPod(pod *corev1.Pod, path string, value string) error {
 	_, updateErr := k8sClient.CoreV1().Pods(pod.GetNamespace()).Patch(context.Background(), pod.GetName(), types.JSONPatchType, payloadBytes, metav1.PatchOptions{})
 	if updateErr == nil {
 		logMessage := fmt.Sprintf("Pod %s labeled successfully for Path %s and Value %s.", pod.GetName(), path, value)
-		fmt.Println(logMessage)
+		logger.Debug(LOG_TAG, logMessage)
 		return updateErr
 	} else {
-		fmt.Println(updateErr)
+		logger.Error(LOG_TAG, updateErr)
 	}
 	return nil
 }
@@ -388,12 +391,12 @@ func GetAllNonOrchestratedPods() ([]corev1.Pod, error) {
 	namespaces, err := GetAllMarkedNamespaces()
 
 	if err != nil {
-		fmt.Printf("Error caught while getting list of namespacese %v.\n", err)
+		logger.Error(LOG_TAG, "Error caught while getting list of namespaces ", err)
 		return nil, err
 	}
 
 	for _, namespace := range namespaces.Items {
-		fmt.Printf("Checking for namespace %v.\n", namespace)
+		logger.Debug(LOG_TAG, "Checking for namespace %v.\n", namespace)
 		pods, err := GetNotOrchestratedPods(namespace.ObjectMeta.Name)
 		if err != nil {
 			err = fmt.Errorf("error getting non orchestrated pods from namespace %v", namespace)

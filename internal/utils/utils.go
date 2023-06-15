@@ -6,11 +6,14 @@ import (
 	"github.com/go-redis/redis"
 	common "github.com/zerok-ai/zk-operator/internal/common"
 	"github.com/zerok-ai/zk-operator/internal/config"
+	logger "github.com/zerok-ai/zk-utils-go/logs"
 	corev1 "k8s.io/api/core/v1"
 	"os"
 	"sync"
 	"time"
 )
+
+var LOG_TAG_UTILS = "utils"
 
 func GetContainerRuntime(data string) (*common.ContainerRuntime, error) {
 	var runtimeDetails common.ContainerRuntime
@@ -29,7 +32,7 @@ func SyncMapToString(m *sync.Map) (string, error) {
 		return true
 	})
 
-	fmt.Println(resultMap)
+	logger.Debug(LOG_TAG_UTILS, resultMap)
 
 	mapBytes, err := json.Marshal(resultMap)
 	if err != nil {
@@ -72,8 +75,8 @@ func GetRedisClient(config config.ZkOperatorConfig, db int) *redis.Client {
 	redisConfig := config.Redis
 	readTimeout := time.Duration(redisConfig.ReadTimeout) * time.Second
 	url := fmt.Sprint(redisConfig.Host, ":", redisConfig.Port)
-	fmt.Printf("Redis endpoint is %v.\n", url)
-	fmt.Println("Db is ", db)
+	logger.Debug(LOG_TAG_UTILS, "Redis endpoint is ", url)
+	logger.Debug(LOG_TAG_UTILS, "Db is ", db)
 	_redisClient := redis.NewClient(&redis.Options{
 		Addr:        url,
 		Password:    "",

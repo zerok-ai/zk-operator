@@ -27,12 +27,12 @@ import (
 	"github.com/zerok-ai/zk-operator/internal/auth"
 	"github.com/zerok-ai/zk-operator/internal/common"
 	"github.com/zerok-ai/zk-operator/internal/webhook"
-	"log"
 	"time"
 
 	scenario "github.com/zerok-ai/zk-operator/internal/scenario"
 	server "github.com/zerok-ai/zk-operator/internal/server"
 	"github.com/zerok-ai/zk-operator/internal/storage"
+	zklogger "github.com/zerok-ai/zk-utils-go/logs"
 	zkredis "github.com/zerok-ai/zk-utils-go/storage/redis"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -128,7 +128,6 @@ func main() {
 }
 
 // TODO:
-// Add zklogger in the project.
 // Unit testing.
 func initOperator() {
 
@@ -141,9 +140,11 @@ func initOperator() {
 	var zkConfig config.ZkOperatorConfig
 
 	if err := cleanenv.ReadConfig(configPath, &zkConfig); err != nil {
-		log.Println(err)
+		fmt.Println("Error while reading config ", err)
 		return
 	}
+
+	zklogger.Init(zkConfig.LogsConfig)
 
 	zkModules := make([]internal.ZkOperatorModule, 0)
 
@@ -151,7 +152,7 @@ func initOperator() {
 	caPEM, cert, key, err := webhook.InitializeKeysAndCertificates(zkConfig.Webhook)
 	if err != nil {
 		msg := fmt.Sprintf("Failed to create keys and certificates for webhook %v. Stopping initialization of the pod.\n", err)
-		fmt.Println(msg)
+		zklogger.Error(LOG_TAG, msg)
 		return
 	}
 
@@ -159,7 +160,7 @@ func initOperator() {
 
 	irisConfig := iris.WithConfiguration(iris.Configuration{
 		DisablePathCorrection: true,
-		LogLevel:              zkConfig.LogLevel,
+		LogLevel:              zkConfig.LogsConfig.Level,
 	})
 
 	// creating mutating webhook

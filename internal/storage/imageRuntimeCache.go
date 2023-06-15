@@ -4,6 +4,7 @@ import (
 	"fmt"
 	common "github.com/zerok-ai/zk-operator/internal/common"
 	utils "github.com/zerok-ai/zk-operator/internal/utils"
+	logger "github.com/zerok-ai/zk-utils-go/logs"
 	zktick "github.com/zerok-ai/zk-utils-go/ticker"
 	"sync"
 	"time"
@@ -11,6 +12,8 @@ import (
 	"github.com/zerok-ai/zk-operator/internal/config"
 	corev1 "k8s.io/api/core/v1"
 )
+
+var LOG_TAG = "ImageRuntimeCache"
 
 type ImageRuntimeCache struct {
 	ImageRuntimeMap   *sync.Map
@@ -23,36 +26,36 @@ func (h *ImageRuntimeCache) StartPeriodicSync() {
 	//Sync first time on pod start
 	err := h.SyncDataFromRedis()
 	if err != nil {
-		fmt.Printf("Error while syncing data from redis %v.\n", err)
+		logger.Error(LOG_TAG, "Error while syncing data from redis ", err)
 	}
 	h.ticker.Start()
 }
 
 func (h *ImageRuntimeCache) periodicSync() {
-	fmt.Println("Sync triggered.")
+	logger.Debug(LOG_TAG, "Sync triggered.")
 	err := h.SyncDataFromRedis()
 	if err != nil {
-		fmt.Printf("Error while syncing data from redis %v.\n", err)
+		logger.Error(LOG_TAG, "Error while syncing data from redis ", err)
 	}
 	err = utils.RestartMarkedNamespacesIfNeeded()
 	if err != nil {
-		fmt.Printf("Error while restarting marked namespaces if needed %v.\n", err)
+		logger.Error(LOG_TAG, "Error while restarting marked namespaces if needed ", err)
 	}
 }
 
 func (h *ImageRuntimeCache) SyncDataFromRedis() error {
 	versionFromRedis, err := h.ImageStore.GetHashSetVersion()
 	if err != nil {
-		fmt.Printf("Error caught while getting hash set version from redis %v.\n", err)
+		logger.Error(LOG_TAG, "Error caught while getting hash set version from redis ", err)
 		return err
 	}
 	if h.RuntimeMapVersion == -1 || h.RuntimeMapVersion != versionFromRedis {
 		h.RuntimeMapVersion = versionFromRedis
 		h.ImageStore.SyncDataFromRedis(h.ImageRuntimeMap)
-		fmt.Println("Updating config map.")
+		logger.Debug(LOG_TAG, "Updating config map.")
 		err := utils.CreateOrUpdateConfigMap(utils.GetCurrentNamespace(), common.ZkConfigMapName, h.ImageRuntimeMap)
 		if err != nil {
-			fmt.Printf("Error while create/update confimap %v.\n", err)
+			logger.Error(LOG_TAG, "Error while create/update confimap ", err)
 			return err
 		}
 	}
@@ -65,10 +68,10 @@ func (h *ImageRuntimeCache) Init(config config.ZkOperatorConfig) {
 	h.RuntimeMapVersion = -1
 	var err error
 	h.ImageRuntimeMap, err = utils.GetDataFromConfigMap(utils.GetCurrentNamespace(), common.ZkConfigMapName)
-	fmt.Printf("ImageMap from configMap is %v.\n", h.ImageRuntimeMap)
+	logger.Debug(LOG_TAG, "ImageMap from configMap is ", h.ImageRuntimeMap)
 	if err != nil {
 		h.ImageRuntimeMap = &sync.Map{}
-		fmt.Printf("Error while reading image map from config Map %v.\n", err)
+		logger.Error(LOG_TAG, "Error while reading image map from config Map ", err)
 	}
 	var duration = time.Duration(config.Instrumentation.PollingInterval) * time.Second
 	h.ticker = zktick.GetNewTickerTask("images_sync", duration, h.periodicSync)
@@ -89,7 +92,7 @@ func (h *ImageRuntimeCache) getRuntimeForImage(imageID string) *common.Container
 
 func (h *ImageRuntimeCache) GetContainerLanguage(container *corev1.Container, pod *corev1.Pod) common.ProgrammingLanguage {
 	imageId := container.Image
-	fmt.Printf("Image is %v.\n", imageId)
+	logger.Debug(LOG_TAG, "Image is ", imageId)
 	runtime := h.getRuntimeForImage(imageId)
 	if runtime == nil {
 		return common.NotYetProcessed
@@ -97,7 +100,7 @@ func (h *ImageRuntimeCache) GetContainerLanguage(container *corev1.Container, po
 	languages := runtime.Languages
 	if len(languages) > 0 {
 		language := languages[0]
-		fmt.Println("found language ", language)
+		logger.Debug(LOG_TAG, "found language ", language)
 		if language == fmt.Sprintf("%v", common.JavaProgrammingLanguage) {
 			return common.JavaProgrammingLanguage
 		}
@@ -106,7 +109,7 @@ func (h *ImageRuntimeCache) GetContainerLanguage(container *corev1.Container, po
 }
 
 func (h *ImageRuntimeCache) CleanUpOnkill() error {
-	fmt.Printf("Kill method in update orchestration.\n")
+	logger.Debug(LOG_TAG, "Kill method in update orchestration.\n")
 	h.ticker.Stop()
 	return nil
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/zerok-ai/zk-operator/internal/config"
 	"github.com/zerok-ai/zk-operator/internal/storage"
 	"github.com/zerok-ai/zk-operator/internal/utils"
+	logger "github.com/zerok-ai/zk-utils-go/logs"
 	"strconv"
 	"time"
 
@@ -14,6 +15,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+var LOG_TAG = "inject"
 
 // Injector is a struct that implements an admission controller webhook for Kubernetes pods.
 type Injector struct {
@@ -66,12 +69,12 @@ func (h *Injector) Inject(body []byte) ([]byte, error) {
 		return nil, fmt.Errorf("unable unmarshal pod json object %v", err)
 	}
 
-	fmt.Printf("Got a request for POD = %s\n", pod.Name)
+	logger.Debug(LOG_TAG, "Got a request for POD ", pod.Name)
 
 	admissionResponse.UID = admissionRequest.UID
 
 	dt := time.Now()
-	fmt.Println("Got request with uid ", admissionRequest.UID, " at time ", dt.String())
+	logger.Debug(LOG_TAG, "Got request with uid ", admissionRequest.UID, " at time ", dt.String())
 	admissionResponse.Allowed = true
 
 	patchType := v1.PatchTypeJSONPatch
@@ -85,7 +88,7 @@ func (h *Injector) Inject(body []byte) ([]byte, error) {
 	admissionResponse.Patch, err = json.Marshal(patches)
 
 	if err != nil {
-		fmt.Printf("Error caught while marshalling the patches %v.\n", err)
+		logger.Debug(LOG_TAG, "Error caught while marshalling the patches ", err)
 		//Sending empty response to let the pod creation happen without instrumentation.
 		return emptyResponse, err
 	}
@@ -114,7 +117,7 @@ func (h *Injector) getPatches(pod *corev1.Pod) []map[string]interface{} {
 	patches = append(patches, h.getVolumePatch())
 	patches = append(patches, h.getContainerPatches(pod)...)
 
-	fmt.Printf("The patches created are %v.\n", patches)
+	logger.Debug(LOG_TAG, "The patches created are ", patches)
 
 	return patches
 }
@@ -132,7 +135,7 @@ func (h *Injector) getContainerPatches(pod *corev1.Pod) []map[string]interface{}
 
 		language := h.ImageRuntimeHandler.GetContainerLanguage(container, pod)
 
-		fmt.Printf("Found language %v for container %v\n", language, container.Name)
+		logger.Debug(LOG_TAG, "Found language ", language, " for container ", container.Name)
 
 		switch language {
 		case common.JavaProgrammingLanguage:
