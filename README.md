@@ -6,20 +6,20 @@ It needs Redis to be up and running as it uses Redis to read language data for i
 
 
 ### Running on the cluster
-1. Install the operator on a running cluster with out rebuild.
+1. Install the operator on a running cluster without rebuild.
 
 ```
-./scripts/install.sh
+make install
 ```
 
 2. To create a new build of the operator and push to gke.
 
 ```
-./scripts/build.sh
+make build
 ```
 
 3. Uninstall operator
 
 ```
-./scripts/uninstall.sh
+make uninstall
 ```
