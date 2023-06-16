@@ -32,7 +32,7 @@ func (h *ImageRuntimeCache) StartPeriodicSync() {
 }
 
 func (h *ImageRuntimeCache) periodicSync() {
-	logger.Debug(LOG_TAG, "Sync triggered.")
+	logger.Debug(LOG_TAG, "Image runtime sync triggered.")
 	err := h.SyncDataFromRedis()
 	if err != nil {
 		logger.Error(LOG_TAG, "Error while syncing data from redis ", err)

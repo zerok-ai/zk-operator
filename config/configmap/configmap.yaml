@@ -34,7 +34,7 @@ data:
       maxRetries: 3
     init_container:
       image: us-west1-docker.pkg.dev/zerok-dev/stage/init-container
-      tag: test
+      tag: dev
     instrumentation:
       otelArgument: -javaagent:/opt/zerok/opentelemetry-javaagent-1.27.0.jar -Dotel.javaagent.extensions=/opt/zerok/zk-otel-extension-1.0.jar -Dotel.traces.exporter=zerok
       pollingInterval: 30 #seconds

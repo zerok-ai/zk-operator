@@ -1,7 +1,7 @@
 NAME = init-container
 IMAGE_PREFIX = us-west1-docker.pkg.dev/zerok-dev/stage
 IMAGE_NAME = init-container
-IMAGE_VERSION = temp
+IMAGE_VERSION = dev
 
 export GO111MODULE=on
 

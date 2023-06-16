@@ -7,6 +7,7 @@ import (
 	"github.com/zerok-ai/zk-operator/internal/common"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
 	"github.com/zerok-ai/zk-utils-go/scenario/model"
+	zktick "github.com/zerok-ai/zk-utils-go/ticker"
 	"io"
 	"net/http"
 	"strconv"
@@ -23,7 +24,7 @@ var authTokenExpiredCode = 401
 type ScenarioHandler struct {
 	VersionedStore *zkredis.VersionedStore[model.Scenario]
 	OpLogin        *auth.OperatorLogin
-	ticker         *time.Ticker
+	ticker         *zktick.TickerTask
 	config         config.ZkOperatorConfig
 	rulesVersion   string
 }
@@ -45,16 +46,17 @@ func (h *ScenarioHandler) Init(VersionedStore *zkredis.VersionedStore[model.Scen
 
 	//Creating a timer for periodic scenario
 	var duration = time.Duration(cfg.ScenarioSync.PollingInterval) * time.Second
-	h.ticker = time.NewTicker(duration)
+	h.ticker = zktick.GetNewTickerTask("scenario_sync", duration, h.periodicSync)
 }
 
 func (h *ScenarioHandler) StartPeriodicSync() {
 	h.updateScenarios(h.config, true)
+	h.ticker.Start()
+}
 
-	for range h.ticker.C {
-		logger.Debug(LOG_TAG, "Sync scenarios triggered.")
-		h.updateScenarios(h.config, true)
-	}
+func (h *ScenarioHandler) periodicSync() {
+	logger.Debug(LOG_TAG, "Sync scenarios triggered.")
+	h.updateScenarios(h.config, true)
 }
 
 func (h *ScenarioHandler) updateScenarios(cfg config.ZkOperatorConfig, refreshAuthToken bool) {
