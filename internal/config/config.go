@@ -27,11 +27,11 @@ type WebhookConfig struct {
 	Port      string `yaml:"port"`
 }
 
-type ExceptionConfig struct {
-	Path string `yaml:"path"`
-	Port string `yaml:"port"`
+type HttpServerConfig struct {
+	Port               string `yaml:"port"`
+	ExceptionPath      string `yaml:"exceptionPath"`
+	ClusterContextPath string `yaml:"clusterContextPath"`
 }
-
 type ZkCloudConfig struct {
 	RestartPath string `yaml:"restartPath"`
 	Port        string `yaml:"port"`
@@ -51,10 +51,10 @@ type ZkOperatorConfig struct {
 	ZkCloud         ZkCloudConfig         `yaml:"zkcloud"`
 	Redis           config.RedisConfig    `yaml:"redis"`
 	Webhook         WebhookConfig         `yaml:"webhook"`
-	Exception       ExceptionConfig       `yaml:"exception"`
-	ScenarioSync    ScenarioSyncConfig    `yaml:"scenario_sync"`
-	OperatorLogin   OperatorLoginConfig   `yaml:"operator_login"`
-	InitContainer   InitContainerConfig   `yaml:"init_container"`
+	Http            HttpServerConfig      `yaml:"http"`
+	ScenarioSync    ScenarioSyncConfig    `yaml:"scenarioSync"`
+	OperatorLogin   OperatorLoginConfig   `yaml:"operatorLogin"`
+	InitContainer   InitContainerConfig   `yaml:"initContainer"`
 	Instrumentation InstrumentationConfig `yaml:"instrumentation"`
 	LogsConfig      logsConfig.LogsConfig `yaml:"logs"`
 }

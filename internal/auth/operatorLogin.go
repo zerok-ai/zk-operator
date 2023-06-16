@@ -26,6 +26,7 @@ var callbacks []RefreshTokenCallback
 
 type OperatorLogin struct {
 	operatorToken    string
+	clusterId        string
 	operatorConfig   config.OperatorLoginConfig
 	killed           bool
 	refreshingToken  bool
@@ -38,8 +39,9 @@ type OperatorLoginResponse struct {
 }
 
 type OperatorTokenObj struct {
-	Token  string `json:"operatorAuthToken"`
-	Killed bool   `json:"killed"`
+	Token     string `json:"operatorAuthToken"`
+	ClusterId string `json:"clusterId"`
+	Killed    bool   `json:"killed"`
 }
 
 type OperatorLoginRequest struct {
@@ -47,13 +49,25 @@ type OperatorLoginRequest struct {
 }
 
 func CreateOperatorLogin(config config.OperatorLoginConfig) *OperatorLogin {
-	opLogin := OperatorLogin{operatorConfig: config, killed: false, operatorToken: "", zkModules: []internal.ZkOperatorModule{}}
+	opLogin := OperatorLogin{}
+
+	//Assigning initial values.
+	opLogin.operatorConfig = config
+	opLogin.killed = false
+	opLogin.operatorToken = ""
+	opLogin.zkModules = []internal.ZkOperatorModule{}
+	opLogin.clusterId = ""
 	callbacks = []RefreshTokenCallback{}
+
 	return &opLogin
 }
 
 func (h *OperatorLogin) GetOperatorToken() string {
 	return h.operatorToken
+}
+
+func (h *OperatorLogin) GetClusterId() string {
+	return h.clusterId
 }
 
 func (h *OperatorLogin) isKilled() bool {
@@ -174,6 +188,7 @@ func (h *OperatorLogin) getOpTokenFromZkCloud() error {
 	}
 
 	h.operatorToken = apiResponse.Payload.Token
+	h.clusterId = apiResponse.Payload.ClusterId
 	return nil
 }
 

@@ -14,25 +14,26 @@ data:
       name: zk-webhook
       path: /zk-injector
       port: 8473
-    exception:
+    http:
       port: 8127
-      path: /exception
+      exceptionPath: /exception
+      clusterContextPath: /i/clusterContext
     zkcloud:
       restartPath: /restart
       port: 8472
-    scenario_sync:
+    scenarioSync:
       host: api.avinpx07.getanton.com
-      path: /v1/o/cluster/scenario
+      path: /v1/o/cluster/handler
       pollingInterval: 300
       db: 6
-    operator_login:
+    operatorLogin:
       host: api.avinpx07.getanton.com
       path: /v1/o/auth/login
       clusterKeySecret: cluster-key
       clusterKeyData: clusterKey
       clusterKeyNamespace: zk-client
       maxRetries: 3
-    init_container:
+    initContainer:
       image: us-west1-docker.pkg.dev/zerok-dev/stage/init-container
       tag: dev
     instrumentation:

@@ -30,7 +30,7 @@ import (
 	"github.com/zerok-ai/zk-utils-go/scenario/model"
 	"time"
 
-	scenario "github.com/zerok-ai/zk-operator/internal/scenario"
+	handler "github.com/zerok-ai/zk-operator/internal/handler"
 	server "github.com/zerok-ai/zk-operator/internal/server"
 	"github.com/zerok-ai/zk-operator/internal/storage"
 	zklogger "github.com/zerok-ai/zk-utils-go/logs"
@@ -178,7 +178,7 @@ func initOperator() {
 	opLogin := auth.CreateOperatorLogin(zkConfig.OperatorLogin)
 
 	//Module for syncing rules
-	scenarioHandler := scenario.ScenarioHandler{}
+	scenarioHandler := handler.ScenarioHandler{}
 	versionedStore, err := zkredis.GetVersionedStore[model.Scenario](&zkConfig.Redis, common.RedisVersionDbName, true, model.Scenario{})
 	if err != nil {
 		//logger.ZkLogger.Err(LOG_TAG, "Error while creating versionedStore ", err.Error())
@@ -198,8 +198,10 @@ func initOperator() {
 	// start webhook server
 	go server.StartWebHookServer(app, zkConfig, cert, key, imageRuntimeCache, irisConfig)
 
-	// start exception server
-	go server.StartExceptionServer(app, irisConfig, zkConfig.Exception)
+	handler.SetOpLogin(opLogin)
+
+	// start http server
+	go server.StartHttpServer(app, irisConfig, zkConfig.Http)
 
 }
 
