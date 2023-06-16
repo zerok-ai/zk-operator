@@ -187,6 +187,9 @@ func initOperator() {
 	scenarioHandler.Init(versionedStore, opLogin, zkConfig)
 	zkModules = append(zkModules, &scenarioHandler)
 
+	clusterConfigHandler := handler.ClusterConfigHandler{OpLogin: opLogin}
+	zkModules = append(zkModules, &clusterConfigHandler)
+
 	opLogin.RegisterZkModules(zkModules)
 
 	//Starting syncing of image,runtime data from redis
@@ -198,10 +201,8 @@ func initOperator() {
 	// start webhook server
 	go server.StartWebHookServer(app, zkConfig, cert, key, imageRuntimeCache, irisConfig)
 
-	handler.SetOpLogin(opLogin)
-
 	// start http server
-	go server.StartHttpServer(app, irisConfig, zkConfig.Http)
+	go server.StartHttpServer(app, irisConfig, zkConfig.Http, &clusterConfigHandler)
 
 }
 

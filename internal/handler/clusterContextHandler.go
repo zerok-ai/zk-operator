@@ -8,13 +8,16 @@ import (
 
 var LOG_TAG2 = "ClusterContextHandler"
 
-var opLogin *auth.OperatorLogin
-
-func SetOpLogin(opLoginParam *auth.OperatorLogin) {
-	opLogin = opLoginParam
+type ClusterConfigHandler struct {
+	OpLogin *auth.OperatorLogin
 }
 
-func ClusterContextHandler(ctx iris.Context) {
-	clusterId := opLogin.GetClusterId()
+func (h *ClusterConfigHandler) ClusterContextHandler(ctx iris.Context) {
+	clusterId := h.OpLogin.GetClusterId()
 	logger.Debug(LOG_TAG2, clusterId)
+}
+
+func (h *ClusterConfigHandler) CleanUpOnkill() error {
+	logger.Debug(LOG_TAG2, "Nothing to clean here.")
+	return nil
 }
