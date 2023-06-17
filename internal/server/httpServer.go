@@ -17,7 +17,10 @@ func StartHttpServer(app *iris.Application, config iris.Configurator, httpServer
 	clusterContextHandler *handler.ClusterConfigHandler) {
 
 	app.Post(httpServerConfig.ExceptionPath, exceptionHandler)
-	app.Post(httpServerConfig.ClusterContextPath, clusterContextHandler.ClusterContextHandler)
+
+	logger.Debug(LOG_TAG_HTTP, httpServerConfig.ClusterContextPath)
+
+	app.Get(httpServerConfig.ClusterContextPath, clusterContextHandler.ClusterContextHandler)
 
 	err := app.Run(iris.Addr(":"+httpServerConfig.Port), config)
 	if err != nil {

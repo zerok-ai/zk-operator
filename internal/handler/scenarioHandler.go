@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/zerok-ai/zk-operator/internal/auth"
 	"github.com/zerok-ai/zk-operator/internal/common"
+	"github.com/zerok-ai/zk-operator/internal/utils"
+	zkhttp "github.com/zerok-ai/zk-utils-go/http"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
 	"github.com/zerok-ai/zk-utils-go/scenario/model"
 	zktick "github.com/zerok-ai/zk-utils-go/ticker"
@@ -30,7 +32,8 @@ type ScenarioHandler struct {
 }
 
 type ScenariosApiResponse struct {
-	Payload ScenariosObj `json:"payload"`
+	Payload ScenariosObj        `json:"payload"`
+	Error   *zkhttp.ZkHttpError `json:"error,omitempty"`
 }
 
 type ScenariosObj struct {
@@ -77,7 +80,7 @@ func (h *ScenarioHandler) getScenariosFromZkCloud(cfg config.ZkOperatorConfig, r
 
 	logger.Debug(LOG_TAG, "Get rules from zk cloud.")
 
-	baseURL := "http://" + cfg.ScenarioSync.Host + cfg.ScenarioSync.Path
+	baseURL := "http://" + cfg.ZkCloud.Host + ":" + cfg.ZkCloud.Port + cfg.ScenarioSync.Path
 
 	//Adding query params
 	url := fmt.Sprintf("%s?%s=%s", baseURL, "version", h.rulesVersion)
@@ -121,6 +124,12 @@ func (h *ScenarioHandler) getScenariosFromZkCloud(cfg config.ZkOperatorConfig, r
 		}
 	}
 
+	if !utils.RespCodeIsOk(statusCode) {
+		message := "response code is not ok for get scenario api - " + strconv.Itoa(resp.StatusCode)
+		logger.Error(LOG_TAG, message)
+		return nil, fmt.Errorf(message)
+	}
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		logger.Error(LOG_TAG, "Error reading response from rules api :", err)
@@ -136,6 +145,12 @@ func (h *ScenarioHandler) getScenariosFromZkCloud(cfg config.ZkOperatorConfig, r
 	if err != nil {
 		logger.Error(LOG_TAG, "Error while unmarshalling rules api response :", err)
 		return nil, err
+	}
+
+	if apiResponse.Error != nil {
+		message := "found error in get scenario api response " + apiResponse.Error.Message
+		logger.Error(LOG_TAG, message)
+		return nil, fmt.Errorf(message)
 	}
 
 	return &apiResponse, nil

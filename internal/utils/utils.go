@@ -85,3 +85,11 @@ func GetRedisClient(config config.ZkOperatorConfig, db int) *redis.Client {
 	})
 	return _redisClient
 }
+
+func RespCodeIsOk(status int) bool {
+	if status > 199 && status < 300 {
+		return true
+	}
+	return false
+
+}

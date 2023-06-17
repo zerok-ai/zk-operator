@@ -15,19 +15,17 @@ data:
       path: /zk-injector
       port: 8473
     http:
-      port: 8127
+      port: 8472
       exceptionPath: /exception
       clusterContextPath: /i/clusterContext
     zkcloud:
-      restartPath: /restart
-      port: 8472
-    scenarioSync:
       host: api.avinpx07.getanton.com
+      port: 80
+    scenarioSync:
       path: /v1/o/cluster/handler
       pollingInterval: 300
       db: 6
     operatorLogin:
-      host: api.avinpx07.getanton.com
       path: /v1/o/auth/login
       clusterKeySecret: cluster-key
       clusterKeyData: clusterKey

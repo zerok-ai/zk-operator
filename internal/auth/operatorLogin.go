@@ -8,10 +8,12 @@ import (
 	"github.com/zerok-ai/zk-operator/internal/common"
 	"github.com/zerok-ai/zk-operator/internal/config"
 	"github.com/zerok-ai/zk-operator/internal/utils"
+	zkhttp "github.com/zerok-ai/zk-utils-go/http"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
 	"io"
 	"net/http"
 	"reflect"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -27,7 +29,7 @@ var callbacks []RefreshTokenCallback
 type OperatorLogin struct {
 	operatorToken    string
 	clusterId        string
-	operatorConfig   config.OperatorLoginConfig
+	zkConfig         config.ZkOperatorConfig
 	killed           bool
 	refreshingToken  bool
 	zkModules        []internal.ZkOperatorModule
@@ -35,7 +37,8 @@ type OperatorLogin struct {
 }
 
 type OperatorLoginResponse struct {
-	Payload OperatorTokenObj `json:"payload"`
+	Payload OperatorTokenObj    `json:"payload"`
+	Error   *zkhttp.ZkHttpError `json:"error,omitempty"`
 }
 
 type OperatorTokenObj struct {
@@ -48,11 +51,11 @@ type OperatorLoginRequest struct {
 	ClusterKey string `json:"clusterKey"`
 }
 
-func CreateOperatorLogin(config config.OperatorLoginConfig) *OperatorLogin {
+func CreateOperatorLogin(config config.ZkOperatorConfig) *OperatorLogin {
 	opLogin := OperatorLogin{}
 
 	//Assigning initial values.
-	opLogin.operatorConfig = config
+	opLogin.zkConfig = config
 	opLogin.killed = false
 	opLogin.operatorToken = ""
 	opLogin.zkModules = []internal.ZkOperatorModule{}
@@ -95,7 +98,7 @@ func (h *OperatorLogin) RefreshOperatorToken(callback RefreshTokenCallback) erro
 		return fmt.Errorf("cluster is killed")
 	}
 
-	maxRetries := h.operatorConfig.MaxRetries
+	maxRetries := h.zkConfig.OperatorLogin.MaxRetries
 	retryCount := 0
 
 	for retryCount <= maxRetries {
@@ -125,9 +128,9 @@ func (h *OperatorLogin) executeCallbackMethods() {
 }
 
 func (h *OperatorLogin) getOpTokenFromZkCloud() error {
-	endpoint := "http://" + h.operatorConfig.Host + h.operatorConfig.Path
+	endpoint := "http://" + h.zkConfig.ZkCloud.Host + ":" + h.zkConfig.ZkCloud.Port + h.zkConfig.OperatorLogin.Path
 
-	clusterKey, err := utils.GetSecretValue(h.operatorConfig.ClusterKeyNamespace, h.operatorConfig.ClusterKey, h.operatorConfig.ClusterKeyData)
+	clusterKey, err := utils.GetSecretValue(h.zkConfig.OperatorLogin.ClusterKeyNamespace, h.zkConfig.OperatorLogin.ClusterKey, h.zkConfig.OperatorLogin.ClusterKeyData)
 
 	if err != nil {
 		logger.Error(LOG_TAG, "Error while getting cluster key from secrets :", err)
@@ -167,12 +170,24 @@ func (h *OperatorLogin) getOpTokenFromZkCloud() error {
 		return err
 	}
 
+	if !utils.RespCodeIsOk(resp.StatusCode) {
+		message := "response code is not ok for operator login api - " + strconv.Itoa(resp.StatusCode)
+		logger.Error(LOG_TAG, message)
+		return fmt.Errorf(message)
+	}
+
 	var apiResponse OperatorLoginResponse
 	err = json.Unmarshal(body, &apiResponse)
 
 	if err != nil {
 		logger.Error(LOG_TAG, "Error while unmarshalling rules operator login api response :", err)
 		return err
+	}
+
+	if apiResponse.Error != nil {
+		message := "found error in operator login api response " + apiResponse.Error.Message
+		logger.Error(LOG_TAG, message)
+		return fmt.Errorf(message)
 	}
 
 	if apiResponse.Payload.Killed {
@@ -189,6 +204,8 @@ func (h *OperatorLogin) getOpTokenFromZkCloud() error {
 
 	h.operatorToken = apiResponse.Payload.Token
 	h.clusterId = apiResponse.Payload.ClusterId
+
+	logger.Debug(LOG_TAG, "ClusterId is ", h.clusterId)
 	return nil
 }
 

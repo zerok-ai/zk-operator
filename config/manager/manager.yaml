@@ -34,6 +34,8 @@ spec:
         - --leader-elect
         image: controller:latest
         imagePullPolicy: Always
+        ports:
+          - containerPort: 8472
         volumeMounts:
           - name: zk-operator-config
             mountPath: /opt

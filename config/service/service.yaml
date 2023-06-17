@@ -10,8 +10,8 @@ spec:
     app: zk-operator
   ports:
   - name: web
-    port: 8127
-    targetPort: 8127
+    port: 8472
+    targetPort: 8472
 
 ---
 
@@ -26,8 +26,5 @@ spec:
     - port: 443
       targetPort: 8473
       name: zk-webhook
-    - port: 8472
-      targetPort: 8472
-      name: zkcloud
   selector:
     app: zk-operator

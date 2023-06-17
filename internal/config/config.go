@@ -4,7 +4,6 @@ import "github.com/zerok-ai/zk-utils-go/storage/redis/config"
 import logsConfig "github.com/zerok-ai/zk-utils-go/logs/config"
 
 type OperatorLoginConfig struct {
-	Host                string `yaml:"host"`
 	Path                string `yaml:"path"`
 	ClusterKey          string `yaml:"clusterKeySecret"`
 	ClusterKeyData      string `yaml:"clusterKeyData"`
@@ -13,7 +12,6 @@ type OperatorLoginConfig struct {
 }
 
 type ScenarioSyncConfig struct {
-	Host            string `yaml:"host"`
 	Path            string `yaml:"path"`
 	PollingInterval int    `yaml:"pollingInterval"`
 	DB              int    `yaml:"db"`
@@ -33,8 +31,8 @@ type HttpServerConfig struct {
 	ClusterContextPath string `yaml:"clusterContextPath"`
 }
 type ZkCloudConfig struct {
-	RestartPath string `yaml:"restartPath"`
-	Port        string `yaml:"port"`
+	Host string `yaml:"host"`
+	Port string `yaml:"port"`
 }
 
 type InitContainerConfig struct {
