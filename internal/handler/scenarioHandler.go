@@ -82,6 +82,8 @@ func (h *ScenarioHandler) getScenariosFromZkCloud(cfg config.ZkOperatorConfig, r
 
 	baseURL := "http://" + cfg.ZkCloud.Host + ":" + cfg.ZkCloud.Port + cfg.ScenarioSync.Path
 
+	logger.Debug(LOG_TAG, "Url for scenario sync ", baseURL)
+
 	//Adding query params
 	url := fmt.Sprintf("%s?%s=%s", baseURL, "version", h.rulesVersion)
 

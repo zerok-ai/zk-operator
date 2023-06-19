@@ -22,7 +22,7 @@ data:
       host: api.avinpx07.getanton.com
       port: 80
     scenarioSync:
-      path: /v1/o/cluster/handler
+      path: /v1/o/cluster/scenario
       pollingInterval: 300
       db: 6
     operatorLogin:
