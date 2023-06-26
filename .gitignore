@@ -1,4 +1,5 @@
 *.local
+.idea
 bin
 bundle
 vendor
