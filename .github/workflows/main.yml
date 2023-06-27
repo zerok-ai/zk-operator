@@ -1,8 +1,14 @@
 name: build and publish
 on:
   workflow_dispatch:
+     inputs:
+        ENV:
+            description: 'ENV'
+            required: true
+            default: 'poc'  
 env:
   GOOS: ${{ vars.GOOS }}
+  ENV: ${{ github.event.inputs.ENV }}
   GOARCH: ${{ vars.GOARCH }}
   CGO_ENABLED: ${{ vars.CGO_ENABLED }}
   GKE_SA_KEY: ${{ secrets.GKE_SA_KEY }}
