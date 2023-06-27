@@ -1,4 +1,4 @@
-name: CICD
+name: build and publish
 on:
   workflow_dispatch:
 env:
@@ -15,7 +15,6 @@ env:
   
 jobs:
   build:
-    environment: ${{ github.event.inputs.ENV }}
     runs-on: self-hosted
     steps:
       - name: Checkout
