@@ -1,0 +1,11 @@
+name: build and publish
+on:
+  workflow_dispatch:
+  
+jobs:
+  build:
+    environment: ${{ github.event.inputs.ENV }}
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
