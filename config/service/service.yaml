@@ -10,7 +10,7 @@ spec:
     app: zk-operator
   ports:
   - name: web
-    port: 8472
+    port: 80
     targetPort: 8472
 
 ---

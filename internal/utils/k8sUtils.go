@@ -222,6 +222,7 @@ func GetDataFromConfigMap(namespace, name string) (*sync.Map, error) {
 }
 
 func GetSecretValue(namespace, secretName, dataKey string) (string, error) {
+	logger.Debug(LOG_TAG, namespace, secretName, dataKey)
 	clientSet, err := GetK8sClient()
 	if err != nil {
 		logger.Error(LOG_TAG, " Error while getting k8s client.")
@@ -237,6 +238,7 @@ func GetSecretValue(namespace, secretName, dataKey string) (string, error) {
 	value, ok := secret.Data[dataKey]
 
 	if ok {
+		logger.Debug(LOG_TAG, dataKey, value)
 		return string(value), nil
 	}
 

@@ -157,8 +157,6 @@ func initOperator() {
 		return
 	}
 
-	app := newApp()
-
 	irisConfig := iris.WithConfiguration(iris.Configuration{
 		DisablePathCorrection: true,
 		LogLevel:              zkConfig.LogsConfig.Level,
@@ -187,8 +185,8 @@ func initOperator() {
 	scenarioHandler.Init(versionedStore, opLogin, zkConfig)
 	zkModules = append(zkModules, &scenarioHandler)
 
-	clusterConfigHandler := handler.ClusterConfigHandler{OpLogin: opLogin, ZkConfig: &zkConfig}
-	zkModules = append(zkModules, &clusterConfigHandler)
+	clusterContextHandler := handler.ClusterContextHandler{OpLogin: opLogin, ZkConfig: &zkConfig}
+	zkModules = append(zkModules, &clusterContextHandler)
 
 	opLogin.RegisterZkModules(zkModules)
 
@@ -198,11 +196,15 @@ func initOperator() {
 	//Staring syncing scenarios from zk cloud.
 	go scenarioHandler.StartPeriodicSync()
 
+	app := newApp()
+
 	// start webhook server
 	go server.StartWebHookServer(app, zkConfig, cert, key, imageRuntimeCache, irisConfig)
 
+	app1 := newApp()
+
 	// start http server
-	go server.StartHttpServer(app, irisConfig, zkConfig.Http, &clusterConfigHandler)
+	go server.StartHttpServer(app1, irisConfig, zkConfig.Http, &clusterContextHandler)
 
 }
 

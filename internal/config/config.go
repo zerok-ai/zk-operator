@@ -5,8 +5,9 @@ import logsConfig "github.com/zerok-ai/zk-utils-go/logs/config"
 
 type OperatorLoginConfig struct {
 	Path                string `yaml:"path"`
-	ClusterKey          string `yaml:"clusterKeySecret"`
+	ClusterSecretName   string `yaml:"clusterSecretName"`
 	ClusterKeyData      string `yaml:"clusterKeyData"`
+	ApiKeyData          string `yaml:"apiKeyData"`
 	ClusterKeyNamespace string `yaml:"clusterKeyNamespace"`
 	MaxRetries          int    `yaml:"maxRetries"`
 }
