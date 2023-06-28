@@ -27,8 +27,9 @@ data:
       db: 6
     operatorLogin:
       path: /v1/o/auth/login
-      clusterKeySecret: cluster-key
+      clusterSecretName: cluster-info
       clusterKeyData: clusterKey
+      apiKeyData: apiKey
       clusterKeyNamespace: zk-client
       maxRetries: 3
     initContainer:

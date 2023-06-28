@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"github.com/kataras/iris/v12"
 	"github.com/zerok-ai/zk-operator/internal/auth"
 	"github.com/zerok-ai/zk-operator/internal/config"
@@ -12,34 +13,35 @@ import (
 
 var LOG_TAG2 = "ClusterContextHandler"
 
-type ClusterConfigHandler struct {
+type ClusterContextHandler struct {
 	OpLogin  *auth.OperatorLogin
 	ZkConfig *config.ZkOperatorConfig
 }
 
 type ClusterContextResponse struct {
-	ClusterKey string `json:"clusterKey"`
-	CloudAddr  string `json:"cloudAddr"`
-	ClusterId  string `json:"clusterId"`
+	ApiKey    string `json:"apiKey"`
+	CloudAddr string `json:"cloudAddr"`
+	ClusterId string `json:"clusterId"`
 }
 
-func (h *ClusterConfigHandler) ClusterContextHandler(ctx iris.Context) {
+func (h *ClusterContextHandler) Handler(ctx iris.Context) {
 
 	response := ClusterContextResponse{}
 	response.ClusterId = h.OpLogin.GetClusterId()
 	logger.Debug(LOG_TAG, h.ZkConfig.ZkCloud)
-	response.CloudAddr = h.ZkConfig.ZkCloud.Host + ":" + h.ZkConfig.ZkCloud.Port
+	addr := fmt.Sprintf("%v:443", h.ZkConfig.ZkCloud.Host)
+	response.CloudAddr = addr
 
-	clusterKey, err := utils.GetSecretValue(h.ZkConfig.OperatorLogin.ClusterKeyNamespace, h.ZkConfig.OperatorLogin.ClusterKey, h.ZkConfig.OperatorLogin.ClusterKeyData)
+	apiKey, err := utils.GetSecretValue(h.ZkConfig.OperatorLogin.ClusterKeyNamespace, h.ZkConfig.OperatorLogin.ClusterSecretName, h.ZkConfig.OperatorLogin.ApiKeyData)
 
 	var zkError *zkerrors.ZkError
 	if err != nil {
 		logger.Error(LOG_TAG2, " Cluster Context api ", err.Error())
 		zkErrorTemp := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, err.Error())
 		zkError = &zkErrorTemp
-		response.ClusterKey = ""
+		response.ApiKey = ""
 	} else {
-		response.ClusterKey = clusterKey
+		response.ApiKey = apiKey
 	}
 
 	zkHttpResponse := zkhttp.ToZkResponse[ClusterContextResponse](200, response, response, zkError)
@@ -49,7 +51,7 @@ func (h *ClusterConfigHandler) ClusterContextHandler(ctx iris.Context) {
 
 }
 
-func (h *ClusterConfigHandler) CleanUpOnkill() error {
+func (h *ClusterContextHandler) CleanUpOnkill() error {
 	logger.Debug(LOG_TAG2, "Nothing to clean here.")
 	return nil
 }
