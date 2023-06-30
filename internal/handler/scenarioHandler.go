@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/zerok-ai/zk-operator/internal/auth"
 	"github.com/zerok-ai/zk-operator/internal/common"
@@ -21,6 +22,8 @@ import (
 
 var LOG_TAG = "ScenarioHandler"
 
+var RefreshAuthToken = fmt.Errorf("refreshing auth token")
+
 var authTokenExpiredCode = 401
 
 type ScenarioHandler struct {
@@ -38,7 +41,7 @@ type ScenariosApiResponse struct {
 
 type ScenariosObj struct {
 	Scenarios []model.Scenario `json:"scenarios"`
-	Deleted   []string         `json:"deleted,omitempty"`
+	Deleted   []string         `json:"deleted_scenario_id,omitempty"`
 }
 
 func (h *ScenarioHandler) Init(VersionedStore *zkredis.VersionedStore[model.Scenario], OpLogin *auth.OperatorLogin, cfg config.ZkOperatorConfig) {
@@ -63,8 +66,13 @@ func (h *ScenarioHandler) periodicSync() {
 }
 
 func (h *ScenarioHandler) updateScenarios(cfg config.ZkOperatorConfig, refreshAuthToken bool) {
+	logger.Debug(LOG_TAG, "Update scenarios method called.", refreshAuthToken)
 	rules, err := h.getScenariosFromZkCloud(cfg, refreshAuthToken)
 	if err != nil {
+		if errors.Is(err, RefreshAuthToken) {
+			logger.Debug(LOG_TAG, "Ignore this, since we are making another call after refreshing auth token.")
+			return
+		}
 		logger.Error(LOG_TAG, "Error while getting rules from zkcloud ", err)
 		return
 	}
@@ -95,8 +103,12 @@ func (h *ScenarioHandler) getScenariosFromZkCloud(cfg config.ZkOperatorConfig, r
 
 	if h.OpLogin.GetOperatorToken() == "" {
 		if refreshAuthToken {
-			logger.Debug(LOG_TAG, "Operator auth token is expired. Refreshing the auth token.")
-			return nil, h.refreshAuthToken(cfg)
+			logger.Debug(LOG_TAG, "Operator auth token is not present. Getting the auth token.")
+			err := h.refreshAuthToken(cfg)
+			if err != nil {
+				return nil, err
+			}
+			return nil, RefreshAuthToken
 		} else {
 			logger.Debug(LOG_TAG, "Operator auth token is empty. Refresh auth token is false.")
 			return nil, fmt.Errorf("operator token is empty")
@@ -119,7 +131,11 @@ func (h *ScenarioHandler) getScenariosFromZkCloud(cfg config.ZkOperatorConfig, r
 	if statusCode == authTokenExpiredCode {
 		if refreshAuthToken {
 			logger.Error(LOG_TAG, "Operator auth token has expired. Refreshing the auth token.")
-			return nil, h.refreshAuthToken(cfg)
+			err := h.refreshAuthToken(cfg)
+			if err != nil {
+				return nil, err
+			}
+			return nil, RefreshAuthToken
 		} else {
 			logger.Error(LOG_TAG, "Operator auth token has expired. Refresh auth token is false.")
 			return nil, fmt.Errorf("operator auth token has expired")
