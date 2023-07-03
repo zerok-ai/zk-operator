@@ -22,16 +22,16 @@ import (
 
 var LOG_TAG = "ScenarioHandler"
 
-var RefreshAuthToken = fmt.Errorf("refreshing auth token")
+var RefreshAuthTokenError = fmt.Errorf("refreshing auth token")
 
 var authTokenExpiredCode = 401
 
 type ScenarioHandler struct {
-	VersionedStore *zkredis.VersionedStore[model.Scenario]
-	OpLogin        *auth.OperatorLogin
-	ticker         *zktick.TickerTask
-	config         config.ZkOperatorConfig
-	rulesVersion   string
+	VersionedStore   *zkredis.VersionedStore[model.Scenario]
+	OpLogin          *auth.OperatorLogin
+	ticker           *zktick.TickerTask
+	config           config.ZkOperatorConfig
+	latestUpdateTime string
 }
 
 type ScenariosApiResponse struct {
@@ -48,7 +48,7 @@ func (h *ScenarioHandler) Init(VersionedStore *zkredis.VersionedStore[model.Scen
 	h.VersionedStore = VersionedStore
 	h.OpLogin = OpLogin
 	h.config = cfg
-	h.rulesVersion = "0"
+	h.latestUpdateTime = "0"
 
 	//Creating a timer for periodic scenario
 	var duration = time.Duration(cfg.ScenarioSync.PollingInterval) * time.Second
@@ -69,18 +69,18 @@ func (h *ScenarioHandler) updateScenarios(cfg config.ZkOperatorConfig, refreshAu
 	logger.Debug(LOG_TAG, "Update scenarios method called.", refreshAuthToken)
 	rules, err := h.getScenariosFromZkCloud(cfg, refreshAuthToken)
 	if err != nil {
-		if errors.Is(err, RefreshAuthToken) {
+		if errors.Is(err, RefreshAuthTokenError) {
 			logger.Debug(LOG_TAG, "Ignore this, since we are making another call after refreshing auth token.")
 			return
 		}
 		logger.Error(LOG_TAG, "Error while getting rules from zkcloud ", err)
 		return
 	}
-	latestVersion, err := h.processScenarios(rules)
+	latestUpdateTime, err := h.processScenarios(rules)
 	if err != nil {
 		logger.Error(LOG_TAG, "Error while savign rules to redis ", err)
 	} else {
-		h.rulesVersion = latestVersion
+		h.latestUpdateTime = latestUpdateTime
 	}
 }
 
@@ -93,7 +93,7 @@ func (h *ScenarioHandler) getScenariosFromZkCloud(cfg config.ZkOperatorConfig, r
 	logger.Debug(LOG_TAG, "Url for scenario sync ", baseURL)
 
 	//Adding query params
-	url := fmt.Sprintf("%s?%s=%s", baseURL, "version", h.rulesVersion)
+	url := fmt.Sprintf("%s?%s=%s", baseURL, "last_sync_ts", h.latestUpdateTime)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -108,12 +108,11 @@ func (h *ScenarioHandler) getScenariosFromZkCloud(cfg config.ZkOperatorConfig, r
 			if err != nil {
 				return nil, err
 			}
-			return nil, RefreshAuthToken
+			return nil, RefreshAuthTokenError
 		} else {
 			logger.Debug(LOG_TAG, "Operator auth token is empty. Refresh auth token is false.")
 			return nil, fmt.Errorf("operator token is empty")
 		}
-
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -135,7 +134,7 @@ func (h *ScenarioHandler) getScenariosFromZkCloud(cfg config.ZkOperatorConfig, r
 			if err != nil {
 				return nil, err
 			}
-			return nil, RefreshAuthToken
+			return nil, RefreshAuthTokenError
 		} else {
 			logger.Error(LOG_TAG, "Operator auth token has expired. Refresh auth token is false.")
 			return nil, fmt.Errorf("operator auth token has expired")
@@ -191,9 +190,9 @@ func (h *ScenarioHandler) processScenarios(rulesApiResponse *ScenariosApiRespons
 		return "", fmt.Errorf("rules Api response is nil")
 	}
 	payload := rulesApiResponse.Payload
-	latestVersion := "0"
+	latestUpdateTime := "0"
 	for _, scenario := range payload.Scenarios {
-		ver1, err1 := strconv.ParseInt(latestVersion, 10, 64)
+		ver1, err1 := strconv.ParseInt(latestUpdateTime, 10, 64)
 		ver2, err2 := strconv.ParseInt(scenario.Version, 10, 64)
 		if err1 != nil || err2 != nil {
 			logger.Error(LOG_TAG, "Error while converting versions to int64 for scenario ", scenario.ScenarioId)
@@ -201,7 +200,7 @@ func (h *ScenarioHandler) processScenarios(rulesApiResponse *ScenariosApiRespons
 		}
 
 		if ver2 > ver1 {
-			latestVersion = scenario.Version
+			latestUpdateTime = scenario.Version
 		}
 
 		logger.Debug(LOG_TAG, "Scenario string ", scenario)
@@ -222,7 +221,7 @@ func (h *ScenarioHandler) processScenarios(rulesApiResponse *ScenariosApiRespons
 			return "", err
 		}
 	}
-	return latestVersion, nil
+	return latestUpdateTime, nil
 }
 
 func (h *ScenarioHandler) CleanUpOnkill() error {
