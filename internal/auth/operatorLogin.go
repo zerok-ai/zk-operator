@@ -128,7 +128,12 @@ func (h *OperatorLogin) executeCallbackMethods() {
 }
 
 func (h *OperatorLogin) getOpTokenFromZkCloud() error {
-	endpoint := "http://" + h.zkConfig.ZkCloud.Host + ":" + h.zkConfig.ZkCloud.Port + h.zkConfig.OperatorLogin.Path
+	port := h.zkConfig.ZkCloud.Port
+	protocol := "http"
+	if port == "443" {
+		protocol = "https"
+	}
+	endpoint := protocol + "://" + h.zkConfig.ZkCloud.Host + ":" + h.zkConfig.ZkCloud.Port + h.zkConfig.OperatorLogin.Path
 
 	clusterKey, err := utils.GetSecretValue(h.zkConfig.OperatorLogin.ClusterKeyNamespace, h.zkConfig.OperatorLogin.ClusterSecretName, h.zkConfig.OperatorLogin.ClusterKeyData)
 
