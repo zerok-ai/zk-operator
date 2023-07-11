@@ -86,14 +86,20 @@ func (h *ScenarioHandler) updateScenarios(cfg config.ZkOperatorConfig, refreshAu
 
 func (h *ScenarioHandler) getScenariosFromZkCloud(cfg config.ZkOperatorConfig, refreshAuthToken bool) (*ScenariosApiResponse, error) {
 
+	port := cfg.ZkCloud.Port
+	protocol := "http"
+	if port == "443" {
+		protocol = "https"
+	}
+
 	logger.Debug(LOG_TAG, "Get rules from zk cloud.")
 
-	baseURL := "http://" + cfg.ZkCloud.Host + ":" + cfg.ZkCloud.Port + cfg.ScenarioSync.Path
-
-	logger.Debug(LOG_TAG, "Url for scenario sync ", baseURL)
+	baseURL := protocol + "://" + cfg.ZkCloud.Host + ":" + cfg.ZkCloud.Port + cfg.ScenarioSync.Path
 
 	//Adding query params
 	url := fmt.Sprintf("%s?%s=%s", baseURL, "last_sync_ts", h.latestUpdateTime)
+
+	logger.Debug(LOG_TAG, "Url for scenario sync ", url)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
