@@ -195,7 +195,7 @@ func (h *ScenarioHandler) processScenarios(rulesApiResponse *ScenariosApiRespons
 		ver1, err1 := strconv.ParseInt(latestUpdateTime, 10, 64)
 		ver2, err2 := strconv.ParseInt(scenario.Version, 10, 64)
 		if err1 != nil || err2 != nil {
-			logger.Error(LOG_TAG, "Error while converting versions to int64 for scenario ", scenario.ScenarioId)
+			logger.Error(LOG_TAG, "Error while converting versions to int64 for scenario ", scenario.Id)
 			continue
 		}
 
@@ -205,7 +205,7 @@ func (h *ScenarioHandler) processScenarios(rulesApiResponse *ScenariosApiRespons
 
 		logger.Debug(LOG_TAG, "Scenario string ", scenario)
 
-		scenarioId := scenario.ScenarioId
+		scenarioId := scenario.Id
 
 		err := h.VersionedStore.SetValue(scenarioId, scenario)
 		if err != nil {
