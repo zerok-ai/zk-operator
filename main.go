@@ -203,7 +203,7 @@ func initOperator() {
 	app1 := newApp()
 
 	// start http server
-	go server.StartHttpServer(app1, irisConfig, zkConfig.Http, &clusterContextHandler)
+	go server.StartHttpServer(app1, irisConfig, zkConfig, &clusterContextHandler)
 
 }
 
