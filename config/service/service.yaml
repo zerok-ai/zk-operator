@@ -3,7 +3,7 @@ kind: Service
 metadata:
   labels:
     name: zk-operator
-  name: zk-operator-service
+  name: zk-operator
 spec:
   type: ClusterIP
   selector:
