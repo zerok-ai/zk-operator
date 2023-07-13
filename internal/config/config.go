@@ -27,9 +27,8 @@ type WebhookConfig struct {
 }
 
 type HttpServerConfig struct {
-	Port               string `yaml:"port"`
-	ExceptionPath      string `yaml:"exceptionPath"`
-	ClusterContextPath string `yaml:"clusterContextPath"`
+	Port          string `yaml:"port"`
+	ExceptionPath string `yaml:"exceptionPath"`
 }
 type ZkCloudConfig struct {
 	Host string `yaml:"host"`
@@ -46,6 +45,12 @@ type InstrumentationConfig struct {
 	PollingInterval int    `yaml:"pollingInterval"`
 }
 
+type ClusterContextConfig struct {
+	Path      string `yaml:"path"`
+	CloudAddr string `yaml:"cloudAddr"`
+	Port      string `yaml:"port"`
+}
+
 type ZkOperatorConfig struct {
 	ZkCloud         ZkCloudConfig         `yaml:"zkcloud"`
 	Redis           config.RedisConfig    `yaml:"redis"`
@@ -56,4 +61,5 @@ type ZkOperatorConfig struct {
 	InitContainer   InitContainerConfig   `yaml:"initContainer"`
 	Instrumentation InstrumentationConfig `yaml:"instrumentation"`
 	LogsConfig      logsConfig.LogsConfig `yaml:"logs"`
+	ClusterContext  ClusterContextConfig  `yaml:"clusterContext"`
 }

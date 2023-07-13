@@ -15,7 +15,7 @@ const (
 
 	ZkAutoRestartKey = "zk-auto-restart"
 
-	ZkConfigMapName = "zk-image-configmap"
+	ZkConfigMapName = "zk-image"
 	ZkConfigMapKey  = "zk-image-map"
 
 	NamespaceEnvVariable = "POD_NAMESPACE"

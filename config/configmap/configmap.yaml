@@ -2,7 +2,7 @@ apiVersion: v1
 data:
   operator-config.yaml: |+
     redis:
-      host: redis.zk-client.svc.cluster.local
+      host: redis-master.zk-client.svc.cluster.local
       port: 6379
       readTimeout: 20
       dbs:
@@ -17,9 +17,12 @@ data:
     http:
       port: 8472
       exceptionPath: /exception
-      clusterContextPath: /i/clusterContext
+    clusterContext:
+      path: /i/clusterContext
+      cloudAddr: px.loadcloud01.getanton.com
+      port: 443
     zkcloud:
-      host: api.avinpx07.getanton.com
+      host: api.loadcloud01.getanton.com
       port: 80
     scenarioSync:
       path: /v1/o/cluster/scenario
@@ -43,4 +46,4 @@ data:
       level: DEBUG
 kind: ConfigMap
 metadata:
-  name: zk-operator-configmap
+  name: zk-operator

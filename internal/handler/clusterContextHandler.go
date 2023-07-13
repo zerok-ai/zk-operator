@@ -29,7 +29,7 @@ func (h *ClusterContextHandler) Handler(ctx iris.Context) {
 	response := ClusterContextResponse{}
 	response.ClusterId = h.OpLogin.GetClusterId()
 	logger.Debug(LOG_TAG, h.ZkConfig.ZkCloud)
-	addr := fmt.Sprintf("%v:443", h.ZkConfig.ZkCloud.Host)
+	addr := fmt.Sprintf("%v:%v", h.ZkConfig.ClusterContext.CloudAddr, h.ZkConfig.ClusterContext.Port)
 	response.CloudAddr = addr
 
 	apiKey, err := utils.GetSecretValue(h.ZkConfig.OperatorLogin.ClusterKeyNamespace, h.ZkConfig.OperatorLogin.ClusterSecretName, h.ZkConfig.OperatorLogin.ApiKeyData)
