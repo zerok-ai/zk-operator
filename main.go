@@ -55,9 +55,8 @@ import (
 var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
+	LOG_TAG  = "Main"
 )
-
-var LOG_TAG = "Main"
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
@@ -177,7 +176,7 @@ func initOperator() {
 
 	//Module for syncing rules
 	scenarioHandler := handler.ScenarioHandler{}
-	versionedStore, err := zkredis.GetVersionedStore[model.Scenario](&zkConfig.Redis, common.RedisVersionDbName, true, model.Scenario{})
+	versionedStore, err := zkredis.GetVersionedStore[model.Scenario](&zkConfig.Redis, common.RedisVersionDbName, common.ScenarioSyncInterval)
 	if err != nil {
 		//logger.ZkLogger.Err(LOG_TAG, "Error while creating versionedStore ", err.Error())
 		return

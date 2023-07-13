@@ -86,14 +86,20 @@ func (h *ScenarioHandler) updateScenarios(cfg config.ZkOperatorConfig, refreshAu
 
 func (h *ScenarioHandler) getScenariosFromZkCloud(cfg config.ZkOperatorConfig, refreshAuthToken bool) (*ScenariosApiResponse, error) {
 
+	port := cfg.ZkCloud.Port
+	protocol := "http"
+	if port == "443" {
+		protocol = "https"
+	}
+
 	logger.Debug(LOG_TAG, "Get rules from zk cloud.")
 
-	baseURL := "http://" + cfg.ZkCloud.Host + ":" + cfg.ZkCloud.Port + cfg.ScenarioSync.Path
-
-	logger.Debug(LOG_TAG, "Url for scenario sync ", baseURL)
+	baseURL := protocol + "://" + cfg.ZkCloud.Host + ":" + cfg.ZkCloud.Port + cfg.ScenarioSync.Path
 
 	//Adding query params
 	url := fmt.Sprintf("%s?%s=%s", baseURL, "last_sync_ts", h.latestUpdateTime)
+
+	logger.Debug(LOG_TAG, "Url for scenario sync ", url)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -195,7 +201,7 @@ func (h *ScenarioHandler) processScenarios(rulesApiResponse *ScenariosApiRespons
 		ver1, err1 := strconv.ParseInt(latestUpdateTime, 10, 64)
 		ver2, err2 := strconv.ParseInt(scenario.Version, 10, 64)
 		if err1 != nil || err2 != nil {
-			logger.Error(LOG_TAG, "Error while converting versions to int64 for scenario ", scenario.ScenarioId)
+			logger.Error(LOG_TAG, "Error while converting versions to int64 for scenario ", scenario.Id)
 			continue
 		}
 
@@ -205,7 +211,7 @@ func (h *ScenarioHandler) processScenarios(rulesApiResponse *ScenariosApiRespons
 
 		logger.Debug(LOG_TAG, "Scenario string ", scenario)
 
-		scenarioId := scenario.ScenarioId
+		scenarioId := scenario.Id
 
 		err := h.VersionedStore.SetValue(scenarioId, scenario)
 		if err != nil {

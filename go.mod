@@ -8,7 +8,7 @@ require (
 	github.com/kataras/iris/v12 v12.2.0
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.24.1
-	github.com/zerok-ai/zk-utils-go v0.4.7-0.20230615082425-417005f1d590
+	github.com/zerok-ai/zk-utils-go v0.4.7-0.20230706061423-e666b08830dc
 	k8s.io/api v0.26.0
 	k8s.io/apimachinery v0.26.0
 	k8s.io/client-go v0.26.0
@@ -42,6 +42,7 @@ require (
 	github.com/kataras/tunnel v0.0.4 // indirect
 	github.com/klauspost/compress v1.16.0 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
+	github.com/lib/pq v1.10.9 // indirect
 	github.com/mailgun/raymond/v2 v2.0.48 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.23 // indirect
 	github.com/redis/go-redis/v9 v9.0.5 // indirect
