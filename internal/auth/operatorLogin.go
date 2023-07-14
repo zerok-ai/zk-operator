@@ -160,7 +160,7 @@ func (h *OperatorLogin) getOpTokenFromZkCloud() error {
 
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := utils.RouteRequestFromWspClient(req, h.zkConfig)
 
 	if err != nil {
 		logger.Error(LOG_TAG, "Error sending request for operator login api :", err)

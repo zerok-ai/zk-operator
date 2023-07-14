@@ -51,6 +51,13 @@ type ClusterContextConfig struct {
 	Port      string `yaml:"port"`
 }
 
+type WspClientConfig struct {
+	Host              string `yaml:"host"`
+	Port              string `yaml:"port"`
+	Path              string `yaml:"path"`
+	DestinationHeader string `yaml:"destinationHeader"`
+}
+
 type ZkOperatorConfig struct {
 	ZkCloud         ZkCloudConfig         `yaml:"zkcloud"`
 	Redis           config.RedisConfig    `yaml:"redis"`
@@ -62,4 +69,5 @@ type ZkOperatorConfig struct {
 	Instrumentation InstrumentationConfig `yaml:"instrumentation"`
 	LogsConfig      logsConfig.LogsConfig `yaml:"logs"`
 	ClusterContext  ClusterContextConfig  `yaml:"clusterContext"`
+	WspClient       WspClientConfig       `yaml:"wspClient"`
 }

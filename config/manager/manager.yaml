@@ -27,6 +27,13 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+      initContainers:
+        - name: init-container
+          image: us-west1-docker.pkg.dev/zerok-dev/stage/zk-init-container:dev
+          imagePullPolicy: Always
+          env:
+            - name: URL
+              value: "http://zk-wsp-client.zk-client.svc.cluster.local:8987/status"
       containers:
       - command:
         - /manager
