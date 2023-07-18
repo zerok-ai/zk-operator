@@ -11,7 +11,7 @@ import (
 	"os"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
@@ -124,6 +124,26 @@ func GetAllMarkedNamespaces() (*corev1.NamespaceList, error) {
 	return namespaces, nil
 }
 
+func GetOrchestratedPods(namespace string) ([]corev1.Pod, error) {
+	podList := []corev1.Pod{}
+
+	//Getting pods where zk-status is in process.
+	pods, err := GetPodsWithLabel(common.ZkOrchKey, common.ZkOrchProcessed, namespace)
+	if err != nil {
+		return podList, err
+	}
+	podList = append(podList, pods.Items...)
+
+	//Getting pods where zk-status is orchestrated.
+	pods, err = GetPodsWithLabel(common.ZkOrchKey, common.ZkOrchOrchestrated, namespace)
+	if err != nil {
+		return podList, err
+	}
+	podList = append(podList, pods.Items...)
+
+	return podList, err
+}
+
 func GetNotOrchestratedPods(namespace string) ([]corev1.Pod, error) {
 	podList := []corev1.Pod{}
 
@@ -187,7 +207,7 @@ func CreateOrUpdateConfigMap(namespace, name string, imageMap *sync.Map) error {
 	configMap, err := configMaps.Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		// If the ConfigMap doesn't exist, create it
-		if errors.IsNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			newConfigMap := &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: namespace,
@@ -312,7 +332,7 @@ func hasRestartLabel(namespace string, workLoadType int, name, labelKey, labelVa
 	return ok && value == labelValue, nil
 }
 
-func RestartMarkedNamespacesIfNeeded() error {
+func RestartMarkedNamespacesIfNeeded(orchestratedPods bool) error {
 	namespaces, err := GetAllMarkedNamespaces()
 	logger.Debug(LOG_TAG, "All marked namespaces are ", namespaces)
 
@@ -325,10 +345,20 @@ func RestartMarkedNamespacesIfNeeded() error {
 
 		logger.Debug(LOG_TAG, " Checking for namespace ", namespace.ObjectMeta.Name)
 
-		pods, err := GetNotOrchestratedPods(namespace.ObjectMeta.Name)
-		if err != nil {
-			logger.Error(LOG_TAG, "Error caught while getting all non orchestrated pods ", err)
-			return err
+		var pods []corev1.Pod
+
+		if orchestratedPods {
+			pods, err = GetOrchestratedPods(namespace.ObjectMeta.Name)
+			if err != nil {
+				logger.Error(LOG_TAG, "Error caught while getting all non orchestrated pods ", err)
+				return err
+			}
+		} else {
+			pods, err = GetNotOrchestratedPods(namespace.ObjectMeta.Name)
+			if err != nil {
+				logger.Error(LOG_TAG, "Error caught while getting all non orchestrated pods ", err)
+				return err
+			}
 		}
 
 		logger.Debug(LOG_TAG, " Non orchestrated pods for namespace ", namespace.ObjectMeta.Name, " are ", pods)
@@ -429,4 +459,23 @@ func getWorkloadForPod(pod *corev1.Pod) (*WorkLoad, error) {
 	}
 
 	return workLoad, nil
+}
+
+func DeleteMutatingWebhookConfiguration(webhookName string) error {
+	clientset, err := GetK8sClient()
+	if err != nil {
+		return err
+	}
+	mutatingWebhookConfigV1Client := clientset.AdmissionregistrationV1()
+	err = mutatingWebhookConfigV1Client.MutatingWebhookConfigurations().Delete(context.TODO(), webhookName, metav1.DeleteOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			logger.Debug(LOG_TAG, "Webhook %s not found.\n", webhookName)
+			return nil
+		} else {
+			logger.Error(LOG_TAG, "Error deleting webhook configuration: %v\n", err)
+			return err
+		}
+	}
+	return nil
 }

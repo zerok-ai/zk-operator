@@ -36,7 +36,7 @@ data:
       clusterKeyNamespace: zk-client
       maxRetries: 3
     wspClient:
-      host: wsp-client.zk-client.svc.cluster.local
+      host: zk-wsp-client.zk-client.svc.cluster.local
       port: 8987
       path: /request
       destinationHeader: X-PROXY-DESTINATION

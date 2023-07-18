@@ -121,7 +121,7 @@ func main() {
 		panic("unable to set up ready check")
 	}
 
-	go restartMarkedNamespacesIfNeeded()
+	go restartNonOrchestratedPodsIfNeeded()
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
@@ -207,16 +207,18 @@ func initOperator() {
 	// start http server
 	go server.StartHttpServer(app1, irisConfig, zkConfig, &clusterContextHandler)
 
+	go utils.ListenToNamespaceDeletion(&zkConfig)
+
 }
 
-func restartMarkedNamespacesIfNeeded() {
+func restartNonOrchestratedPodsIfNeeded() {
 	// Waiting for 2 minutes for operator init to complete
 	duration := 2 * time.Minute
 	<-time.After(duration)
 
 	//Restarting workloads in namespaces which have zk-injection enabled, but have non-orchestrated pods.
 	zklogger.Debug(LOG_TAG, "Restarting marked namespaces if needed")
-	err := utils.RestartMarkedNamespacesIfNeeded()
+	err := utils.RestartMarkedNamespacesIfNeeded(false)
 	if err != nil {
 		zklogger.Error(LOG_TAG, "Error while restarting marked namespaces if needed ", err)
 	}

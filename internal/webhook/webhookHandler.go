@@ -33,20 +33,6 @@ func (h *WebhookHandler) Init(caPEM *bytes.Buffer, config config.WebhookConfig) 
 	}
 }
 
-func (h *WebhookHandler) deleteMutatingWebhookConfiguration() error {
-	clientset, err := utils.GetK8sClient()
-	if err != nil {
-		return err
-	}
-	mutatingWebhookConfigV1Client := clientset.AdmissionregistrationV1()
-	err = mutatingWebhookConfigV1Client.MutatingWebhookConfigurations().Delete(context.TODO(), h.webhookConfig.Name, metav1.DeleteOptions{})
-	if err != nil {
-		logger.Error(LOG_TAG, "Error while deleting operator webhook ", err)
-		return err
-	}
-	return nil
-}
-
 func (h *WebhookHandler) CreateOrUpdateMutatingWebhookConfiguration() error {
 
 	clientset, err := utils.GetK8sClient()
@@ -164,5 +150,5 @@ func areWebHookConfigsSame(foundWebhookConfig *admissionregistrationv1.MutatingW
 
 func (h *WebhookHandler) CleanUpOnkill() error {
 	logger.Info(LOG_TAG, "Kill method in webhook.")
-	return h.deleteMutatingWebhookConfiguration()
+	return utils.DeleteMutatingWebhookConfiguration(h.webhookConfig.Name)
 }
