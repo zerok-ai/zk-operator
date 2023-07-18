@@ -37,10 +37,6 @@ func (h *ImageRuntimeCache) periodicSync() {
 	if err != nil {
 		logger.Error(LOG_TAG, "Error while syncing data from redis ", err)
 	}
-	err = utils.RestartMarkedNamespacesIfNeeded()
-	if err != nil {
-		logger.Error(LOG_TAG, "Error while restarting marked namespaces if needed ", err)
-	}
 }
 
 func (h *ImageRuntimeCache) SyncDataFromRedis() error {

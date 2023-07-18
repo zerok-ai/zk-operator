@@ -26,6 +26,7 @@ import (
 	"github.com/zerok-ai/zk-operator/internal"
 	"github.com/zerok-ai/zk-operator/internal/auth"
 	"github.com/zerok-ai/zk-operator/internal/common"
+	"github.com/zerok-ai/zk-operator/internal/utils"
 	"github.com/zerok-ai/zk-operator/internal/webhook"
 	"github.com/zerok-ai/zk-utils-go/scenario/model"
 	"time"
@@ -204,6 +205,12 @@ func initOperator() {
 
 	// start http server
 	go server.StartHttpServer(app1, irisConfig, zkConfig, &clusterContextHandler)
+
+	//Restarting workloads in namespaces which have zk-injection enabled, but have non-orchestrated pods.
+	err = utils.RestartMarkedNamespacesIfNeeded()
+	if err != nil {
+		zklogger.Error(LOG_TAG, "Error while restarting marked namespaces if needed ", err)
+	}
 
 }
 
