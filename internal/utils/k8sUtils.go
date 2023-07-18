@@ -56,6 +56,7 @@ func getWorkLoadPatchData() string {
 }
 
 func RestartStatefulSet(namespace string, statefulSet string) error {
+	logger.Debug(LOG_TAG, "Restarting statefulSet ", statefulSet, " in namespace ", namespace)
 	k8sClient, err := GetK8sClient()
 	if err != nil {
 		return err
@@ -70,6 +71,7 @@ func RestartStatefulSet(namespace string, statefulSet string) error {
 }
 
 func RestartDaemonSet(namespace string, daemonSet string) error {
+	logger.Debug(LOG_TAG, "Restarting daemonset ", daemonSet, " in namespace ", namespace)
 	k8sClient, err := GetK8sClient()
 	if err != nil {
 		return err
@@ -84,6 +86,7 @@ func RestartDaemonSet(namespace string, daemonSet string) error {
 }
 
 func RestartDeployment(namespace string, deployment string) error {
+	logger.Debug(LOG_TAG, "Restarting deployment ", deployment, " in namespace ", namespace)
 	k8sClient, err := GetK8sClient()
 	if err != nil {
 		return err
@@ -305,11 +308,13 @@ func hasRestartLabel(namespace string, workLoadType int, name, labelKey, labelVa
 	}
 
 	value, ok := objLabels[labelKey]
+	logger.Debug(LOG_TAG, "Label value is ", value, " and ok is ", ok, " for workload ", name)
 	return ok && value == labelValue, nil
 }
 
 func RestartMarkedNamespacesIfNeeded() error {
 	namespaces, err := GetAllMarkedNamespaces()
+	logger.Debug(LOG_TAG, "All marked namespaces are ", namespaces)
 
 	if err != nil || namespaces == nil {
 		logger.Error(LOG_TAG, "In restart marked namespaces, error caught while getting all marked namespaces ", err)
@@ -318,19 +323,25 @@ func RestartMarkedNamespacesIfNeeded() error {
 
 	for _, namespace := range namespaces.Items {
 
+		logger.Debug(LOG_TAG, " Checking for namespace ", namespace.ObjectMeta.Name)
+
 		pods, err := GetNotOrchestratedPods(namespace.ObjectMeta.Name)
 		if err != nil {
 			logger.Error(LOG_TAG, "Error caught while getting all non orchestrated pods ", err)
 			return err
 		}
 
+		logger.Debug(LOG_TAG, " Non orchestrated pods for namespace ", namespace.ObjectMeta.Name, " are ", pods)
+
 		workLoads, err := getWorkloadsForPods(pods)
 		if err != nil {
 			return err
 		}
 
+		logger.Debug(LOG_TAG, " Workloads for pods for namespace ", namespace.ObjectMeta.Name, " are ", workLoads)
+
 		for workLoad := range workLoads {
-			restart, err := hasRestartLabel(namespace.ObjectMeta.Name, workLoad.workLoadType, workLoad.name, common.ZkAutoRestartKey, "true")
+			restart, err := hasRestartLabel(namespace.ObjectMeta.Name, workLoad.workLoadType, workLoad.name, common.ZkAutoRestartKey, common.ZkAutoRestartValue)
 			if err != nil {
 				logger.Error(LOG_TAG, "Error caught while checking if workload ", workLoad, " has restart label ", err)
 			}
