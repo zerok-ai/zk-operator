@@ -14,13 +14,14 @@ var targetNamespace = "zk-client"
 var targetFinalizer = "operator/cleanup-pods"
 
 func ListenToNamespaceDeletion(config *config.ZkOperatorConfig) {
+	logger.Debug(FINALIZER_LOG_TAG, "Listening to namespace deletion")
 	clientSet, err := GetK8sClient()
 	if err != nil {
 		logger.Debug(FINALIZER_LOG_TAG, "Failed to create clientSet in listenToNamespaceDeletion")
 		return
 	}
 
-	informerFactory := informers.NewSharedInformerFactoryWithOptions(clientSet, time.Second*30, informers.WithNamespace(targetNamespace))
+	informerFactory := informers.NewSharedInformerFactoryWithOptions(clientSet, time.Second*5, informers.WithNamespace(targetNamespace))
 
 	namespaceInformer := informerFactory.Core().V1().Namespaces().Informer()
 
@@ -50,12 +51,14 @@ func ListenToNamespaceDeletion(config *config.ZkOperatorConfig) {
 	informerFactory.Start(stopCh)
 
 	informerFactory.WaitForCacheSync(stopCh)
+	select {}
 }
 
 func cleanUpOrchestratedPods(config *config.ZkOperatorConfig, namespace *corev1.Namespace) error {
 
 	if !ContainsFinalizer(namespace, targetFinalizer) {
 		//Finalizer is not present. No need to do any cleanup.
+		logger.Debug(FINALIZER_LOG_TAG, "Finalizer is not present. No need to do any cleanup.")
 		return nil
 	}
 

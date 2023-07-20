@@ -333,6 +333,7 @@ func hasRestartLabel(namespace string, workLoadType int, name, labelKey, labelVa
 }
 
 func RestartMarkedNamespacesIfNeeded(orchestratedPods bool) error {
+	logger.Debug(LOG_TAG, "In restart marked namespaces with orchestrated pods flag as ", orchestratedPods)
 	namespaces, err := GetAllMarkedNamespaces()
 	logger.Debug(LOG_TAG, "All marked namespaces are ", namespaces)
 
@@ -462,6 +463,7 @@ func getWorkloadForPod(pod *corev1.Pod) (*WorkLoad, error) {
 }
 
 func DeleteMutatingWebhookConfiguration(webhookName string) error {
+	logger.Debug(FINALIZER_LOG_TAG, "Deleting mutating webhook configuration ", webhookName)
 	clientset, err := GetK8sClient()
 	if err != nil {
 		return err
