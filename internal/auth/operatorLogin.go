@@ -219,20 +219,23 @@ func (h *OperatorLogin) RegisterZkModules(modules []internal.ZkOperatorModule) {
 }
 
 func (h *OperatorLogin) deleteNamespaces(maxRetries int, retryDelay time.Duration) error {
-	err := utils.DeleteNamespaceWithRetry("pl", maxRetries, retryDelay)
-	if err != nil {
-		logger.Error(LOG_TAG, "Error while deleting namespace ", err.Error())
-		return err
-	}
-	err = utils.DeleteNamespaceWithRetry("px-operator", maxRetries, retryDelay)
-	if err != nil {
-		logger.Error(LOG_TAG, "Error while deleting namespace ", err.Error())
-		return err
-	}
-	err = utils.DeleteNamespaceWithRetry("zk-client", maxRetries, retryDelay)
-	if err != nil {
-		logger.Error(LOG_TAG, "Error while deleting namespace ", err.Error())
-		return err
-	}
+	// TODO: commemting thi code temporarily.
+	// Delete namespaces
+	logger.Debug(LOG_TAG, "Deleting namespaces")
+	//err := utils.DeleteNamespaceWithRetry("pl", maxRetries, retryDelay)
+	//if err != nil {
+	//	logger.Error(LOG_TAG, "Error while deleting namespace ", err.Error())
+	//	return err
+	//}
+	//err = utils.DeleteNamespaceWithRetry("px-operator", maxRetries, retryDelay)
+	//if err != nil {
+	//	logger.Error(LOG_TAG, "Error while deleting namespace ", err.Error())
+	//	return err
+	//}
+	//err = utils.DeleteNamespaceWithRetry("zk-client", maxRetries, retryDelay)
+	//if err != nil {
+	//	logger.Error(LOG_TAG, "Error while deleting namespace ", err.Error())
+	//	return err
+	//}
 	return nil
 }

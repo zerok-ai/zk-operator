@@ -20,7 +20,7 @@ rules:
   verbs: ["get"]
 - apiGroups: ["admissionregistration.k8s.io"]
   resources: ["mutatingwebhookconfigurations"]
-  verbs: ["create", "get", "update"]
+  verbs: ["create", "get", "update","delete"]
 - apiGroups: ["v1",""]
   resources: ["pods"]
   verbs: ["list"]

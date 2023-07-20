@@ -19,10 +19,10 @@ data:
       exceptionPath: /exception
     clusterContext:
       path: /i/clusterContext
-      cloudAddr: px.avinpx07.getanton.com
+      cloudAddr: px.loadcloud01.getanton.com
       port: 443
     zkcloud:
-      host: api.avinpx07.getanton.com
+      host: api.loadcloud01.getanton.com
       port: 80
     scenarioSync:
       path: /v1/o/cluster/scenario
