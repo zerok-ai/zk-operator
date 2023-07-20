@@ -19,10 +19,10 @@ data:
       exceptionPath: /exception
     clusterContext:
       path: /i/clusterContext
-      cloudAddr: px.loadcloud01.getanton.com
+      cloudAddr: px.avinpx07.getanton.com
       port: 443
     zkcloud:
-      host: api.loadcloud01.getanton.com
+      host: api.avinpx07.getanton.com
       port: 80
     scenarioSync:
       path: /v1/o/cluster/scenario
@@ -35,6 +35,11 @@ data:
       apiKeyData: apiKey
       clusterKeyNamespace: zk-client
       maxRetries: 3
+    wspClient:
+      host: zk-wsp-client.zk-client.svc.cluster.local
+      port: 8987
+      path: /request
+      destinationHeader: X-PROXY-DESTINATION
     initContainer:
       image: us-west1-docker.pkg.dev/zerok-dev/stage/init-container
       tag: dev

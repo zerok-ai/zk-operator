@@ -124,7 +124,7 @@ func (h *ScenarioHandler) getScenariosFromZkCloud(cfg config.ZkOperatorConfig, r
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(common.OperatorTokenHeaderKey, h.OpLogin.GetOperatorToken())
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := utils.RouteRequestFromWspClient(req, h.config)
 	if err != nil {
 		logger.Error(LOG_TAG, "Error sending request for rules api :", err)
 		return nil, err

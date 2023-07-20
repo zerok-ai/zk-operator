@@ -53,5 +53,9 @@ func handleRoutes(app *iris.Application, cfg config.ZkOperatorConfig, runtimeMap
 func StartWebHookServer(app *iris.Application, cfg config.ZkOperatorConfig, cert *bytes.Buffer, key *bytes.Buffer, runtimeMap *storage.ImageRuntimeCache, config iris.Configurator) {
 	logger.Debug(LOG_TAG, "Starting webhook server.")
 	handleRoutes(app, cfg, runtimeMap)
-	app.Run(iris.TLS(":"+cfg.Webhook.Port, cert.String(), key.String()), config)
+	err := app.Run(iris.TLS(":"+cfg.Webhook.Port, cert.String(), key.String()), config)
+	if err != nil {
+		logger.Error(LOG_TAG, "Error while starting webhook server ", err)
+		return
+	}
 }

@@ -14,7 +14,7 @@ rules:
   verbs: ["get", "patch", "update"]
 - apiGroups: ["v1",""]
   resources: ["namespaces"]
-  verbs: ["list","delete"]
+  verbs: ["list","delete", "watch"]
 - apiGroups: ["v1",""]
   resources: ["secrets"]
   verbs: ["get"]

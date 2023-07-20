@@ -2,7 +2,6 @@ package utils
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/zerok-ai/zk-operator/internal/common"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
@@ -12,7 +11,7 @@ import (
 	"os"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
@@ -20,12 +19,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
-
-type patchStringValue struct {
-	Op    string `json:"op"`
-	Path  string `json:"path"`
-	Value string `json:"value"`
-}
 
 var LOG_TAG = "k8sutils"
 
@@ -58,35 +51,51 @@ func GetPodsWithoutLabel(labelKey string, namespace string) (*corev1.PodList, er
 	return pods, nil
 }
 
-func RestartDeployment(namespace string, deployment string) error {
+func getWorkLoadPatchData() string {
+	return fmt.Sprintf(`{"spec": {"template": {"metadata": {"annotations": {"zk-operator/restartedAt": "%s"}}}}}`, time.Now().Format("20060102150405"))
+}
+
+func RestartStatefulSet(namespace string, statefulSet string) error {
+	logger.Debug(LOG_TAG, "Restarting statefulSet ", statefulSet, " in namespace ", namespace)
 	k8sClient, err := GetK8sClient()
 	if err != nil {
 		return err
 	}
-	deploymentsClient := k8sClient.AppsV1().Deployments(namespace)
-	data := fmt.Sprintf(`{"spec": {"template": {"metadata": {"annotations": {"zk-operator/restartedAt": "%s"}}}}}`, time.Now().Format("20060102150405"))
-	_, err = deploymentsClient.Patch(context.TODO(), deployment, types.StrategicMergePatchType, []byte(data), metav1.PatchOptions{})
+	statefulSetsClient := k8sClient.AppsV1().StatefulSets(namespace)
+	_, err = statefulSetsClient.Patch(context.TODO(), statefulSet, types.StrategicMergePatchType, []byte(getWorkLoadPatchData()), metav1.PatchOptions{})
 	if err != nil {
-		logger.Error(LOG_TAG, "Error caught while restarting deployment ", err)
+		logger.Error(LOG_TAG, "Error caught while restarting statefulSet ", statefulSet, " with error ", err)
 		return err
 	}
 	return nil
 }
 
-func RestartAllDeploymentsInNamespace(namespace string) error {
+func RestartDaemonSet(namespace string, daemonSet string) error {
+	logger.Debug(LOG_TAG, "Restarting daemonset ", daemonSet, " in namespace ", namespace)
 	k8sClient, err := GetK8sClient()
 	if err != nil {
 		return err
 	}
-	deployments, err := k8sClient.AppsV1().Deployments(namespace).List(context.Background(), metav1.ListOptions{})
+	daemonSetsClient := k8sClient.AppsV1().DaemonSets(namespace)
+	_, err = daemonSetsClient.Patch(context.TODO(), daemonSet, types.StrategicMergePatchType, []byte(getWorkLoadPatchData()), metav1.PatchOptions{})
 	if err != nil {
-		logger.Error(LOG_TAG, "Error getting deployments: ", err)
+		logger.Error(LOG_TAG, "Error caught while restarting daemonSet ", daemonSet, " with error ", err)
 		return err
 	}
+	return nil
+}
 
-	for _, deployment := range deployments.Items {
-		logger.Error(LOG_TAG, "Restarting Deployment: ", deployment.ObjectMeta.Name)
-		RestartDeployment(namespace, deployment.ObjectMeta.Name)
+func RestartDeployment(namespace string, deployment string) error {
+	logger.Debug(LOG_TAG, "Restarting deployment ", deployment, " in namespace ", namespace)
+	k8sClient, err := GetK8sClient()
+	if err != nil {
+		return err
+	}
+	deploymentsClient := k8sClient.AppsV1().Deployments(namespace)
+	_, err = deploymentsClient.Patch(context.TODO(), deployment, types.StrategicMergePatchType, []byte(getWorkLoadPatchData()), metav1.PatchOptions{})
+	if err != nil {
+		logger.Error(LOG_TAG, "Error caught while restarting deployment ", deployment, " with error ", err)
+		return err
 	}
 	return nil
 }
@@ -99,8 +108,7 @@ func GetAllMarkedNamespaces() (*corev1.NamespaceList, error) {
 	}
 
 	labelSelector := labels.Set{
-		common.ZkInjectionKey:   common.ZkInjectionValue,
-		common.ZkAutoRestartKey: "true",
+		common.ZkInjectionKey: common.ZkInjectionValue,
 	}.AsSelector()
 
 	listOptions := metav1.ListOptions{
@@ -114,6 +122,26 @@ func GetAllMarkedNamespaces() (*corev1.NamespaceList, error) {
 	}
 
 	return namespaces, nil
+}
+
+func GetOrchestratedPods(namespace string) ([]corev1.Pod, error) {
+	podList := []corev1.Pod{}
+
+	//Getting pods where zk-status is in process.
+	pods, err := GetPodsWithLabel(common.ZkOrchKey, common.ZkOrchProcessed, namespace)
+	if err != nil {
+		return podList, err
+	}
+	podList = append(podList, pods.Items...)
+
+	//Getting pods where zk-status is orchestrated.
+	pods, err = GetPodsWithLabel(common.ZkOrchKey, common.ZkOrchOrchestrated, namespace)
+	if err != nil {
+		return podList, err
+	}
+	podList = append(podList, pods.Items...)
+
+	return podList, err
 }
 
 func GetNotOrchestratedPods(namespace string) ([]corev1.Pod, error) {
@@ -179,7 +207,7 @@ func CreateOrUpdateConfigMap(namespace, name string, imageMap *sync.Map) error {
 	configMap, err := configMaps.Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		// If the ConfigMap doesn't exist, create it
-		if errors.IsNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			newConfigMap := &corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: namespace,
@@ -265,8 +293,49 @@ func DeleteNamespaceWithRetry(namespaceName string, maxRetries int, retryDelay t
 	return fmt.Errorf("failed to delete namespace %s after %d retries", namespaceName, maxRetries)
 }
 
-func RestartMarkedNamespacesIfNeeded() error {
+func hasRestartLabel(namespace string, workLoadType int, name, labelKey, labelValue string) (bool, error) {
+	k8sClient, err := GetK8sClient()
+	if err != nil {
+		return false, err
+	}
+
+	var objLabels map[string]string
+
+	switch workLoadType {
+	case DEPLYOMENT:
+		deployment, err := k8sClient.AppsV1().Deployments(namespace).Get(context.TODO(), name, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		objLabels = deployment.ObjectMeta.Labels
+
+	case STATEFULSET:
+		statefulSet, err := k8sClient.AppsV1().StatefulSets(namespace).Get(context.TODO(), name, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		objLabels = statefulSet.ObjectMeta.Labels
+
+	case DAEMONSET:
+		daemonSet, err := k8sClient.AppsV1().DaemonSets(namespace).Get(context.TODO(), name, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		objLabels = daemonSet.ObjectMeta.Labels
+
+	default:
+		return false, fmt.Errorf("unsupported resource kind")
+	}
+
+	value, ok := objLabels[labelKey]
+	logger.Debug(LOG_TAG, "Label value is ", value, " and ok is ", ok, " for workload ", name)
+	return ok && value == labelValue, nil
+}
+
+func RestartMarkedNamespacesIfNeeded(orchestratedPods bool) error {
+	logger.Debug(LOG_TAG, "In restart marked namespaces with orchestrated pods flag as ", orchestratedPods)
 	namespaces, err := GetAllMarkedNamespaces()
+	logger.Debug(LOG_TAG, "All marked namespaces are ", namespaces)
 
 	if err != nil || namespaces == nil {
 		logger.Error(LOG_TAG, "In restart marked namespaces, error caught while getting all marked namespaces ", err)
@@ -275,21 +344,55 @@ func RestartMarkedNamespacesIfNeeded() error {
 
 	for _, namespace := range namespaces.Items {
 
-		pods, err := GetNotOrchestratedPods(namespace.ObjectMeta.Name)
-		if err != nil {
-			logger.Error(LOG_TAG, "Error caught while getting all non orchestrated pods ", err)
-			return err
-		}
+		logger.Debug(LOG_TAG, " Checking for namespace ", namespace.ObjectMeta.Name)
 
-		deployments, err := getDeploymentsForPods(pods)
-		if err != nil {
-			return err
-		}
+		var pods []corev1.Pod
 
-		for deploymentName := range deployments {
-			err = RestartDeployment(namespace.ObjectMeta.Name, deploymentName)
+		if orchestratedPods {
+			pods, err = GetOrchestratedPods(namespace.ObjectMeta.Name)
 			if err != nil {
-				logger.Error(LOG_TAG, "Error caught while restaring deployment name ", deploymentName, " with error ", err)
+				logger.Error(LOG_TAG, "Error caught while getting all non orchestrated pods ", err)
+				return err
+			}
+		} else {
+			pods, err = GetNotOrchestratedPods(namespace.ObjectMeta.Name)
+			if err != nil {
+				logger.Error(LOG_TAG, "Error caught while getting all non orchestrated pods ", err)
+				return err
+			}
+		}
+
+		logger.Debug(LOG_TAG, " Non orchestrated pods for namespace ", namespace.ObjectMeta.Name, " are ", pods)
+
+		workLoads, err := getWorkloadsForPods(pods)
+		if err != nil {
+			return err
+		}
+
+		logger.Debug(LOG_TAG, " Workloads for pods for namespace ", namespace.ObjectMeta.Name, " are ", workLoads)
+
+		for workLoad := range workLoads {
+			restart, err := hasRestartLabel(namespace.ObjectMeta.Name, workLoad.workLoadType, workLoad.name, common.ZkAutoRestartKey, common.ZkAutoRestartValue)
+			if err != nil {
+				logger.Error(LOG_TAG, "Error caught while checking if workload ", workLoad, " has restart label ", err)
+			}
+			if !restart {
+				logger.Debug(LOG_TAG, "Workload ", workLoad.name, " and type ", workLoad.workLoadType, " does not have restart label, skipping")
+				continue
+			}
+			switch workLoad.workLoadType {
+			case DEPLYOMENT:
+				err = RestartDeployment(namespace.ObjectMeta.Name, workLoad.name)
+			case STATEFULSET:
+				err = RestartStatefulSet(namespace.ObjectMeta.Name, workLoad.name)
+			case DAEMONSET:
+				err = RestartDaemonSet(namespace.ObjectMeta.Name, workLoad.name)
+			default:
+				logger.Error(LOG_TAG, "Unknown workload type ", workLoad.workLoadType)
+
+			}
+			if err != nil {
+				logger.Error(LOG_TAG, "Error caught while restarting workload name ", workLoad, " with type ", workLoad.workLoadType, " with error ", err)
 				return err
 			}
 		}
@@ -297,27 +400,27 @@ func RestartMarkedNamespacesIfNeeded() error {
 	return nil
 }
 
-func getDeploymentsForPods(pods []corev1.Pod) (map[string]bool, error) {
-	deployments := make(map[string]bool)
+func getWorkloadsForPods(pods []corev1.Pod) (map[*WorkLoad]bool, error) {
+	workLoads := make(map[*WorkLoad]bool)
 	for _, pod := range pods {
-		deploymentName, err := getDeploymentForAPod(&pod)
+		workLoad, err := getWorkloadForPod(&pod)
 		if err != nil {
 			logger.Error(LOG_TAG, "Error caught while getting all deployment for pod ", pod.Name, " with error ", err)
-			return deployments, err
+			return workLoads, err
 		}
-		deployments[deploymentName] = true
+		workLoads[workLoad] = true
 	}
-	return deployments, nil
+	return workLoads, nil
 }
 
-func getDeploymentForAPod(pod *corev1.Pod) (string, error) {
+func getWorkloadForPod(pod *corev1.Pod) (*WorkLoad, error) {
 	ownerReferences := pod.GetOwnerReferences()
 	namespace := pod.ObjectMeta.Namespace
-	var deploymentName string
+	var workLoad *WorkLoad
 
 	clientset, err := GetK8sClient()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	for _, ownerRef := range ownerReferences {
@@ -325,13 +428,30 @@ func getDeploymentForAPod(pod *corev1.Pod) (string, error) {
 			replicaSetName := ownerRef.Name
 			replicaSet, err := clientset.AppsV1().ReplicaSets(namespace).Get(context.TODO(), replicaSetName, metav1.GetOptions{})
 			if err != nil {
-				return "", err
+				return nil, err
 			}
 
 			ownerReferences := replicaSet.GetOwnerReferences()
 			for _, ownerRef := range ownerReferences {
 				if ownerRef.Kind == "Deployment" {
-					deploymentName = ownerRef.Name
+					workLoad = &WorkLoad{
+						workLoadType: DEPLYOMENT,
+						name:         ownerRef.Name,
+					}
+					break
+				}
+				if ownerRef.Kind == "StatefulSet" {
+					workLoad = &WorkLoad{
+						workLoadType: STATEFULSET,
+						name:         ownerRef.Name,
+					}
+					break
+				}
+				if ownerRef.Kind == "DaemonSet" {
+					workLoad = &WorkLoad{
+						workLoadType: DAEMONSET,
+						name:         ownerRef.Name,
+					}
 					break
 				}
 			}
@@ -339,72 +459,25 @@ func getDeploymentForAPod(pod *corev1.Pod) (string, error) {
 		}
 	}
 
-	return deploymentName, nil
+	return workLoad, nil
 }
 
-func restartWorkloads(restartRequestObj common.RestartRequest) error {
-	namespace := restartRequestObj.Namespace
-	all := restartRequestObj.All
-	if all {
-		return RestartAllDeploymentsInNamespace(namespace)
-	} else {
-		deployment := restartRequestObj.Deployment
-		return RestartDeployment(namespace, deployment)
-	}
-}
-
-func LabelPod(pod *corev1.Pod, path string, value string) error {
-	k8sClient, err := GetK8sClient()
+func DeleteMutatingWebhookConfiguration(webhookName string) error {
+	logger.Debug(FINALIZER_LOG_TAG, "Deleting mutating webhook configuration ", webhookName)
+	clientset, err := GetK8sClient()
 	if err != nil {
 		return err
 	}
-	payload := []patchStringValue{{
-		Op:    "replace",
-		Path:  path,
-		Value: value,
-	}}
-	payloadBytes, _ := json.Marshal(payload)
-	_, updateErr := k8sClient.CoreV1().Pods(pod.GetNamespace()).Patch(context.Background(), pod.GetName(), types.JSONPatchType, payloadBytes, metav1.PatchOptions{})
-	if updateErr == nil {
-		logMessage := fmt.Sprintf("Pod %s labeled successfully for Path %s and Value %s.", pod.GetName(), path, value)
-		logger.Debug(LOG_TAG, logMessage)
-		return updateErr
-	} else {
-		logger.Error(LOG_TAG, updateErr)
+	mutatingWebhookConfigV1Client := clientset.AdmissionregistrationV1()
+	err = mutatingWebhookConfigV1Client.MutatingWebhookConfigurations().Delete(context.TODO(), webhookName, metav1.DeleteOptions{})
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			logger.Debug(LOG_TAG, "Webhook %s not found.\n", webhookName)
+			return nil
+		} else {
+			logger.Error(LOG_TAG, "Error deleting webhook configuration: %v\n", err)
+			return err
+		}
 	}
 	return nil
-}
-
-func GetPodsMatchingLabels(labelsMap map[string]string, namespace string) (*corev1.PodList, error) {
-	clientset, err := GetK8sClient()
-	if err != nil {
-		return nil, err
-	}
-	labelSet := labels.Set(labelsMap)
-	listOptions := metav1.ListOptions{
-		LabelSelector: labelSet.AsSelector().String(),
-	}
-	pods, err := clientset.CoreV1().Pods(namespace).List(context.Background(), listOptions)
-	return pods, err
-}
-
-func GetAllNonOrchestratedPods() ([]corev1.Pod, error) {
-	allPodsList := []corev1.Pod{}
-	namespaces, err := GetAllMarkedNamespaces()
-
-	if err != nil {
-		logger.Error(LOG_TAG, "Error caught while getting list of namespaces ", err)
-		return nil, err
-	}
-
-	for _, namespace := range namespaces.Items {
-		logger.Debug(LOG_TAG, "Checking for namespace %v.\n", namespace)
-		pods, err := GetNotOrchestratedPods(namespace.ObjectMeta.Name)
-		if err != nil {
-			err = fmt.Errorf("error getting non orchestrated pods from namespace %v", namespace)
-			return nil, err
-		}
-		allPodsList = append(allPodsList, pods...)
-	}
-	return allPodsList, nil
 }

@@ -13,7 +13,8 @@ const (
 	ZkInjectionKey   = "zk-injection"
 	ZkInjectionValue = "enabled"
 
-	ZkAutoRestartKey = "zk-auto-restart"
+	ZkAutoRestartKey   = "zk-auto-restart"
+	ZkAutoRestartValue = "enabled"
 
 	ZkConfigMapName = "zk-image"
 	ZkConfigMapKey  = "zk-image-map"
