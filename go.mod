@@ -8,7 +8,7 @@ require (
 	github.com/kataras/iris/v12 v12.2.0
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.27.4
-	github.com/zerok-ai/zk-utils-go v0.4.7-0.20230706061423-e666b08830dc
+	github.com/zerok-ai/zk-utils-go v0.4.7-0.20230720072801-f8a934d8e227
 	k8s.io/api v0.26.0
 	k8s.io/apimachinery v0.26.0
 	k8s.io/client-go v0.26.0
