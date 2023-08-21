@@ -1,0 +1,161 @@
+name: deploy
+on:
+  push:
+    tags: #r/<ENVIRONMENT>/<DOCKER-TAG-OR-VERSION>
+      - 'r/**'
+  workflow_dispatch:
+    inputs:
+      DOCKER_TAG:
+        description: 'Docker Image Tag'
+        required: true
+        default: 'latest'
+      GKE_CLUSTER:
+        description: 'Cluster Name'
+        required: true
+        default: 'pxclient02'
+  workflow_call:
+    inputs:
+      VERSION:
+        type: string
+        default: 'latest'
+      ENVIRONMENT:
+        type: string
+        default: 'poc'
+    secrets:
+      GKE_SA_KEY:
+        required: true
+env:
+  DOCKER_TAG: ${{ github.event.inputs.DOCKER_TAG }}
+  GKE_CLUSTER: ${{ github.event.inputs.GKE_CLUSTER }}
+  GOOS: ${{ vars.GOOS }}
+  GOARCH: ${{ vars.GOARCH }}
+  CGO_ENABLED: ${{ vars.CGO_ENABLED }}
+  GKE_SA_KEY: ${{ secrets.GKE_SA_KEY }}
+  DOCKER_REG: ${{ vars.DOCKER_REG }}
+  PROJECT_ID: ${{ vars.PROJECT_ID }}
+  NS: ${{ vars.NS }}
+  DOCKER_REPO: ${{ vars.DOCKER_REPO }}
+  APP_NAME: ${{ vars.APP_NAME }}
+  GKE_ZONE: ${{ vars.GKE_ZONE }}
+  GOPRIVATE: ${{ vars.GOPRIVATE }}
+  TOKEN: ${{ secrets.GITPAT }}
+  POSTGRES_DB: ${{ vars.POSTGRES_DB }}
+  POSTGRES_HOST: ${{ vars.POSTGRES_HOST }}
+  POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+
+jobs:
+  init:
+    runs-on: zk-self-hosted
+    outputs:
+      ENVIRONMENT: ${{ steps.extractEnvironment.outputs.EXTRACTED_ENVIRONMENT }}
+      CLUSTERNAME: ${{ steps.extractClusterAndVersion.outputs.TAG_CLUSTERNAME }}
+      VERSION: ${{ steps.extractClusterAndVersion.outputs.TAG_VERSION }}
+    steps:
+      - name: Set tag envt var
+        run: |
+          echo "GIT_TAG=${GITHUB_REF#refs/*/}" >> "$GITHUB_ENV"
+
+      - name: Extract cluster and version
+        id: extractClusterAndVersion
+        run: |
+          if [ "$DOCKER_TAG" == "" ]; then
+            part1=$(echo "$GIT_TAG" | cut -d'/' -f2)
+            part2=$(echo "$GIT_TAG" | cut -d'/' -f3)
+            echo "TAG_CLUSTERNAME=$part1" >> $GITHUB_OUTPUT
+            echo "TAG_VERSION=$part2" >> $GITHUB_OUTPUT
+            clusterName=$part1
+          else
+            echo "TAG_CLUSTERNAME=$GKE_CLUSTER" >> $GITHUB_OUTPUT
+            echo "TAG_VERSION=$DOCKER_TAG" >> $GITHUB_OUTPUT
+            clusterName=$GKE_CLUSTER
+          fi
+          TAG_CLUSTERNAME_CAPITAL=$(echo "$clusterName" | tr '[:lower:]' '[:upper:]')
+          echo "TAG_CLUSTERNAME_CAPITAL=$TAG_CLUSTERNAME_CAPITAL" >> $GITHUB_OUTPUT
+
+      - name: Extract environment
+        id: extractEnvironment
+        env:
+          ORG_VARIABLE_NAME: ${{ format('{0}_ENV', steps.extractClusterAndVersion.outputs.TAG_CLUSTERNAME_CAPITAL) }}
+          ORG_VARIABLE: ${{ vars[format('{0}_ENV', steps.extractClusterAndVersion.outputs.TAG_CLUSTERNAME_CAPITAL)] }}
+        run: |
+          echo "EXTRACTED_ENVIRONMENT=$ORG_VARIABLE" >> $GITHUB_OUTPUT
+          echo "$ORG_VARIABLE_NAME"
+          echo "$ORG_VARIABLE"
+
+      - name: Dump steps context
+        env:
+          STEPS_CONTEXT: ${{ toJson(steps) }}
+        run: echo "$STEPS_CONTEXT"
+
+  build-push:
+    uses: zerok-ai/zk-operator/.github/workflows/zk-build-push.yml@helm-push
+    with:
+      VERSION: ${{ needs.init.outputs.VERSION }}
+      ENVIRONMENT: ${{ needs.init.outputs.ENVIRONMENT }}
+      DOCKER_IDENTIFIER: ${{ needs.init.outputs.CLUSTERNAME }}
+    secrets:
+      GKE_SA_KEY: ${{ secrets.GKE_SA_KEY }}
+    needs: init
+
+  init-container-build-push:
+    uses: zerok-ai/zk-operator/.github/workflows/zk-init-container.yml@helm-push
+    with:
+      VERSION: ${{ needs.init.outputs.VERSION }}
+      ENVIRONMENT: ${{ needs.init.outputs.ENVIRONMENT }}
+      DOCKER_IDENTIFIER: ${{ needs.init.outputs.ENVIRONMENT }}
+    secrets:
+      GKE_SA_KEY: ${{ secrets.GKE_SA_KEY }}
+    needs: init
+
+  deploy:
+    needs: [ init,build-push ]
+    env:
+      CLUSTERNAME: ${{ needs.init.outputs.CLUSTERNAME }}
+      VERSION: ${{ needs.init.outputs.VERSION }}
+      ENVIRONMENT: ${{ needs.init.outputs.ENVIRONMENT }}
+    environment:
+      name: ${{ needs.init.outputs.ENVIRONMENT }}
+    runs-on: zk-self-hosted
+    steps:
+      - name: docker-tag
+        run: |-
+          chmod +x helm-charts/rename-docker-tag.sh
+          helm-charts/rename-docker-tag.sh $VERSION
+
+      - name: Check output
+        run: |
+          echo "GIT_TAG=$GIT_TAG"
+          echo "DOCKER_TAG=$VERSION"
+          echo "GITHUB_SHA=$GITHUB_SHA"
+          echo "DOCKER_REPO=$DOCKER_REPO"
+          echo "ENVIRONMENT=$ENVIRONMENT"
+          echo "GKE_ZONE=$GKE_ZONE"
+
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v0'
+        with:
+          credentials_json: '${{ env.GKE_SA_KEY }}'
+
+      - id: 'get-credentials'
+        uses: 'google-github-actions/get-gke-credentials@v1'
+        with:
+          cluster_name: '${{ needs.init.outputs.CLUSTERNAME }}'
+          location: '${{ env.GKE_ZONE }}'
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: helm-charts
+
+      - name: Deploy
+        run: |-
+          helm --install  \
+          --set=image.repo=$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$CLUSTERNAME/$APP_NAME \
+          --set=image.tag=$VERSION \
+          --set=postgres.host=$POSTGRES_HOST \
+          --set=postgres.user=$POSTGRES_USER \
+          --set=postgres.dbname=$POSTGRES_DB \
+          upgrade $APP_NAME \
+           -f ./helm-charts/values.yaml ./helm-charts/ \
+           --create-namespace \
+           --namespace $NS

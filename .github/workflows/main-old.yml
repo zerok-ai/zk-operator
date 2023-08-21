@@ -1,0 +1,70 @@
+name: build and publish - old
+on:
+  workflow_dispatch:
+     inputs:
+        ENV:
+            description: 'ENV'
+            required: true
+            default: 'poc'
+        DOCKER_TAG:
+          description: 'docker image tag'
+          required: true
+          default: 'latest'
+env:
+  GOOS: ${{ vars.GOOS }}
+  ENV: ${{ github.event.inputs.ENV }}
+  DOCKER_TAG: ${{ github.event.inputs.DOCKER_TAG }}
+  GOARCH: ${{ vars.GOARCH }}
+  CGO_ENABLED: ${{ vars.CGO_ENABLED }}
+  GKE_SA_KEY: ${{ secrets.GKE_SA_KEY }}
+  DOCKER_REG: ${{ vars.DOCKER_REG }}
+  PROJECT_ID:  ${{ vars.PROJECT_ID }}
+  DOCKER_REPO:  ${{ vars.DOCKER_REPO }}
+  APP_NAME:  ${{ vars.APP_NAME }}
+  GOPRIVATE : ${{ vars.GOPRIVATE }}
+  TOKEN: ${{ secrets.GITPAT }}
+  
+jobs:
+  build:
+    runs-on: self-hosted
+    environment: ${{ github.event.inputs.ENV }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Configure git for private modules
+        run: git config --global url."https://$TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.20'
+    
+      - name: Build
+        run: go build -a -o bin/manager main.go
+      
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v0'
+        with:
+          credentials_json: '${{ env.GKE_SA_KEY }}'
+        
+
+      - uses: google-github-actions/setup-gcloud@v0
+        with:
+          version: latest
+          export_default_credentials: true
+      - name: login to docker registry
+        run: |
+          gcloud auth configure-docker $DOCKER_REG --quiet
+
+      - name: Docker build
+        run: |-
+          docker build  --tag "$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$APP_NAME:$GITHUB_SHA" .
+
+      - name: Docker Tag
+        run: |-
+          docker tag "$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$APP_NAME:$GITHUB_SHA" "$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$APP_NAME:$DOCKER_TAG"
+
+      - name: Docker push
+        run: |-
+          docker push "$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$APP_NAME:$GITHUB_SHA"
+          docker push  "$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$APP_NAME:$DOCKER_TAG" 
