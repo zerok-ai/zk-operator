@@ -22,34 +22,3 @@ version: 0.1.1
 # follow Semantic Versioning. They should reflect the version the application is using.
 # It is recommended to use it with quotes.
 appVersion: "1.16.1"
-
-dependencies:
-  - name : postgresql
-    condition: postgresql.enabled
-    version: 12.5.9
-    repository: https://charts.bitnami.com/bitnami
-
-  - name : redis
-    condition: redis.enabled
-    version: 17.11.6
-    repository: https://charts.bitnami.com/bitnami
-
-  - name: zk-daemonset
-    condition: global.zk-daemonset.enabled
-    version: "0.1.0"
-    repository: https://storage.googleapis.com/zk-helm-charts
-  - name: zk-scenario-manager
-    condition: global.zk-scenario-manager.enabled
-    version: "0.1.0"
-    repository: https://storage.googleapis.com/zk-helm-charts
-  - name: zk-wsp-client
-    condition: global.zk-wsp.enabled
-    version: "0.1.0"
-    repository: https://storage.googleapis.com/zk-helm-charts
-  - name: zk-axon
-    condition: global.zk-axon.enabled
-    version: "0.1.0"
-    repository:  https://storage.googleapis.com/zk-helm-charts
-#  - name: vizier
-#    condition: global.vizier.enabled
-#    version: "0.1.0"
