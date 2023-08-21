@@ -1,0 +1,57 @@
+name: helm-publish
+on:
+  workflow_call:
+    inputs:
+      HELM_VERSION:
+        type: string
+        required: true
+      ENVIRONMENT:
+        type: string
+        default: 'poc'
+    secrets:
+      AWS_ACCESS_ID:
+        required: true
+      AWS_SECRET_KEY:
+        required: true
+env:
+  HELM_VERSION: ${{ inputs.HELM_VERSION }}
+  ENVIRONMENT: ${{ inputs.ENVIRONMENT }}
+
+jobs:
+  helm-publish:
+    runs-on: zk-self-hosted
+    environment:
+      name: ${{ inputs.ENVIRONMENT }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: s3 sync repo
+        run: aws s3 sync ${{ vars.PUBLIC_HELM_S3_BUCKET }}/zk-client/${{ vars.APP_NAME }} .
+
+      - name: docker-tag
+        run: |-
+          chmod +x helm-charts/rename-docker-tag.sh
+          helm-charts/rename-docker-tag.sh $HELM_VERSION
+
+      - name: helm package
+        run: |-
+              helm dependency update helm-charts
+              helm package --version $HELM_VERSION helm-charts
+      - name: helm index
+        run: |-
+              helm repo index ./ --url https://helm.zerok.ai/zk-client/${{ vars.APP_NAME }}/
+      - name: s3 sync
+        run: |-
+             aws s3 cp . ${{ vars.PUBLIC_HELM_S3_BUCKET }}/zk-client/${{ vars.APP_NAME }}  --recursive --exclude "*" --include "index.yaml"  --include "*.tgz" --exclude "*/*"
+
+      - name: Clear CF Cache
+        run: aws cloudfront create-invalidation --distribution-id ${{ vars.CF_DIST_ID }} --paths "/*"
+
+     

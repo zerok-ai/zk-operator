@@ -1,0 +1,114 @@
+name: build-push
+on:
+  workflow_call:
+    inputs:
+      VERSION:
+        type: string
+        default: 'latest'
+      ENVIRONMENT:
+        type: string
+        default: 'poc'
+      DOCKER_IDENTIFIER:
+        type: string
+        default: 'prod'
+    secrets:
+      GKE_SA_KEY:
+        required: true
+env:
+  ENV: ${{ github.event.inputs.ENV }}
+  DOCKER_TAG: ${{ github.event.inputs.DOCKER_TAG }}
+  GOOS: ${{ vars.GOOS }}
+  GOARCH: ${{ vars.GOARCH }}
+  CGO_ENABLED: ${{ vars.CGO_ENABLED }}
+  GKE_SA_KEY: ${{ secrets.GKE_SA_KEY }}
+  DOCKER_REG: ${{ vars.DOCKER_REG }}
+  PROJECT_ID: ${{ vars.PROJECT_ID }}
+  DOCKER_REPO: ${{ vars.DOCKER_REPO }}
+  APP_NAME: ${{ vars.APP_NAME }}
+  GOPRIVATE: ${{ vars.GOPRIVATE }}
+  TOKEN: ${{ secrets.GITPAT }}
+  VERSION: ${{ inputs.VERSION }}
+  ENVIRONMENT: ${{ inputs.ENVIRONMENT }}
+  DOCKER_IDENTIFIER: ${{ inputs.DOCKER_IDENTIFIER }}
+
+jobs:
+
+  print-envs:
+    runs-on: zk-self-hosted
+    environment:
+      name: ${{ inputs.ENVIRONMENT }}
+    steps:
+      - name: Check output
+        run: |
+          echo "GIT_TAG=$GIT_TAG"
+          echo "DOCKER_TAG=$VERSION"
+          echo "GITHUB_SHA=$GITHUB_SHA"
+          echo "DOCKER_REPO=$DOCKER_REPO"
+          echo "ENVIRONMENT=$ENVIRONMENT"
+
+  ##############
+  app-build:
+    runs-on: zk-self-hosted
+    environment:
+      name: ${{ inputs.ENVIRONMENT }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Configure git for private modules
+        run: git config --global url."https://$TOKEN:x-oauth-basic@github.com/".insteadOf "https://github.com/"
+
+      - name: Build
+        run: go build -a -o bin/manager main.go
+
+      - name: Uploading Helm Charts (for deploy)
+        uses: actions/upload-artifact@v3
+        with:
+          name: helm-charts
+          path: |
+            helm-charts
+
+      - name: Uploading Build files (for docker push)
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: |
+            zk-operator
+            Dockerfile
+
+  docker-build:
+    needs: app-build
+    environment:
+      name: ${{ inputs.ENVIRONMENT }}
+    runs-on: zk-self-hosted
+    steps:
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v0'
+        with:
+          credentials_json: '${{ env.GKE_SA_KEY }}'
+
+      - name: login to docker registry
+        run: |
+          gcloud auth configure-docker $DOCKER_REG --quiet
+          
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+
+      - name: Docker build
+        run: |-
+          echo "DOCKER_TAG=$VERSION"
+          docker build  --tag "$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$DOCKER_IDENTIFIER/$APP_NAME:$GITHUB_SHA" .
+
+      - name: Docker Tag
+        run: |-
+          echo "DOCKER_TAG=$VERSION"
+          docker tag "$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$DOCKER_IDENTIFIER/$APP_NAME:$GITHUB_SHA" "$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$DOCKER_IDENTIFIER/$APP_NAME:$VERSION"
+
+      - name: Docker push
+        run: |-
+          echo "DOCKER_TAG=$VERSION"
+          docker push "$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$DOCKER_IDENTIFIER/$APP_NAME:$GITHUB_SHA"
+          docker push "$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$DOCKER_IDENTIFIER/$APP_NAME:$VERSION"
