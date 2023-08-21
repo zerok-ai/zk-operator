@@ -36,6 +36,7 @@ env:
   NS: ${{ vars.NS }}
   DOCKER_REPO: ${{ vars.DOCKER_REPO }}
   APP_NAME: ${{ vars.APP_NAME }}
+  INIT_APP_NAME: ${{ vars.INIT_APP_NAME }}
   GKE_ZONE: ${{ vars.GKE_ZONE }}
   GOPRIVATE: ${{ vars.GOPRIVATE }}
   TOKEN: ${{ secrets.GITPAT }}
@@ -152,6 +153,8 @@ jobs:
           helm --install  \
           --set=image.repo=$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$CLUSTERNAME/$APP_NAME \
           --set=image.tag=$VERSION \
+          --set=image.initContainerRepo=$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$CLUSTERNAME/$INIT_APP_NAME \
+          --set=image.initContainerTag=$VERSION \
           --set=postgres.host=$POSTGRES_HOST \
           --set=postgres.user=$POSTGRES_USER \
           --set=postgres.dbname=$POSTGRES_DB \
