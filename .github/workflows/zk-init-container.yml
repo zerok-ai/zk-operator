@@ -51,16 +51,19 @@ jobs:
           gcloud auth configure-docker $DOCKER_REG --quiet
           
       - name: Docker build
+        working-directory: ./init
         run: |-
           echo "DOCKER_TAG=$VERSION"
-          docker build -f init/Dockerfile --tag "$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$DOCKER_IDENTIFIER/$INIT_APP_NAME:$GITHUB_SHA" .
+          docker build -f Dockerfile --tag "$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$DOCKER_IDENTIFIER/$INIT_APP_NAME:$GITHUB_SHA" .
 
       - name: Docker Tag
+        working-directory: ./init
         run: |-
           echo "DOCKER_TAG=$VERSION"
           docker tag "$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$DOCKER_IDENTIFIER/$INIT_APP_NAME:$GITHUB_SHA" "$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$DOCKER_IDENTIFIER/$INIT_APP_NAME:$VERSION"
 
       - name: Docker push
+        working-directory: ./init
         run: |-
           echo "DOCKER_TAG=$VERSION"
           docker push "$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$DOCKER_IDENTIFIER/$INIT_APP_NAME:$GITHUB_SHA"
