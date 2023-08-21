@@ -24,7 +24,7 @@ env:
   DOCKER_REG: ${{ vars.DOCKER_REG }}
   PROJECT_ID: ${{ vars.PROJECT_ID }}
   DOCKER_REPO: ${{ vars.DOCKER_REPO }}
-  INIT_APP_NAME: ${{ vars.APP_NAME }}-init
+  INIT_APP_NAME: ${{ vars.INIT_APP_NAME }}
   GOPRIVATE: ${{ vars.GOPRIVATE }}
   TOKEN: ${{ secrets.GITPAT }}
   VERSION: ${{ inputs.VERSION }}
