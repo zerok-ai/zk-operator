@@ -103,7 +103,7 @@ jobs:
     with:
       VERSION: ${{ needs.init.outputs.VERSION }}
       ENVIRONMENT: ${{ needs.init.outputs.ENVIRONMENT }}
-      DOCKER_IDENTIFIER: ${{ needs.init.outputs.ENVIRONMENT }}
+      DOCKER_IDENTIFIER: ${{ needs.init.outputs.CLUSTERNAME }}
     secrets:
       GKE_SA_KEY: ${{ secrets.GKE_SA_KEY }}
     needs: init
