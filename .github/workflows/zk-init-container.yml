@@ -32,7 +32,7 @@ env:
   DOCKER_IDENTIFIER: ${{ inputs.DOCKER_IDENTIFIER }}
 
 jobs:
-  migrations-docker:
+  init-container-docker:
     environment:
       name: ${{ inputs.ENVIRONMENT }}
     runs-on: zk-self-hosted
