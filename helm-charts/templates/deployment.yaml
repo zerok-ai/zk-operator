@@ -21,7 +21,7 @@ spec:
     spec:
       initContainers:
         - name: init-container
-          image: "{{ index .Values.image.initContainerRepo }}:{{ index .Values.image.initContainerTag }}"
+          image: "{{ index .Values.initContainer.repo }}:{{ index .Values.initContainer.tag }}"
           imagePullPolicy: Always
           env:
             - name: URL

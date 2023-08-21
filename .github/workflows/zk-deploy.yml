@@ -155,6 +155,8 @@ jobs:
           --set=image.tag=$VERSION \
           --set=image.initContainerRepo=$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$CLUSTERNAME/$INIT_APP_NAME \
           --set=image.initContainerTag=$VERSION \
+          --set=initContainer.repo=$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$CLUSTERNAME/zk-init-container \
+          --set=initContainer.tag=$VERSION \
           --set=postgres.host=$POSTGRES_HOST \
           --set=postgres.user=$POSTGRES_USER \
           --set=postgres.dbname=$POSTGRES_DB \

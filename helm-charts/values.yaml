@@ -15,9 +15,13 @@ global:
 image:
   repo: "us-west1-docker.pkg.dev/zerok-dev/zk-client/zk-operator"
   tag: latest
-  initContainerRepo: "us-west1-docker.pkg.dev/zerok-dev/zk-client/zk-init-container"
+  initContainerRepo: "us-west1-docker.pkg.dev/zerok-dev/zk-client/op-init-container"
   initContainerTag: dev
   imagePullPolicy: Always
+
+initContainer:
+  repo: us-west1-docker.pkg.dev/zerok-dev/zk-client/zk-init-container
+  tag: latest
 
 zk-wsp:
   routes:
