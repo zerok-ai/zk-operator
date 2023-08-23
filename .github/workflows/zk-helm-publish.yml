@@ -5,6 +5,9 @@ on:
       HELM_VERSION:
         type: string
         required: true
+      DOCKER_IDENTIFIER:
+        type: string
+        required: true
       ENVIRONMENT:
         type: string
         default: 'poc'
@@ -16,6 +19,12 @@ on:
 env:
   HELM_VERSION: ${{ inputs.HELM_VERSION }}
   ENVIRONMENT: ${{ inputs.ENVIRONMENT }}
+  DOCKER_REG: ${{ vars.DOCKER_REG }}
+  PROJECT_ID: ${{ vars.PROJECT_ID }}
+  DOCKER_REPO: ${{ vars.DOCKER_REPO }}
+  ZK_INIT_CONTAINER_REPO: ${{ vars.ZK_INIT_CONTAINER_REPO }}
+  ZK_INIT_CONTAINER_TAG: ${{ vars.ZK_INIT_CONTAINER_TAG }}
+  DOCKER_IDENTIFIER: ${{ inputs.DOCKER_IDENTIFIER }}
 
 jobs:
   helm-publish:
@@ -39,6 +48,14 @@ jobs:
         run: |-
           chmod +x helm-charts/rename-docker-tag.sh
           helm-charts/rename-docker-tag.sh $HELM_VERSION
+
+      - name: docker-repo
+        run: |-
+          chmod +x helm-charts/rename-docker-repo.sh
+          export DOCKER_REPO=$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$DOCKER_IDENTIFIER
+          export ZK_INIT_REPO=$ZK_INIT_CONTAINER_REPO
+          export ZK_INIT_TAG=$ZK_INIT_CONTAINER_TAG
+          helm-charts/rename-docker-repo.sh
 
       - name: helm package
         run: |-
