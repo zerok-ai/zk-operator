@@ -11,8 +11,8 @@ global:
     PX_API_KEY: ""
     cluster_key: ""
   dockerBase: "us-west1-docker.pkg.dev/zerok-dev/zk-client"
-  zkInitContainerRepo: zk-init-container
-  zkInitContainerTag: zk-init-container
+  zkInitContainerRepo: "zk-init-container"
+  zkInitContainerTag: "zk-init-container"
 
 image:
   repo: "zk-operator"
