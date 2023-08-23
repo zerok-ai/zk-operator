@@ -43,6 +43,8 @@ env:
   POSTGRES_DB: ${{ vars.POSTGRES_DB }}
   POSTGRES_HOST: ${{ vars.POSTGRES_HOST }}
   POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+  ZK_INIT_CONTAINER_REPO: ${{ vars.ZK_INIT_CONTAINER_REPO }}
+  ZK_INIT_CONTAINER_TAG: ${{ vars.ZK_INIT_CONTAINER_TAG }}
 
 jobs:
   init:
@@ -98,8 +100,8 @@ jobs:
       GKE_SA_KEY: ${{ secrets.GKE_SA_KEY }}
     needs: init
 
-  init-container-build-push:
-    uses: zerok-ai/zk-operator/.github/workflows/zk-init-container.yml@helm-push
+  app-init-container-build-push:
+    uses: zerok-ai/zk-operator/.github/workflows/zk-app-init-container.yml@helm-push
     with:
       VERSION: ${{ needs.init.outputs.VERSION }}
       ENVIRONMENT: ${{ needs.init.outputs.ENVIRONMENT }}
@@ -108,8 +110,19 @@ jobs:
       GKE_SA_KEY: ${{ secrets.GKE_SA_KEY }}
     needs: init
 
+  helm-push:
+    uses: zerok-ai/zk-operator/.github/workflows/zk-helm-publish.yml@helm-push
+    with:
+      HELM_VERSION: ${{ needs.init.outputs.VERSION }}
+      ENVIRONMENT: ${{ needs.init.outputs.ENVIRONMENT }}
+      DOCKER_IDENTIFIER: ${{ needs.init.outputs.CLUSTERNAME }}
+    secrets:
+      AWS_ACCESS_ID: ${{ secrets.AWS_ACCESS_ID }}
+      AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
+    needs: [ init,build-push,app-init-container-build-push ]
+
   deploy:
-    needs: [ init,build-push ]
+    needs: [ init,build-push,app-init-container-build-push ]
     env:
       CLUSTERNAME: ${{ needs.init.outputs.CLUSTERNAME }}
       VERSION: ${{ needs.init.outputs.VERSION }}
@@ -131,6 +144,8 @@ jobs:
           echo "DOCKER_REPO=$DOCKER_REPO"
           echo "ENVIRONMENT=$ENVIRONMENT"
           echo "GKE_ZONE=$GKE_ZONE"
+          echo "ZK_INIT_CONTAINER_REPO=$ZK_INIT_CONTAINER_REPO"
+          echo "ZK_INIT_CONTAINER_TAG=$ZK_INIT_CONTAINER_TAG"
 
       - id: 'auth'
         name: 'Authenticate to Google Cloud'
@@ -151,12 +166,12 @@ jobs:
       - name: Deploy
         run: |-
           helm --install  \
-          --set=image.repo=$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$CLUSTERNAME/$APP_NAME \
+          --set=global.dockerBase=$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$CLUSTERNAME \
           --set=image.tag=$VERSION \
-          --set=image.initContainerRepo=$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$CLUSTERNAME/$INIT_APP_NAME \
-          --set=image.initContainerTag=$VERSION \
-          --set=initContainer.repo=$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$CLUSTERNAME/zk-init-container \
-          --set=initContainer.tag=$VERSION \
+          --set=global.zkInitContainerRepo=$ZK_INIT_CONTAINER_REPO \
+          --set=global.zkInitContainerTag=$ZK_INIT_CONTAINER_TAG \
+          --set=image.appInitContainerRepo=$DOCKER_REG/$PROJECT_ID/$DOCKER_REPO/$CLUSTERNAME/$INIT_APP_NAME \
+          --set=image.appInitContainerTag=$VERSION \
           --set=postgres.host=$POSTGRES_HOST \
           --set=postgres.user=$POSTGRES_USER \
           --set=postgres.dbname=$POSTGRES_DB \

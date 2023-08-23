@@ -41,8 +41,8 @@ data:
       path: /request
       destinationHeader: X-PROXY-DESTINATION
     initContainer:
-      image: us-west1-docker.pkg.dev/zerok-dev/stage/init-container
-      tag: dev
+      image: "{{ .Values.global.dockerBase }}/{{ .Values.image.appInitContainerRepo }}"
+      tag: {{ .Values.image.appInitContainerTag }}
     instrumentation:
       otelArgument: -javaagent:/opt/zerok/opentelemetry-javaagent-1.27.0.jar -Dotel.javaagent.extensions=/opt/zerok/zk-otel-extension-1.0.jar -Dotel.traces.exporter=zerok
       pollingInterval: 30 #seconds

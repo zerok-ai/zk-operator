@@ -65,8 +65,8 @@ jobs:
       GKE_SA_KEY: ${{ secrets.GKE_SA_KEY }}
     needs: init
 
-  init-container-build-push:
-    uses: zerok-ai/zk-operator/.github/workflows/zk-init-container.yml@helm-push
+  app-init-container-build-push:
+    uses: zerok-ai/zk-operator/.github/workflows/zk-app-init-container.yml@helm-push
     with:
       VERSION: ${{ needs.init.outputs.VERSION }}
       ENVIRONMENT: ${{ needs.init.outputs.ENVIRONMENT }}
@@ -80,7 +80,8 @@ jobs:
     with:
       HELM_VERSION: ${{ needs.init.outputs.VERSION }}
       ENVIRONMENT: ${{ needs.init.outputs.ENVIRONMENT }}
+      DOCKER_IDENTIFIER: ${{ needs.init.outputs.ENVIRONMENT }}
     secrets:
       AWS_ACCESS_ID: ${{ secrets.AWS_ACCESS_ID }}
       AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
-    needs: [ init,build-push ]
+    needs: [ init,build-push,app-init-container-build-push ]

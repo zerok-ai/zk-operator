@@ -10,18 +10,16 @@ global:
   data:
     PX_API_KEY: ""
     cluster_key: ""
-
+  dockerBase: "us-west1-docker.pkg.dev/zerok-dev/zk-client"
+  zkInitContainerRepo: zk-init-container
+  zkInitContainerTag: zk-init-container
 
 image:
-  repo: "us-west1-docker.pkg.dev/zerok-dev/zk-client/zk-operator"
+  repo: "zk-operator"
   tag: latest
-  initContainerRepo: "us-west1-docker.pkg.dev/zerok-dev/zk-client/op-init-container"
-  initContainerTag: dev
+  appInitContainerRepo: "app-init-container"
+  appInitContainerTag: 0.0.1
   imagePullPolicy: Always
-
-initContainer:
-  repo: us-west1-docker.pkg.dev/zerok-dev/zk-client/zk-init-container
-  tag: latest
 
 zk-wsp:
   routes:

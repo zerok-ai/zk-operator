@@ -1,4 +1,4 @@
-name: init-container-build-push
+name: app-init-container-build-push
 on:
   workflow_call:
     inputs:
