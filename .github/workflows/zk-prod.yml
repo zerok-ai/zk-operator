@@ -2,7 +2,7 @@ name: prod
 on:
   push:
     tags: #r/<ENVIRONMENT>/<DOCKER-TAG-OR-VERSION>
-      - 'prod/**'
+      - 'oldprod/**'
   workflow_dispatch:
     inputs:
       DOCKER_TAG:
@@ -29,31 +29,11 @@ env:
 
 jobs:
   init:
-    runs-on: zk-self-hosted
-    outputs:
-      ENVIRONMENT: ${{ steps.extractEnvAndVersion.outputs.TAG_ENV }}
-      VERSION: ${{ steps.extractEnvAndVersion.outputs.TAG_VERSION }}
-    steps:
-      - name: Set tag envt var
-        run: |
-          echo "GIT_TAG=${GITHUB_REF#refs/*/}" >> "$GITHUB_ENV"
-
-      - name: Extract env and version
-        id: extractEnvAndVersion
-        run: |
-          if [ "$DOCKER_TAG" == "" ]; then
-            part1=$(echo "$GIT_TAG" | cut -d'/' -f2)
-            echo "TAG_VERSION=$part1" >> $GITHUB_OUTPUT
-            echo "TAG_ENV=prod" >> $GITHUB_OUTPUT
-          else
-            echo "TAG_VERSION=$DOCKER_TAG" >> $GITHUB_OUTPUT
-            echo "TAG_ENV=$ENV" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Dump steps context
-        env:
-          STEPS_CONTEXT: ${{ toJson(steps) }}
-        run: echo "$STEPS_CONTEXT"
+    uses: zerok-ai/zk-git-actions/.github/workflows/zk-prod-init.yml@main
+    with:
+      ENVIRONMENT: ${{ github.event.inputs.ENV }}
+      GIT_TAG: ${{ github.ref }}
+      DOCKER_TAG: ${{ github.event.inputs.DOCKER_TAG }}
 
   build-push:
     uses: zerok-ai/zk-operator/.github/workflows/zk-build-push.yml@helm-push

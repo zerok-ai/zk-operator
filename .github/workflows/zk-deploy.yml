@@ -2,7 +2,7 @@ name: deploy
 on:
   push:
     tags: #r/<ENVIRONMENT>/<DOCKER-TAG-OR-VERSION>
-      - 'r/**'
+      - 'oldr/**'
   workflow_dispatch:
     inputs:
       DOCKER_TAG:
@@ -48,47 +48,11 @@ env:
 
 jobs:
   init:
-    runs-on: zk-self-hosted
-    outputs:
-      ENVIRONMENT: ${{ steps.extractEnvironment.outputs.EXTRACTED_ENVIRONMENT }}
-      CLUSTERNAME: ${{ steps.extractClusterAndVersion.outputs.TAG_CLUSTERNAME }}
-      VERSION: ${{ steps.extractClusterAndVersion.outputs.TAG_VERSION }}
-    steps:
-      - name: Set tag envt var
-        run: |
-          echo "GIT_TAG=${GITHUB_REF#refs/*/}" >> "$GITHUB_ENV"
-
-      - name: Extract cluster and version
-        id: extractClusterAndVersion
-        run: |
-          if [ "$DOCKER_TAG" == "" ]; then
-            part1=$(echo "$GIT_TAG" | cut -d'/' -f2)
-            part2=$(echo "$GIT_TAG" | cut -d'/' -f3)
-            echo "TAG_CLUSTERNAME=$part1" >> $GITHUB_OUTPUT
-            echo "TAG_VERSION=$part2" >> $GITHUB_OUTPUT
-            clusterName=$part1
-          else
-            echo "TAG_CLUSTERNAME=$GKE_CLUSTER" >> $GITHUB_OUTPUT
-            echo "TAG_VERSION=$DOCKER_TAG" >> $GITHUB_OUTPUT
-            clusterName=$GKE_CLUSTER
-          fi
-          TAG_CLUSTERNAME_CAPITAL=$(echo "$clusterName" | tr '[:lower:]' '[:upper:]')
-          echo "TAG_CLUSTERNAME_CAPITAL=$TAG_CLUSTERNAME_CAPITAL" >> $GITHUB_OUTPUT
-
-      - name: Extract environment
-        id: extractEnvironment
-        env:
-          ORG_VARIABLE_NAME: ${{ format('{0}_ENV', steps.extractClusterAndVersion.outputs.TAG_CLUSTERNAME_CAPITAL) }}
-          ORG_VARIABLE: ${{ vars[format('{0}_ENV', steps.extractClusterAndVersion.outputs.TAG_CLUSTERNAME_CAPITAL)] }}
-        run: |
-          echo "EXTRACTED_ENVIRONMENT=$ORG_VARIABLE" >> $GITHUB_OUTPUT
-          echo "$ORG_VARIABLE_NAME"
-          echo "$ORG_VARIABLE"
-
-      - name: Dump steps context
-        env:
-          STEPS_CONTEXT: ${{ toJson(steps) }}
-        run: echo "$STEPS_CONTEXT"
+    uses: zerok-ai/zk-git-actions/.github/workflows/zk-dev-init.yml@main
+    with:
+      GKE_CLUSTER: ${{ github.event.inputs.GKE_CLUSTER }}
+      GIT_TAG: ${{ github.ref }}
+      DOCKER_TAG: ${{ github.event.inputs.DOCKER_TAG }}
 
   build-push:
     uses: zerok-ai/zk-operator/.github/workflows/zk-build-push.yml@helm-push
