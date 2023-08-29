@@ -215,8 +215,12 @@ func (h *ScenarioHandler) processScenarios(rulesApiResponse *ScenariosApiRespons
 
 		err := h.VersionedStore.SetValue(scenarioId, scenario)
 		if err != nil {
-			logger.Error(LOG_TAG, "Error while setting filter rule to redis ", err)
-			return "", err
+			if errors.Is(err, zkredis.LATEST) {
+				logger.Info(LOG_TAG, "Latest value is already present in redis for scenario Id ", scenarioId)
+			} else {
+				logger.Error(LOG_TAG, "Error while setting filter rule to redis ", err)
+				return "", err
+			}
 		}
 	}
 
