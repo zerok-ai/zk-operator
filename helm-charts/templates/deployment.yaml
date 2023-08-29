@@ -32,7 +32,7 @@ spec:
               value: zk-wsp-client.zk-client.svc.cluster.local
             - name: SERVICE_PORT
               value: 8987
-          image: registry.hub.docker.com/library/curlimages/curl:latest
+          image: us-west1-docker.pkg.dev/zerok-dev/curl/curl:latest
           imagePullPolicy: IfNotPresent
           resources: {}
           securityContext:
