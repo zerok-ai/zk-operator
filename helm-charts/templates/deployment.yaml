@@ -20,12 +20,26 @@ spec:
         control-plane: controller-manager
     spec:
       initContainers:
-        - name: init-container
-          image: "{{ index .Values.global.zkInitContainerRepo }}:{{ index .Values.global.zkInitContainerTag }}"
-          imagePullPolicy: Always
+        - command:
+            - sh
+            - -c
+            - 'set -x; URL="https://${SERVICE_NAME}:${SERVICE_PORT}/status"; until [
+            $(curl -m 0.5 -s -o /dev/null -w "%{http_code}" -k ${URL}) -eq 200 ]; do
+            echo "waiting for ${URL}"; sleep 2; done;'
+          name: wsp-wait
           env:
-            - name: URL
-              value: "http://zk-wsp-client.zk-client.svc.cluster.local:8987/status"
+            - name: SERVICE_NAME
+              value: zk-wsp-client.zk-client.svc.cluster.local
+            - name: SERVICE_PORT
+              value: 8987
+          image: registry.hub.docker.com/library/curlimages/curl:latest
+          imagePullPolicy: IfNotPresent
+          resources: {}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
       containers:
       - args:
         - --secure-listen-address=0.0.0.0:8443
