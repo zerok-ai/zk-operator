@@ -1,10 +1,13 @@
 apiVersion: operator.zerok.ai/v1alpha1
-kind: Zerokop
+kind: Zerokop //ZkImageOverrides
 metadata:
   name: zerokop-sample
 spec:
-  images-overrides:
-    - language : java
-      env_override:
-        - java_tool_options: ""
+  images:
+    - imageID: "us-west1-docker.pkg.dev/zerok-dev/java-spring-boot-demo/inventory:configurable" // Support regex here.
+      user_override: true
+      env:
+        - JAVA_TOOL_OPTIONS: ""
       cmd_override: ""
+    - imageID: "us-west1-docker.pkg.dev/zerok-dev/java-spring-boot-demo/inventory:configurable"
+      zk_override: true
