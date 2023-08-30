@@ -6,6 +6,22 @@ import (
 
 // ZerokopSpec defines the desired state of Zerokop
 type ZerokopSpec struct {
+	Images []ImageOverride `json:"images"`
+}
+
+// ImageOverride defines overrides for a specific image.
+type ImageOverride struct {
+	ImageID      string   `json:"imageID"`
+	UserOverride bool     `json:"user_override,omitempty"`
+	Env          []EnvVar `json:"env,omitempty"`
+	CmdOverride  string   `json:"cmd_override,omitempty"`
+	ZkOverride   bool     `json:"zk_override,omitempty"`
+}
+
+// EnvVar defines environment variables to override.
+type EnvVar struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
 // ZerokopStatus defines the observed state of Zerokop
