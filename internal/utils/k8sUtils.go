@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/zerok-ai/zk-operator/internal/common"
+	"github.com/zerok-ai/zk-operator/internal/storage"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
 	"sync"
 	"time"
@@ -332,7 +333,7 @@ func hasRestartLabel(namespace string, workLoadType int, name, labelKey, labelVa
 	return ok && value == labelValue, nil
 }
 
-func RestartMarkedNamespacesIfNeeded(orchestratedPods bool) error {
+func RestartMarkedNamespacesIfNeeded(orchestratedPods bool, imageRuntimeCache *storage.ImageRuntimeCache) error {
 	logger.Debug(LOG_TAG, "In restart marked namespaces with orchestrated pods flag as ", orchestratedPods)
 	namespaces, err := GetAllMarkedNamespaces()
 	logger.Debug(LOG_TAG, "All marked namespaces are ", namespaces)
@@ -360,7 +361,22 @@ func RestartMarkedNamespacesIfNeeded(orchestratedPods bool) error {
 				logger.Error(LOG_TAG, "Error caught while getting all non orchestrated pods ", err)
 				return err
 			}
-			//TODO: We can add a check whether the image data is available or not. Or maybe restart needed to get the needed.
+
+			if imageRuntimeCache != nil {
+
+				podsToOrchestrate := make([]corev1.Pod, 0)
+				for _, pod := range pods {
+					containers := pod.Spec.Containers
+					for index := range containers {
+						container := &pod.Spec.Containers[index]
+						language := imageRuntimeCache.GetContainerLanguage(container, nil)
+						if language == common.JavaProgrammingLanguage {
+							podsToOrchestrate = append(podsToOrchestrate, pod)
+							break
+						}
+					}
+				}
+			}
 		}
 
 		logger.Debug(LOG_TAG, " Non orchestrated pods for namespace ", namespace.ObjectMeta.Name, " are ", pods)

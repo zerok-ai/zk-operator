@@ -69,7 +69,7 @@ func cleanUpOrchestratedPods(config *config.ZkOperatorConfig, namespace *corev1.
 		return err
 	}
 
-	err = RestartMarkedNamespacesIfNeeded(true)
+	err = RestartMarkedNamespacesIfNeeded(true, nil)
 	if err != nil {
 		logger.Error(FINALIZER_LOG_TAG, "Failed to restart marked namespaces ", err)
 		return err

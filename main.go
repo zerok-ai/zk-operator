@@ -121,8 +121,6 @@ func main() {
 		panic("unable to set up ready check")
 	}
 
-	go restartNonOrchestratedPodsIfNeeded()
-
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
@@ -174,6 +172,9 @@ func initOperator() {
 	imageRuntimeCache.Init(zkConfig)
 	zkModules = append(zkModules, imageRuntimeCache)
 
+	podRestartTicker := utils.NewOrchestrateRestart(imageRuntimeCache)
+	podRestartTicker.Ticker.Start()
+
 	//Creating operator login module
 	opLogin := auth.CreateOperatorLogin(zkConfig)
 
@@ -209,28 +210,6 @@ func initOperator() {
 
 	go utils.ListenToNamespaceDeletion(&zkConfig)
 
-}
-
-func restartNonOrchestratedPodsIfNeeded() {
-	// Waiting for 2 minutes for operator init to complete
-	//TODO: Doing once, check with shivam if this is enough.
-	duration := 2 * time.Minute
-	<-time.After(duration)
-
-	//Restarting workloads in namespaces which have zk-injection enabled, but have non-orchestrated pods.
-	zklogger.Debug(LOG_TAG, "Restarting marked namespaces if needed")
-	// zk-injection: enabled --> namespace
-	// non-orchestrated pods
-	// for all non-orchestrated - workloads
-	// if workload has auto-restart
-	// then restart
-
-	// 1. Zk operator is just installed.
-	// 2. New workload deployed.
-	err := utils.RestartMarkedNamespacesIfNeeded(false)
-	if err != nil {
-		zklogger.Error(LOG_TAG, "Error while restarting marked namespaces if needed ", err)
-	}
 }
 
 func newApp() *iris.Application {
