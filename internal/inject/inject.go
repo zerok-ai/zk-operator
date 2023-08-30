@@ -22,6 +22,7 @@ var LOG_TAG = "inject"
 type Injector struct {
 	ImageRuntimeHandler *storage.ImageRuntimeCache
 	Config              config.ZkOperatorConfig
+	InitContainerData   *config.AppInitContainerData
 }
 
 // GetEmptyResponse returns an empty admission response as a JSON byte array.
@@ -246,6 +247,12 @@ func (h *Injector) getVolumePatch() map[string]interface{} {
 func (h *Injector) getInitContainerPatches(pod *corev1.Pod) []map[string]interface{} {
 	p := make([]map[string]interface{}, 0)
 
+	initImage := h.InitContainerData.Image
+	initTag := h.InitContainerData.Tag
+	if len(initImage) == 0 || len(initTag) == 0 {
+		return p
+	}
+
 	if pod.Spec.InitContainers == nil {
 		initInitialize := map[string]interface{}{
 			"op":    "add",
@@ -262,7 +269,7 @@ func (h *Injector) getInitContainerPatches(pod *corev1.Pod) []map[string]interfa
 		"value": &corev1.Container{
 			Name:            "zerok-init",
 			Command:         []string{"cp", "-r", "/opt/zerok/.", "/opt/temp"},
-			Image:           h.Config.InitContainer.Image + ":" + h.Config.InitContainer.Tag,
+			Image:           initImage + ":" + initTag,
 			ImagePullPolicy: corev1.PullAlways,
 			VolumeMounts: []corev1.VolumeMount{
 				{

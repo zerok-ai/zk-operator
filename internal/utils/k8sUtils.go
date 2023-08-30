@@ -256,7 +256,7 @@ func CreateOrUpdateConfigMap(namespace string, name string, configMaps v1.Config
 	return err
 }
 
-func GetDataFromConfigMap(namespace, name string) (*sync.Map, error) {
+func GetSyncMapFromConfigMap(namespace, name string) (*sync.Map, error) {
 	clientSet, err := GetK8sClient()
 	if err != nil {
 		logger.Error(LOG_TAG, " Error while getting k8s client.")

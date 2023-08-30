@@ -192,6 +192,10 @@ func initOperator() {
 
 	opLogin.RegisterZkModules(zkModules)
 
+	appInitData := config.AppInitContainerData{}
+	appInitData.Init(zkConfig)
+	appInitData.StartPeriodicSync()
+
 	//Starting syncing of image,runtime data from redis
 	go imageRuntimeCache.StartPeriodicSync()
 
@@ -200,7 +204,7 @@ func initOperator() {
 	app := newApp()
 
 	// start webhook server
-	go server.StartWebHookServer(app, zkConfig, cert, key, imageRuntimeCache, irisConfig)
+	go server.StartWebHookServer(app, zkConfig, cert, key, imageRuntimeCache, irisConfig, &appInitData)
 
 	app1 := newApp()
 

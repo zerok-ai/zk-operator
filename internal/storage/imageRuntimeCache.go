@@ -69,7 +69,7 @@ func (h *ImageRuntimeCache) Init(config config.ZkOperatorConfig) {
 	h.ImageStore = GetNewRedisStore(config)
 	h.RuntimeMapVersion = -1
 	var err error
-	h.ImageRuntimeMap, err = utils.GetDataFromConfigMap(utils.GetCurrentNamespace(), common.ZkImageConfigMapName)
+	h.ImageRuntimeMap, err = utils.GetSyncMapFromConfigMap(utils.GetCurrentNamespace(), common.ZkImageConfigMapName)
 	logger.Debug(LOG_TAG, "ImageMap from configMap is ", h.ImageRuntimeMap)
 	if err != nil {
 		h.ImageRuntimeMap = &sync.Map{}

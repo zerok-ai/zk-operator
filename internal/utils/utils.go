@@ -36,7 +36,9 @@ func CreateProcessMap(m *sync.Map) (string, error) {
 					temp := make(map[string]string)
 					temp["Process"] = y.Process
 					temp["language"] = "java"
-					temp["CmdLine"] = y.Cmd[0]
+					if len(y.Cmd) > 0 {
+						temp["CmdLine"] = y.Cmd[0]
+					}
 					temp["JAVA_TOOL_OPTIONS"] = y.EnvMap["JAVA_TOOL_OPTIONS"]
 					resultMap[fmt.Sprintf("%v", key)] = temp
 				}
