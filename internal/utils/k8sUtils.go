@@ -360,6 +360,7 @@ func RestartMarkedNamespacesIfNeeded(orchestratedPods bool) error {
 				logger.Error(LOG_TAG, "Error caught while getting all non orchestrated pods ", err)
 				return err
 			}
+			//TODO: We can add a check whether the image data is available or not. Or maybe restart needed to get the needed.
 		}
 
 		logger.Debug(LOG_TAG, " Non orchestrated pods for namespace ", namespace.ObjectMeta.Name, " are ", pods)
