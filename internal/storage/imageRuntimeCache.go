@@ -48,10 +48,16 @@ func (h *ImageRuntimeCache) SyncDataFromRedis() error {
 	if h.RuntimeMapVersion == -1 || h.RuntimeMapVersion != versionFromRedis {
 		h.RuntimeMapVersion = versionFromRedis
 		h.ImageStore.SyncDataFromRedis(h.ImageRuntimeMap)
-		logger.Debug(LOG_TAG, "Updating config map.")
-		err := utils.CreateOrUpdateConfigMap(utils.GetCurrentNamespace(), common.ZkConfigMapName, h.ImageRuntimeMap)
+		logger.Debug(LOG_TAG, "Updating image config map.")
+		err := utils.CreateOrUpdateZkImageConfigMap(utils.GetCurrentNamespace(), common.ZkImageConfigMapName, h.ImageRuntimeMap)
 		if err != nil {
-			logger.Error(LOG_TAG, "Error while create/update confimap ", err)
+			logger.Error(LOG_TAG, "Error while create/update image configmap ", err)
+			return err
+		}
+		logger.Debug(LOG_TAG, "Updating process config map.")
+		err = utils.CreateOrUpdateProcessInfoConfigMap(utils.GetCurrentNamespace(), common.ZkProcessConfigMapName, h.ImageRuntimeMap)
+		if err != nil {
+			logger.Error(LOG_TAG, "Error while create/update process info configmap ", err)
 			return err
 		}
 	}
@@ -63,7 +69,7 @@ func (h *ImageRuntimeCache) Init(config config.ZkOperatorConfig) {
 	h.ImageStore = GetNewRedisStore(config)
 	h.RuntimeMapVersion = -1
 	var err error
-	h.ImageRuntimeMap, err = utils.GetDataFromConfigMap(utils.GetCurrentNamespace(), common.ZkConfigMapName)
+	h.ImageRuntimeMap, err = utils.GetDataFromConfigMap(utils.GetCurrentNamespace(), common.ZkImageConfigMapName)
 	logger.Debug(LOG_TAG, "ImageMap from configMap is ", h.ImageRuntimeMap)
 	if err != nil {
 		h.ImageRuntimeMap = &sync.Map{}

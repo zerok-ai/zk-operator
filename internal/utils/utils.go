@@ -24,6 +24,37 @@ func GetContainerRuntime(data string) (*common.ContainerRuntime, error) {
 	return &runtimeDetails, nil
 }
 
+func CreateProcessMap(m *sync.Map) (string, error) {
+	resultMap := make(map[string]interface{})
+
+	m.Range(func(key, value interface{}) bool {
+		switch y := value.(type) {
+		case *common.ContainerRuntime:
+			if len(y.Languages) > 0 {
+				lang := y.Languages[0]
+				if lang == "java" {
+					temp := make(map[string]string)
+					temp["Process"] = y.Process
+					temp["language"] = "java"
+					temp["CmdLine"] = y.Cmd[0]
+					temp["JAVA_TOOL_OPTIONS"] = y.EnvMap["JAVA_TOOL_OPTIONS"]
+					resultMap[fmt.Sprintf("%v", key)] = temp
+				}
+			}
+		}
+		return true
+	})
+
+	logger.Debug(LOG_TAG_UTILS, resultMap)
+
+	mapBytes, err := json.MarshalIndent(resultMap, "", " ")
+	if err != nil {
+		return "", err
+	}
+
+	return string(mapBytes), nil
+}
+
 func SyncMapToString(m *sync.Map) (string, error) {
 	resultMap := make(map[string]interface{})
 

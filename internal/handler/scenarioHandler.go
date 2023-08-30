@@ -159,7 +159,7 @@ func (h *ScenarioHandler) getScenariosFromZkCloud(cfg config.ZkOperatorConfig, r
 		return nil, err
 	}
 
-	logger.Debug(LOG_TAG, "Scenario response body ", body)
+	//logger.Debug(LOG_TAG, "Scenario response body ", body)
 
 	var apiResponse ScenariosApiResponse
 
@@ -209,7 +209,7 @@ func (h *ScenarioHandler) processScenarios(rulesApiResponse *ScenariosApiRespons
 			latestUpdateTime = scenario.Version
 		}
 
-		logger.Debug(LOG_TAG, "Scenario string ", scenario)
+		//logger.Debug(LOG_TAG, "Scenario string ", scenario)
 
 		scenarioId := scenario.Id
 

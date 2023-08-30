@@ -3,3 +3,8 @@ kind: Zerokop
 metadata:
   name: zerokop-sample
 spec:
+  images-overrides:
+    - language : java
+      env_override:
+        - java_tool_options: ""
+      cmd_override: ""
