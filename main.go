@@ -172,8 +172,12 @@ func initOperator() {
 	imageRuntimeCache.Init(zkConfig)
 	zkModules = append(zkModules, imageRuntimeCache)
 
-	podRestartTicker := restart.NewOrchestrateRestart(imageRuntimeCache)
-	podRestartTicker.Ticker.Start()
+	// we want to wait for the pod to be ready before we start the restart ticker
+	go func() {
+		time.Sleep(time.Duration(2) * time.Minute)
+		podRestartTicker := restart.NewOrchestrateRestart(imageRuntimeCache)
+		podRestartTicker.Ticker.Start()
+	}()
 
 	//Creating operator login module
 	opLogin := auth.CreateOperatorLogin(zkConfig)
