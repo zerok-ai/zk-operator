@@ -45,7 +45,7 @@ func webhookErrorResponse(err error, ctx iris.Context, message string) {
 
 func handleRoutes(app *iris.Application, cfg config.ZkOperatorConfig, runtimeMap *storage.ImageRuntimeCache, appInitContainerData *config.AppInitContainerData) {
 	injectHandler := &WebhookRequestHandler{
-		injector: &inject.Injector{ImageRuntimeHandler: runtimeMap, Config: cfg, InitContainerData: appInitContainerData},
+		injector: &inject.Injector{ImageRuntimeCache: runtimeMap, Config: cfg, InitContainerData: appInitContainerData},
 	}
 	app.Post(cfg.Webhook.Path, injectHandler.ServeHTTP)
 }

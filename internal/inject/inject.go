@@ -3,12 +3,14 @@ package inject
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/zerok-ai/zk-operator/api/v1alpha1"
 	common "github.com/zerok-ai/zk-operator/internal/common"
 	"github.com/zerok-ai/zk-operator/internal/config"
 	"github.com/zerok-ai/zk-operator/internal/storage"
 	"github.com/zerok-ai/zk-operator/internal/utils"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
 	"strconv"
+	"strings"
 	"time"
 
 	v1 "k8s.io/api/admission/v1"
@@ -20,9 +22,9 @@ var LOG_TAG = "inject"
 
 // Injector is a struct that implements an admission controller webhook for Kubernetes pods.
 type Injector struct {
-	ImageRuntimeHandler *storage.ImageRuntimeCache
-	Config              config.ZkOperatorConfig
-	InitContainerData   *config.AppInitContainerData
+	ImageRuntimeCache *storage.ImageRuntimeCache
+	Config            config.ZkOperatorConfig
+	InitContainerData *config.AppInitContainerData
 }
 
 // GetEmptyResponse returns an empty admission response as a JSON byte array.
@@ -134,15 +136,17 @@ func (h *Injector) getContainerPatches(pod *corev1.Pod) []map[string]interface{}
 
 		container := &pod.Spec.Containers[index]
 
-		language := h.ImageRuntimeHandler.GetContainerLanguage(container, pod)
+		language := h.ImageRuntimeCache.GetContainerLanguage(container)
+
+		override := h.ImageRuntimeCache.GetOverrideForImage(container.Image)
 
 		logger.Debug(LOG_TAG, "Found language ", language, " for container ", container.Name)
 
 		switch language {
 		case common.JavaProgrammingLanguage:
 			//Adding env variable patch in case the prog language is java.
-			javaToolsPatch := h.modifyJavaToolsEnvVariablePatch(container, index)
-			patches = append(patches, javaToolsPatch...)
+			javaEnvPatch := h.addJavaToolEnvPatch(container, index)
+			patches = append(patches, javaEnvPatch...)
 			orchLabelPatch := getZerokLabelPatch(common.ZkOrchOrchestrated)
 			patches = append(patches, orchLabelPatch)
 		case common.NotYetProcessed:
@@ -158,24 +162,54 @@ func (h *Injector) getContainerPatches(pod *corev1.Pod) []map[string]interface{}
 
 		patches = append(patches, addVolumeMount)
 
+		patches = append(patches, h.addEnvOverridePatch(container, index, override.Env)...)
+
 	}
 
 	return patches
 }
 
-func (h *Injector) modifyJavaToolsEnvVariablePatch(container *corev1.Container, containerIndex int) []map[string]interface{} {
+func (h *Injector) getAddEnvPatch(containerIndex int, name, value string) map[string]interface{} {
+	patch := map[string]interface{}{
+		"op":   "add",
+		"path": fmt.Sprintf("/spec/containers/%v/env/-", containerIndex),
+		"value": corev1.EnvVar{
+			Name:  name,
+			Value: value,
+		},
+	}
+	return patch
+}
+
+func (h *Injector) getReplaceEnvPatch(containerIndex, envIndex int, name, value string) map[string]interface{} {
+	patch := map[string]interface{}{
+		"op":   "replace",
+		"path": fmt.Sprintf("/spec/containers/%v/env/%v", containerIndex, envIndex),
+		"value": corev1.EnvVar{
+			Name:  name,
+			Value: value,
+		},
+	}
+	return patch
+}
+
+func (h *Injector) addEnvObjectPatch(containerIndex int) map[string]interface{} {
+	envInitialize := map[string]interface{}{
+		"op":    "add",
+		"path":  fmt.Sprintf("/spec/containers/%v/env", containerIndex),
+		"value": []corev1.EnvVar{},
+	}
+	return envInitialize
+}
+
+func (h *Injector) addJavaToolEnvPatch(container *corev1.Container, containerIndex int) []map[string]interface{} {
 	envVars := container.Env
 	envIndex := -1
 	patches := []map[string]interface{}{}
 
 	//If there are no env variables in container, adding an empty array first.
 	if len(envVars) == 0 {
-		envInitialize := map[string]interface{}{
-			"op":    "add",
-			"path":  fmt.Sprintf("/spec/containers/%v/env", containerIndex),
-			"value": []corev1.EnvVar{},
-		}
-		patches = append(patches, envInitialize)
+		patches = append(patches, h.addEnvObjectPatch(containerIndex))
 	} else {
 		envIndex = utils.GetIndexOfEnv(envVars, common.JavalToolOptions)
 	}
@@ -183,27 +217,57 @@ func (h *Injector) modifyJavaToolsEnvVariablePatch(container *corev1.Container, 
 	var patch map[string]interface{}
 	//Scenario where java_tool_options is not present.
 	if envIndex == -1 {
-		patch = map[string]interface{}{
-			"op":   "add",
-			"path": fmt.Sprintf("/spec/containers/%v/env/-", containerIndex),
-			"value": corev1.EnvVar{
-				Name:  common.JavalToolOptions,
-				Value: h.Config.Instrumentation.OtelArgument,
-			},
-		}
-
+		patch = h.getAddEnvPatch(containerIndex, common.JavalToolOptions, h.Config.Instrumentation.OtelArgument)
 	} else {
 		//Scenario where java_tool_options is already present.
-		patch = map[string]interface{}{
-			"op":   "replace",
-			"path": fmt.Sprintf("/spec/containers/%v/env/%v", containerIndex, envIndex),
-			"value": corev1.EnvVar{
-				Name:  common.JavalToolOptions,
-				Value: container.Env[envIndex].Value + h.Config.Instrumentation.OtelArgument,
-			},
+		splitResult := strings.Split(h.Config.Instrumentation.OtelArgument, " ")
+		prefix := "-Dotel."
+		existingValue := container.Env[envIndex].Value
+
+		for _, str := range splitResult {
+			if strings.HasPrefix(str, prefix) {
+				splitResultNew := strings.Split(str, "=")
+				if len(splitResultNew) == 2 {
+					flag := splitResultNew[0]
+					value := splitResultNew[1]
+					existingValue = h.ImageRuntimeCache.AddorUpdateFlags(existingValue, flag, value)
+				}
+			}
 		}
+		patch = h.getReplaceEnvPatch(containerIndex, envIndex, common.JavalToolOptions, existingValue)
 	}
 	patches = append(patches, patch)
+	return patches
+}
+
+func (h *Injector) addEnvOverridePatch(container *corev1.Container, containerIndex int, overrideEnv []v1alpha1.EnvVar) []map[string]interface{} {
+	envVars := container.Env
+	envIndex := -1
+	patches := []map[string]interface{}{}
+	isAdd := false
+
+	//If there are no env variables in container, adding an empty array first.
+	if len(envVars) == 0 {
+		patches = append(patches, h.addEnvObjectPatch(containerIndex))
+		isAdd = true
+	}
+
+	for _, overrideEnv := range overrideEnv {
+		name := overrideEnv.Name
+		value := overrideEnv.Value
+		var patch map[string]interface{}
+		if isAdd {
+			patch = h.getAddEnvPatch(containerIndex, name, value)
+		} else {
+			envIndex = utils.GetIndexOfEnv(envVars, name)
+			if envIndex == -1 {
+				patch = h.getAddEnvPatch(containerIndex, name, value)
+			} else {
+				patch = h.getReplaceEnvPatch(containerIndex, envIndex, name, value)
+			}
+		}
+		patches = append(patches, patch)
+	}
 	return patches
 }
 

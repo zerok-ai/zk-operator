@@ -110,7 +110,7 @@ func (h *ImageRuntimeCache) getRuntimeForImage(imageID string) *common.Container
 	}
 }
 
-func (h *ImageRuntimeCache) GetContainerLanguage(container *corev1.Container, pod *corev1.Pod) common.ProgrammingLanguage {
+func (h *ImageRuntimeCache) GetContainerLanguage(container *corev1.Container) common.ProgrammingLanguage {
 	imageId := container.Image
 	logger.Debug(LOG_TAG, "Image is ", imageId)
 	runtime := h.getRuntimeForImage(imageId)
