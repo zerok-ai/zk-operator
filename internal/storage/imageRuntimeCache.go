@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"github.com/zerok-ai/zk-operator/api/v1alpha1"
 	common "github.com/zerok-ai/zk-operator/internal/common"
 	utils "github.com/zerok-ai/zk-operator/internal/utils"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
@@ -16,6 +17,8 @@ import (
 var LOG_TAG = "ImageRuntimeCache"
 
 type ImageRuntimeCache struct {
+	//Key will be regex and value will be *v1alpha1.ImageOverride
+	ImageOverrideMap  *sync.Map
 	ImageRuntimeMap   *sync.Map
 	RuntimeMapVersion int64
 	ImageStore        *ImageStore
@@ -77,6 +80,7 @@ func (h *ImageRuntimeCache) Init(config config.ZkOperatorConfig) {
 	}
 	var duration = time.Duration(config.Instrumentation.PollingInterval) * time.Second
 	h.ticker = zktick.GetNewTickerTask("images_sync", duration, h.periodicSync)
+	h.ImageOverrideMap = &sync.Map{}
 }
 
 func (h *ImageRuntimeCache) getRuntimeForImage(imageID string) *common.ContainerRuntime {
@@ -113,5 +117,15 @@ func (h *ImageRuntimeCache) GetContainerLanguage(container *corev1.Container, po
 func (h *ImageRuntimeCache) CleanUpOnkill() error {
 	logger.Debug(LOG_TAG, "Kill method in update orchestration.\n")
 	h.ticker.Stop()
+	return nil
+}
+
+func (h *ImageRuntimeCache) ProcessOverrideValues(values []v1alpha1.ImageOverride) error {
+	logger.Debug(LOG_TAG, "Processing override values.")
+	for _, imageOverride := range values {
+		imageId := imageOverride.ImageID
+		h.ImageOverrideMap.Store(imageId, imageOverride)
+		logger.Debug(LOG_TAG, "Saving override value for imageId ", imageId)
+	}
 	return nil
 }
