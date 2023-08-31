@@ -7,6 +7,7 @@ import (
 	"github.com/zerok-ai/zk-operator/internal/auth"
 	"github.com/zerok-ai/zk-operator/internal/common"
 	"github.com/zerok-ai/zk-operator/internal/utils"
+	common2 "github.com/zerok-ai/zk-utils-go/common"
 	zkhttp "github.com/zerok-ai/zk-utils-go/http"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
 	"github.com/zerok-ai/zk-utils-go/scenario/model"
@@ -40,8 +41,15 @@ type ScenariosApiResponse struct {
 }
 
 type ScenariosObj struct {
-	Scenarios []model.Scenario `json:"scenarios"`
-	Deleted   []string         `json:"deleted_scenario_id,omitempty"`
+	Scenarios []ScenarioModelResponse `json:"scenarios"`
+	Deleted   []string                `json:"deleted_scenario_id,omitempty"`
+}
+
+type ScenarioModelResponse struct {
+	Scenario   model.Scenario `json:"scenario"`
+	CreatedAt  int64          `json:"created_at"`
+	DisabledAt *int64         `json:"disabled_at,omitempty"`
+	UpdatedAt  int64          `json:"updated_at"`
 }
 
 func (h *ScenarioHandler) Init(VersionedStore *zkredis.VersionedStore[model.Scenario], OpLogin *auth.OperatorLogin, cfg config.ZkOperatorConfig) {
@@ -196,24 +204,26 @@ func (h *ScenarioHandler) processScenarios(rulesApiResponse *ScenariosApiRespons
 		return "", fmt.Errorf("rules Api response is nil")
 	}
 	payload := rulesApiResponse.Payload
-	latestUpdateTime := "0"
-	for _, scenario := range payload.Scenarios {
-		ver1, err1 := strconv.ParseInt(latestUpdateTime, 10, 64)
-		ver2, err2 := strconv.ParseInt(scenario.Version, 10, 64)
-		if err1 != nil || err2 != nil {
-			logger.Error(LOG_TAG, "Error while converting versions to int64 for scenario ", scenario.Id)
+	var latestUpdateTime int64
+	for _, scenarioResp := range payload.Scenarios {
+		updatedAt := scenarioResp.UpdatedAt
+
+		if updatedAt > latestUpdateTime {
+			latestUpdateTime = updatedAt
+		}
+
+		logger.Debug(LOG_TAG, "Scenario string ", scenarioResp)
+
+		var scenarioId string
+
+		if common2.IsEmpty(scenarioResp.Scenario.Id) {
+			logger.Error(LOG_TAG, "Scenario id is empty. Ignoring this scenario.", scenarioResp.Scenario)
 			continue
+		} else {
+			scenarioId = scenarioResp.Scenario.Id
 		}
 
-		if ver2 > ver1 {
-			latestUpdateTime = scenario.Version
-		}
-
-		logger.Debug(LOG_TAG, "Scenario string ", scenario)
-
-		scenarioId := scenario.Id
-
-		err := h.VersionedStore.SetValue(scenarioId, scenario)
+		err := h.VersionedStore.SetValue(scenarioId, scenarioResp.Scenario)
 		if err != nil {
 			if errors.Is(err, zkredis.LATEST) {
 				logger.Info(LOG_TAG, "Latest value is already present in redis for scenario Id ", scenarioId)
@@ -231,7 +241,10 @@ func (h *ScenarioHandler) processScenarios(rulesApiResponse *ScenariosApiRespons
 			return "", err
 		}
 	}
-	return latestUpdateTime, nil
+
+	latestUpdateTimeStr := fmt.Sprintf("%v", latestUpdateTime)
+
+	return latestUpdateTimeStr, nil
 }
 
 func (h *ScenarioHandler) CleanUpOnkill() error {
