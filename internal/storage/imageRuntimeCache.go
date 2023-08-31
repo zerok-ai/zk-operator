@@ -7,6 +7,7 @@ import (
 	utils "github.com/zerok-ai/zk-operator/internal/utils"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
 	zktick "github.com/zerok-ai/zk-utils-go/ticker"
+	"regexp"
 	"sync"
 	"time"
 
@@ -83,6 +84,19 @@ func (h *ImageRuntimeCache) Init(config config.ZkOperatorConfig) {
 	h.ImageOverrideMap = &sync.Map{}
 }
 
+func (h *ImageRuntimeCache) GetOverrideForImage(imageID string) *v1alpha1.ImageOverride {
+	value, ok := h.ImageRuntimeMap.Load(imageID)
+	if !ok {
+		return nil
+	}
+	switch y := value.(type) {
+	case *v1alpha1.ImageOverride:
+		return y
+	default:
+		return nil
+	}
+}
+
 func (h *ImageRuntimeCache) getRuntimeForImage(imageID string) *common.ContainerRuntime {
 	value, ok := h.ImageRuntimeMap.Load(imageID)
 	if !ok {
@@ -124,8 +138,27 @@ func (h *ImageRuntimeCache) ProcessOverrideValues(values []v1alpha1.ImageOverrid
 	logger.Debug(LOG_TAG, "Processing override values.")
 	for _, imageOverride := range values {
 		imageId := imageOverride.ImageID
-		h.ImageOverrideMap.Store(imageId, imageOverride)
+		h.ImageOverrideMap.Store(imageId, &imageOverride)
 		logger.Debug(LOG_TAG, "Saving override value for imageId ", imageId)
 	}
 	return nil
+}
+
+func (h *ImageRuntimeCache) AddorUpdateFlags(inputString, flag, value string) string {
+	re := regexp.MustCompile(fmt.Sprintf(`%s=([^ ]+)`, flag))
+	matches := re.FindStringSubmatch(inputString)
+
+	newString := inputString
+
+	if len(matches) > 1 {
+		// Flag is already present, append the new value
+		newValue := fmt.Sprintf("%s,%s", matches[1], value)
+		newString = re.ReplaceAllString(inputString, fmt.Sprintf("%s=%s", flag, newValue))
+
+	} else {
+		// Flag is not present, add it with value
+		newString = fmt.Sprintf("%s=%s %s", flag, value, inputString)
+	}
+
+	return newString
 }
