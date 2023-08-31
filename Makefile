@@ -3,7 +3,7 @@
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
-VERSION ?= dev
+VERSION ?= exinst
 LOCATION ?= us-west1
 PROJECT_ID ?= zerok-dev
 REPOSITORY ?= stage
@@ -117,7 +117,7 @@ build: generate manifests fmt vet ## Build manager binary.
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o bin/manager main.go
 
 .PHONY: buildAndPush
-buildAndPush: build
+buildAndPush: generate build
 	$(MAKE) gke docker-build docker-push
 
 .PHONY: run
@@ -144,7 +144,7 @@ ifndef ignore-not-found
 endif
 
 .PHONY: install
-install: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+install: generate manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
 

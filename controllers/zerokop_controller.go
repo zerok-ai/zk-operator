@@ -18,6 +18,9 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
+	logger "github.com/zerok-ai/zk-utils-go/logs"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -29,9 +32,11 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 )
 
+var LOG_TAG = "ZerokopReconciler"
+
 // ZerokopReconciler reconciles a Zerokop object
 type ZerokopReconciler struct {
-	Client client.Client
+	client.Client
 	Scheme *runtime.Scheme
 }
 
@@ -54,6 +59,18 @@ type ZerokopReconciler struct {
 func (r *ZerokopReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 
+	instance := &operatorv1alpha1.Zerokop{}
+	err := r.Get(ctx, req.NamespacedName, instance)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	specJSON, err := json.MarshalIndent(instance.Spec, "", "  ")
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	logger.Debug(string(specJSON))
+
+	// Print the spec in a m
 	return ctrl.Result{}, nil
 }
 

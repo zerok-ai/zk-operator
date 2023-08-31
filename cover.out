@@ -1,3 +1,7 @@
 mode: set
-github.com/zerok-ai/zk-operator/controllers/zerokop_controller.go:54.99,58.2 2 0
-github.com/zerok-ai/zk-operator/controllers/zerokop_controller.go:61.70,66.2 1 0
+github.com/zerok-ai/zk-operator/controllers/zerokop_controller.go:59.99,64.16 4 0
+github.com/zerok-ai/zk-operator/controllers/zerokop_controller.go:67.2,68.16 2 0
+github.com/zerok-ai/zk-operator/controllers/zerokop_controller.go:71.2,74.27 2 0
+github.com/zerok-ai/zk-operator/controllers/zerokop_controller.go:64.16,66.3 1 0
+github.com/zerok-ai/zk-operator/controllers/zerokop_controller.go:68.16,70.3 1 0
+github.com/zerok-ai/zk-operator/controllers/zerokop_controller.go:78.70,83.2 1 0
