@@ -26,7 +26,7 @@ import (
 	"github.com/zerok-ai/zk-operator/internal"
 	"github.com/zerok-ai/zk-operator/internal/auth"
 	"github.com/zerok-ai/zk-operator/internal/common"
-	"github.com/zerok-ai/zk-operator/internal/utils"
+	"github.com/zerok-ai/zk-operator/internal/restart"
 	"github.com/zerok-ai/zk-operator/internal/webhook"
 	"github.com/zerok-ai/zk-utils-go/scenario/model"
 	"time"
@@ -172,7 +172,7 @@ func initOperator() {
 	imageRuntimeCache.Init(zkConfig)
 	zkModules = append(zkModules, imageRuntimeCache)
 
-	podRestartTicker := utils.NewOrchestrateRestart(imageRuntimeCache)
+	podRestartTicker := restart.NewOrchestrateRestart(imageRuntimeCache)
 	podRestartTicker.Ticker.Start()
 
 	//Creating operator login module
@@ -208,7 +208,7 @@ func initOperator() {
 	// start http server
 	go server.StartHttpServer(app1, irisConfig, zkConfig, &clusterContextHandler)
 
-	go utils.ListenToNamespaceDeletion(&zkConfig)
+	go restart.ListenToNamespaceDeletion(&zkConfig)
 
 }
 
