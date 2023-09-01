@@ -96,8 +96,6 @@ spec:
         volumeMounts:
         - mountPath: /opt
           name: zk-operator-config
-      securityContext:
-        runAsNonRoot: true
       serviceAccountName: zk-operator
       terminationGracePeriodSeconds: 10
       volumes:
