@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cluster-info
+type: Opaque
+stringData:
+  clusterKey: {{ index .Values.global.zkcloud.keys.cluster_key }}
+  apiKey: {{ index .Values.global.zkcloud.keys.PX_API_KEY }}

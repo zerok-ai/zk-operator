@@ -1,0 +1,48 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: zk-operator-inject
+  name: zk-operator-inject
+  namespace: zk-client
+spec:
+  ports:
+  - name: zk-webhook
+    port: 443
+    targetPort: 8473
+  selector:
+    app: zk-operator
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    control-plane: controller-manager
+  name: zk-operator-metrics
+  namespace: zk-client
+spec:
+  ports:
+  - name: https
+    port: 8443
+    protocol: TCP
+    targetPort: https
+  selector:
+    control-plane: controller-manager
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: zk-operator
+  name: zk-operator
+  namespace: zk-client
+spec:
+  ports:
+  - name: web
+    port: 80
+    targetPort: 8472
+  selector:
+    app: zk-operator
+  type: ClusterIP
+---

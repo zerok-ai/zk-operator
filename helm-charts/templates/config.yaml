@@ -1,0 +1,55 @@
+apiVersion: v1
+data:
+  operator-config.yaml: |
+    redis:
+      host: redis-master.zk-client.svc.cluster.local
+      port: 6379
+      readTimeout: 20
+      dbs:
+        image_db: 7
+        version_db: 6
+    webhook:
+      namespace: zk-client
+      service: zk-operator-inject
+      name: zk-webhook
+      path: /zk-injector
+      port: 8473
+    http:
+      port: 8472
+      exceptionPath: /exception
+    clusterContext:
+      path: /i/clusterContext
+      cloudAddr: "px.{{ .Values.global.zkcloud.host }}"
+      port: 443
+    zkcloud:
+      host: "api.{{ .Values.global.zkcloud.host }}"
+      port: {{ .Values.global.zkcloud.port }}
+    scenarioSync:
+      path: /v1/o/cluster/scenario
+      pollingInterval: 300
+      db: 6
+    operatorLogin:
+      path: /v1/o/auth/login
+      clusterSecretName: cluster-info
+      clusterKeyData: clusterKey
+      apiKeyData: apiKey
+      clusterKeyNamespace: zk-client
+      maxRetries: 3
+    wspClient:
+      host: zk-wsp-client.zk-client.svc.cluster.local
+      port: 8987
+      path: /request
+      destinationHeader: X-PROXY-DESTINATION
+    initContainer:
+      image: "{{ .Values.global.dockerBase }}/{{ .Values.image.appInitContainerRepo }}"
+      tag: {{ .Values.image.appInitContainerTag }}
+    instrumentation:
+      otelArgument: -javaagent:/opt/zerok/opentelemetry-javaagent-1.27.0.jar -Dotel.javaagent.extensions=/opt/zerok/zk-otel-extension-1.0.jar -Dotel.traces.exporter=zerok
+      pollingInterval: 30 #seconds
+    logs:
+      color: true
+      level: DEBUG
+kind: ConfigMap
+metadata:
+  name: zk-operator
+  namespace: zk-client
