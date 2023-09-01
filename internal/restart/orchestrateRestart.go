@@ -47,7 +47,6 @@ func RestartMarkedNamespacesIfNeeded(orchestratedPods bool, imageRuntimeCache *s
 	}
 
 	for _, namespace := range namespaces.Items {
-
 		zklogger.Debug(utils.LOG_TAG, " Checking for namespace ", namespace.ObjectMeta.Name)
 
 		var pods []v1.Pod
@@ -66,13 +65,11 @@ func RestartMarkedNamespacesIfNeeded(orchestratedPods bool, imageRuntimeCache *s
 			}
 
 			if imageRuntimeCache != nil {
-
 				podsToOrchestrate := make([]v1.Pod, 0)
 				for _, pod := range pods {
 					containers := pod.Spec.Containers
-					for index := range containers {
-						container := &pod.Spec.Containers[index]
-						language := imageRuntimeCache.GetContainerLanguage(container, nil)
+					for _, container := range containers {
+						language := imageRuntimeCache.GetContainerLanguage(&container, nil)
 						if language == common.JavaProgrammingLanguage {
 							podsToOrchestrate = append(podsToOrchestrate, pod)
 							break
