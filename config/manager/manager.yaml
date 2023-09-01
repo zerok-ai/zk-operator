@@ -28,12 +28,28 @@ spec:
       securityContext:
         runAsNonRoot: true
       initContainers:
-        - name: init-container
-          image: us-west1-docker.pkg.dev/zerok-dev/stage/zk-init-container:dev
-          imagePullPolicy: Always
+        - command:
+            - sh
+            - -c
+            - 'set -x; URL="https://${SERVICE_NAME}:${SERVICE_PORT}/status"; until [
+           $(curl -m 0.5 -s -o /dev/null -w "%{http_code}" -k ${URL}) -eq 200 ]; do
+           echo "waiting for ${URL}"; sleep 2; done;'
+          name: wsp-wait
           env:
             - name: URL
               value: "http://zk-wsp-client.zk-client.svc.cluster.local:8987/status"
+            - name: SERVICE_NAME
+              value: zk-wsp-client.zk-client.svc.cluster.local
+            - name: SERVICE_PORT
+              value: "8987"
+          image: us-west1-docker.pkg.dev/zerok-dev/curl/curl:latest
+          imagePullPolicy: IfNotPresent
+          resources: { }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
       containers:
       - command:
         - /manager
