@@ -164,6 +164,30 @@ func (h *Injector) getContainerPatches(pod *corev1.Pod) []map[string]interface{}
 
 		patches = append(patches, h.addEnvOverridePatch(container, index, override.Env)...)
 
+		cmdOverride := override.CmdOverride
+
+		//TODO: What is the role of zk-override and user-override here?
+		//TODO: Should we explicitly ask users to add zk-override for all of them?
+		if len(cmdOverride) > 0 {
+			//We will have to make changes to cmdOverride and add it here.
+
+			if len(container.Command) > 0 {
+				//Container cmd already present
+				//We will have to give a replace patch here.
+				// Create
+			} else {
+				//Container cmd not present.
+				//We will have to give an add patch here.
+			}
+		} else if len(container.Command) > 0 {
+			//We will have to make changes to container command and add it here.
+		} else {
+			//TODO: Should we check for zk-override value here?
+			//TODO: For auto injection what is the relation between zk-injection enabled, zk-override in crd.
+			//TODO: Is it and/or condition?
+			//We will have to add a new container command and add it here.
+		}
+
 	}
 
 	return patches
@@ -241,6 +265,7 @@ func (h *Injector) addJavaToolEnvPatch(container *corev1.Container, containerInd
 }
 
 func (h *Injector) addEnvOverridePatch(container *corev1.Container, containerIndex int, overrideEnv []v1alpha1.EnvVar) []map[string]interface{} {
+	//TODO: Do we need to add check for user-override value here?
 	envVars := container.Env
 	envIndex := -1
 	patches := []map[string]interface{}{}

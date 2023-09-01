@@ -14,7 +14,7 @@ type ImageOverride struct {
 	ImageID      string   `json:"imageID"`
 	UserOverride bool     `json:"user_override,omitempty"`
 	Env          []EnvVar `json:"env,omitempty"`
-	CmdOverride  string   `json:"cmd_override,omitempty"`
+	CmdOverride  []string `json:"cmd_override,omitempty"`
 	ZkOverride   bool     `json:"zk_override,omitempty"`
 }
 
