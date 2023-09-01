@@ -157,6 +157,10 @@ func (h *Injector) getContainerPatches(pod *corev1.Pod) []map[string]interface{}
 
 		patches = append(patches, addVolumeMount)
 
+		envPatch := h.getEnvVarPatches(index)
+
+		patches = append(patches, envPatch)
+
 	}
 
 	return patches
@@ -213,6 +217,24 @@ func getZerokLabelPatch(value string) map[string]interface{} {
 		"value": value,
 	}
 	return labelPod
+}
+
+func (h *Injector) getEnvVarPatches(i int) map[string]interface{} {
+	addVolumeMount := map[string]interface{}{
+		"op":   "add",
+		"path": "/spec/containers/" + strconv.Itoa(i) + "/env/-",
+		"value": []corev1.EnvVar{
+			{
+				Name:  "REDIS_HOST",
+				Value: h.Config.Redis.Host,
+			},
+			{
+				Name:  "REDIS_PASSWORD",
+				Value: h.Config.Redis.Password,
+			},
+		},
+	}
+	return addVolumeMount
 }
 
 func (*Injector) getVolumeMount(i int) map[string]interface{} {
