@@ -125,6 +125,44 @@ func (h *Injector) getPatches(pod *corev1.Pod) []map[string]interface{} {
 	return patches
 }
 
+func (h *Injector) modifyExistingCmd(existingCmd []string) []string {
+	var newCmd []string
+	otelSplitResult := strings.Split(h.Config.Instrumentation.OtelArgument, " ")
+	otelSplitResultMap := make(map[string]string)
+	for _, result := range otelSplitResult {
+		otelSplitResultItem := strings.Split(result, "=")
+		if len(otelSplitResultItem) == 2 {
+			flag := otelSplitResultItem[0]
+			value := otelSplitResultItem[1]
+			otelSplitResultMap[flag] = value
+		}
+	}
+
+	prefix := "-Dotel."
+	for i, cmd := range existingCmd {
+		cmdSplitArr := strings.Split(cmd, " ")
+		for i, cmdSplit := range cmdSplitArr {
+			if strings.HasPrefix(cmdSplit, prefix) {
+				cmdSplitItems := strings.Split(cmdSplit, "=")
+				if len(cmdSplitItems) == 2 {
+					existingFlag := cmdSplitItems[0]
+					existingValue := cmdSplitItems[1]
+					otelValue, ok := otelSplitResultMap[existingFlag]
+					if ok {
+						existingValue = existingValue + "," + otelValue
+						delete(otelSplitResultMap, existingFlag)
+					}
+					newCmdItem := fmt.Sprintf("%s=%s", existingFlag, existingValue)
+					cmdSplitArr[i] = newCmdItem
+				}
+			}
+		}
+		existingCmd[i] = strings.Join(cmdSplitArr, "")
+	}
+
+	return newCmd
+}
+
 // These patches orchestrate the container based on language.
 func (h *Injector) getContainerPatches(pod *corev1.Pod) []map[string]interface{} {
 
@@ -162,32 +200,41 @@ func (h *Injector) getContainerPatches(pod *corev1.Pod) []map[string]interface{}
 
 		patches = append(patches, addVolumeMount)
 
+		//TODO: Check if we are also considering the env values that we got from daemonset.
 		patches = append(patches, h.addEnvOverridePatch(container, index, override.Env)...)
 
 		cmdOverride := override.CmdOverride
+		runtime := h.ImageRuntimeCache.GetRuntimeForImage(container.Image)
 
 		//TODO: What is the role of zk-override and user-override here?
 		//TODO: Should we explicitly ask users to add zk-override for all of them?
 		if len(cmdOverride) > 0 {
 			//We will have to make changes to cmdOverride and add it here.
-
+			//TODO: Which one should take precedence here?
 			if len(container.Command) > 0 {
 				//Container cmd already present
 				//We will have to give a replace patch here.
-				// Create
+				//Create a new command and create a replace patch.
+				newCmd := h.modifyExistingCmd(container.Command)
+				patch := map[string]interface{}{
+					"op":    "replace",
+					"path":  fmt.Sprintf("/spec/containers/%v/command", index),
+					"value": newCmd,
+				}
+				patches = append(patches, patch)
 			} else {
 				//Container cmd not present.
+				//Take the command we got from runtime and change that.
 				//We will have to give an add patch here.
+				newCmd := h.modifyExistingCmd(runtime.Cmd)
+				patch := map[string]interface{}{
+					"op":    "add",
+					"path":  fmt.Sprintf("/spec/containers/%v/command", index),
+					"value": newCmd,
+				}
+				patches = append(patches, patch)
 			}
-		} else if len(container.Command) > 0 {
-			//We will have to make changes to container command and add it here.
-		} else {
-			//TODO: Should we check for zk-override value here?
-			//TODO: For auto injection what is the relation between zk-injection enabled, zk-override in crd.
-			//TODO: Is it and/or condition?
-			//We will have to add a new container command and add it here.
 		}
-
 	}
 
 	return patches
@@ -247,7 +294,7 @@ func (h *Injector) addJavaToolEnvPatch(container *corev1.Container, containerInd
 		splitResult := strings.Split(h.Config.Instrumentation.OtelArgument, " ")
 		prefix := "-Dotel."
 		existingValue := container.Env[envIndex].Value
-
+		//TODO: Check if we are also handling the case where the flag is not present?
 		for _, str := range splitResult {
 			if strings.HasPrefix(str, prefix) {
 				splitResultNew := strings.Split(str, "=")

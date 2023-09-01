@@ -97,7 +97,7 @@ func (h *ImageRuntimeCache) GetOverrideForImage(imageID string) *v1alpha1.ImageO
 	}
 }
 
-func (h *ImageRuntimeCache) getRuntimeForImage(imageID string) *common.ContainerRuntime {
+func (h *ImageRuntimeCache) GetRuntimeForImage(imageID string) *common.ContainerRuntime {
 	value, ok := h.ImageRuntimeMap.Load(imageID)
 	if !ok {
 		return nil
@@ -113,7 +113,7 @@ func (h *ImageRuntimeCache) getRuntimeForImage(imageID string) *common.Container
 func (h *ImageRuntimeCache) GetContainerLanguage(container *corev1.Container) common.ProgrammingLanguage {
 	imageId := container.Image
 	logger.Debug(LOG_TAG, "Image is ", imageId)
-	runtime := h.getRuntimeForImage(imageId)
+	runtime := h.GetRuntimeForImage(imageId)
 	if runtime == nil {
 		return common.NotYetProcessed
 	}
