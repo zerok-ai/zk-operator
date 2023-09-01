@@ -26,7 +26,7 @@ import (
 	"github.com/zerok-ai/zk-operator/internal"
 	"github.com/zerok-ai/zk-operator/internal/auth"
 	"github.com/zerok-ai/zk-operator/internal/common"
-	"github.com/zerok-ai/zk-operator/internal/utils"
+	"github.com/zerok-ai/zk-operator/internal/restart"
 	"github.com/zerok-ai/zk-operator/internal/webhook"
 	"github.com/zerok-ai/zk-utils-go/scenario/model"
 	"time"
@@ -121,8 +121,6 @@ func main() {
 		panic("unable to set up ready check")
 	}
 
-	go restartNonOrchestratedPodsIfNeeded()
-
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
@@ -207,21 +205,15 @@ func initOperator() {
 	// start http server
 	go server.StartHttpServer(app1, irisConfig, zkConfig, &clusterContextHandler)
 
-	go utils.ListenToNamespaceDeletion(&zkConfig)
+	go restart.ListenToNamespaceDeletion(&zkConfig)
 
-}
+	// we want to wait for the pod to be ready before we start the restart ticker
+	go func() {
+		time.Sleep(time.Duration(2) * time.Minute)
+		podRestartTicker := restart.NewOrchestrateRestart(imageRuntimeCache)
+		podRestartTicker.Ticker.Start()
+	}()
 
-func restartNonOrchestratedPodsIfNeeded() {
-	// Waiting for 2 minutes for operator init to complete
-	duration := 2 * time.Minute
-	<-time.After(duration)
-
-	//Restarting workloads in namespaces which have zk-injection enabled, but have non-orchestrated pods.
-	zklogger.Debug(LOG_TAG, "Restarting marked namespaces if needed")
-	err := utils.RestartMarkedNamespacesIfNeeded(false)
-	if err != nil {
-		zklogger.Error(LOG_TAG, "Error while restarting marked namespaces if needed ", err)
-	}
 }
 
 func newApp() *iris.Application {

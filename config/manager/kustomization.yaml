@@ -13,4 +13,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: us-west1-docker.pkg.dev/zerok-dev/stage/zerok-operator
-  newTag: dev
+  newTag: test-auto-restart

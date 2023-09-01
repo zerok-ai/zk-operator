@@ -293,7 +293,7 @@ func DeleteNamespaceWithRetry(namespaceName string, maxRetries int, retryDelay t
 	return fmt.Errorf("failed to delete namespace %s after %d retries", namespaceName, maxRetries)
 }
 
-func hasRestartLabel(namespace string, workLoadType int, name, labelKey, labelValue string) (bool, error) {
+func HasRestartLabel(namespace string, workLoadType int, name, labelKey, labelValue string) (bool, error) {
 	k8sClient, err := GetK8sClient()
 	if err != nil {
 		return false, err
@@ -332,75 +332,7 @@ func hasRestartLabel(namespace string, workLoadType int, name, labelKey, labelVa
 	return ok && value == labelValue, nil
 }
 
-func RestartMarkedNamespacesIfNeeded(orchestratedPods bool) error {
-	logger.Debug(LOG_TAG, "In restart marked namespaces with orchestrated pods flag as ", orchestratedPods)
-	namespaces, err := GetAllMarkedNamespaces()
-	logger.Debug(LOG_TAG, "All marked namespaces are ", namespaces)
-
-	if err != nil || namespaces == nil {
-		logger.Error(LOG_TAG, "In restart marked namespaces, error caught while getting all marked namespaces ", err)
-		return err
-	}
-
-	for _, namespace := range namespaces.Items {
-
-		logger.Debug(LOG_TAG, " Checking for namespace ", namespace.ObjectMeta.Name)
-
-		var pods []corev1.Pod
-
-		if orchestratedPods {
-			pods, err = GetOrchestratedPods(namespace.ObjectMeta.Name)
-			if err != nil {
-				logger.Error(LOG_TAG, "Error caught while getting all non orchestrated pods ", err)
-				return err
-			}
-		} else {
-			pods, err = GetNotOrchestratedPods(namespace.ObjectMeta.Name)
-			if err != nil {
-				logger.Error(LOG_TAG, "Error caught while getting all non orchestrated pods ", err)
-				return err
-			}
-		}
-
-		logger.Debug(LOG_TAG, " Non orchestrated pods for namespace ", namespace.ObjectMeta.Name, " are ", pods)
-
-		workLoads, err := getWorkloadsForPods(pods)
-		if err != nil {
-			return err
-		}
-
-		logger.Debug(LOG_TAG, " Workloads for pods for namespace ", namespace.ObjectMeta.Name, " are ", workLoads)
-
-		for workLoad := range workLoads {
-			restart, err := hasRestartLabel(namespace.ObjectMeta.Name, workLoad.workLoadType, workLoad.name, common.ZkAutoRestartKey, common.ZkAutoRestartValue)
-			if err != nil {
-				logger.Error(LOG_TAG, "Error caught while checking if workload ", workLoad, " has restart label ", err)
-			}
-			if !restart {
-				logger.Debug(LOG_TAG, "Workload ", workLoad.name, " and type ", workLoad.workLoadType, " does not have restart label, skipping")
-				continue
-			}
-			switch workLoad.workLoadType {
-			case DEPLYOMENT:
-				err = RestartDeployment(namespace.ObjectMeta.Name, workLoad.name)
-			case STATEFULSET:
-				err = RestartStatefulSet(namespace.ObjectMeta.Name, workLoad.name)
-			case DAEMONSET:
-				err = RestartDaemonSet(namespace.ObjectMeta.Name, workLoad.name)
-			default:
-				logger.Error(LOG_TAG, "Unknown workload type ", workLoad.workLoadType)
-
-			}
-			if err != nil {
-				logger.Error(LOG_TAG, "Error caught while restarting workload name ", workLoad, " with type ", workLoad.workLoadType, " with error ", err)
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func getWorkloadsForPods(pods []corev1.Pod) (map[*WorkLoad]bool, error) {
+func GetWorkloadsForPods(pods []corev1.Pod) (map[*WorkLoad]bool, error) {
 	workLoads := make(map[*WorkLoad]bool)
 	for _, pod := range pods {
 		workLoad, err := getWorkloadForPod(&pod)
@@ -435,22 +367,22 @@ func getWorkloadForPod(pod *corev1.Pod) (*WorkLoad, error) {
 			for _, ownerRef := range ownerReferences {
 				if ownerRef.Kind == "Deployment" {
 					workLoad = &WorkLoad{
-						workLoadType: DEPLYOMENT,
-						name:         ownerRef.Name,
+						WorkLoadType: DEPLYOMENT,
+						Name:         ownerRef.Name,
 					}
 					break
 				}
 				if ownerRef.Kind == "StatefulSet" {
 					workLoad = &WorkLoad{
-						workLoadType: STATEFULSET,
-						name:         ownerRef.Name,
+						WorkLoadType: STATEFULSET,
+						Name:         ownerRef.Name,
 					}
 					break
 				}
 				if ownerRef.Kind == "DaemonSet" {
 					workLoad = &WorkLoad{
-						workLoadType: DAEMONSET,
-						name:         ownerRef.Name,
+						WorkLoadType: DAEMONSET,
+						Name:         ownerRef.Name,
 					}
 					break
 				}
@@ -463,7 +395,7 @@ func getWorkloadForPod(pod *corev1.Pod) (*WorkLoad, error) {
 }
 
 func DeleteMutatingWebhookConfiguration(webhookName string) error {
-	logger.Debug(FINALIZER_LOG_TAG, "Deleting mutating webhook configuration ", webhookName)
+	logger.Debug("FINALIZER", "Deleting mutating webhook configuration ", webhookName)
 	clientset, err := GetK8sClient()
 	if err != nil {
 		return err

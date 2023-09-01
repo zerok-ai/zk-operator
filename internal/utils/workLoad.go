@@ -8,15 +8,15 @@ const (
 )
 
 type WorkLoad struct {
-	workLoadType int
-	name         string
+	WorkLoadType int
+	Name         string
 }
 
 func (w *WorkLoad) Equals(other *WorkLoad) bool {
 	if other == nil {
 		return false
 	}
-	return w.name == other.name && w.workLoadType == other.workLoadType
+	return w.Name == other.Name && w.WorkLoadType == other.WorkLoadType
 }
 
 func (w *WorkLoad) NotEquals(other *WorkLoad) bool {

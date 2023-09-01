@@ -1,7 +1,8 @@
-package utils
+package restart
 
 import (
 	"github.com/zerok-ai/zk-operator/internal/config"
+	"github.com/zerok-ai/zk-operator/internal/utils"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/informers"
@@ -15,7 +16,7 @@ var targetFinalizer = "operator/cleanup-pods"
 
 func ListenToNamespaceDeletion(config *config.ZkOperatorConfig) {
 	logger.Debug(FINALIZER_LOG_TAG, "Listening to namespace deletion")
-	clientSet, err := GetK8sClient()
+	clientSet, err := utils.GetK8sClient()
 	if err != nil {
 		logger.Debug(FINALIZER_LOG_TAG, "Failed to create clientSet in listenToNamespaceDeletion")
 		return
@@ -63,13 +64,13 @@ func cleanUpOrchestratedPods(config *config.ZkOperatorConfig, namespace *corev1.
 	}
 
 	// Remove mutating webhook configuration.
-	err := DeleteMutatingWebhookConfiguration(config.Webhook.Name)
+	err := utils.DeleteMutatingWebhookConfiguration(config.Webhook.Name)
 	if err != nil {
 		logger.Error(FINALIZER_LOG_TAG, "Failed to delete mutating webhook configuration ", err)
 		return err
 	}
 
-	err = RestartMarkedNamespacesIfNeeded(true)
+	err = RestartMarkedNamespacesIfNeeded(true, nil)
 	if err != nil {
 		logger.Error(FINALIZER_LOG_TAG, "Failed to restart marked namespaces ", err)
 		return err
