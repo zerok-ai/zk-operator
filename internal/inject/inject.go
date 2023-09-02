@@ -300,26 +300,28 @@ func (h *Injector) addJavaToolEnvPatch(container *corev1.Container, containerInd
 }
 
 func (h *Injector) addEnvOverridePatch(container *corev1.Container, containerIndex int, overrideEnv []v1alpha1.EnvVar) []map[string]interface{} {
-	//TODO: Do we need to add check for user-override value here?
-	envVars := container.Env
+	specEnvVars := container.Env
 	envIndex := -1
 	patches := []map[string]interface{}{}
-	isAdd := false
 
 	//If there are no env variables in container, adding an empty array first.
-	if len(envVars) == 0 {
+	if len(specEnvVars) == 0 {
 		patches = append(patches, h.addEnvObjectPatch(containerIndex))
-		isAdd = true
 	}
 
 	for _, overrideEnv := range overrideEnv {
 		name := overrideEnv.Name
 		value := overrideEnv.Value
+		//Ignoring java_tool_versions to add a special handling for that.
+		if name == common.JavalToolOptions {
+			continue
+		}
 		var patch map[string]interface{}
-		if isAdd {
+
+		if len(specEnvVars) == 0 {
 			patch = h.getAddEnvPatch(containerIndex, name, value)
 		} else {
-			envIndex = utils.GetIndexOfEnv(envVars, name)
+			envIndex = utils.GetIndexOfEnv(specEnvVars, name)
 			if envIndex == -1 {
 				patch = h.getAddEnvPatch(containerIndex, name, value)
 			} else {
