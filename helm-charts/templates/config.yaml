@@ -2,7 +2,7 @@ apiVersion: v1
 data:
   operator-config.yaml: |
     redis:
-      host: redis-master.zk-client.svc.cluster.local
+      host: redis.zk-client.svc.cluster.local
       port: 6379
       readTimeout: 20
       dbs:

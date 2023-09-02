@@ -3,14 +3,11 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/go-redis/redis"
-	common "github.com/zerok-ai/zk-operator/internal/common"
-	"github.com/zerok-ai/zk-operator/internal/config"
+	"github.com/zerok-ai/zk-operator/internal/common"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
 	corev1 "k8s.io/api/core/v1"
 	"os"
 	"sync"
-	"time"
 )
 
 var LOG_TAG_UTILS = "utils"
@@ -69,21 +66,6 @@ func GetIndexOfEnv(envVars []corev1.EnvVar, targetEnv string) int {
 func GetCurrentNamespace() string {
 	podNamespace := os.Getenv(common.NamespaceEnvVariable)
 	return podNamespace
-}
-
-func GetRedisClient(config config.ZkOperatorConfig, db int) *redis.Client {
-	redisConfig := config.Redis
-	readTimeout := time.Duration(redisConfig.ReadTimeout) * time.Second
-	url := fmt.Sprint(redisConfig.Host, ":", redisConfig.Port)
-	logger.Debug(LOG_TAG_UTILS, "Redis endpoint is ", url)
-	logger.Debug(LOG_TAG_UTILS, "Db is ", db)
-	_redisClient := redis.NewClient(&redis.Options{
-		Addr:        url,
-		Password:    "",
-		DB:          db,
-		ReadTimeout: readTimeout,
-	})
-	return _redisClient
 }
 
 func RespCodeIsOk(status int) bool {

@@ -29,17 +29,19 @@ spec:
         - command:
             - sh
             - -c
-            - 'set -x; URL="http://${SERVICE_NAME}:${SERVICE_PORT}/status"; until [
-           $(curl -m 0.5 -s -o /dev/null -w "%{http_code}" -k ${URL}) -eq 200 ]; do
-           echo "waiting for ${URL}"; sleep 2; done;'
+            - 'set -xe; URL="${PROTOCOL}://${SERVICE_NAME}:${SERVICE_PORT}${HEALTH_PATH}";
+              until [ $(curl -m 0.5 -s -o /dev/null -w "%{http_code}" -k ${URL}) -eq 200 ];
+              do echo "waiting for ${URL}"; sleep 2; done;'
           name: wsp-wait
           env:
-            - name: URL
-              value: "http://zk-wsp-client.zk-client.svc.cluster.local:8987/status"
+            - name: PROTOCOL
+              value: http
             - name: SERVICE_NAME
               value: zk-wsp-client.zk-client.svc.cluster.local
             - name: SERVICE_PORT
               value: "8987"
+            - name: HEALTH_PATH
+              value: "/healthz"
           image: gcr.io/pixie-oss/pixie-dev-public/curl:multiarch-7.87.0@sha256:f7f265d5c64eb4463a43a99b6bf773f9e61a50aaa7cefaf564f43e42549a01dd
           imagePullPolicy: IfNotPresent
           resources: { }
@@ -67,6 +69,11 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: ZK_REDIS_PASSWORD # Setting Redis password from Secret
+          valueFrom:
+            secretKeyRef:
+              name: redis
+              key: redis-password
         name: manager
         securityContext:
           allowPrivilegeEscalation: false

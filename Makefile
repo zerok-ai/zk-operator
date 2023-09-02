@@ -112,8 +112,12 @@ test: manifests generate fmt vet envtest ## Run tests.
 
 ##@ Build
 
+.PHONY: sync
+sync:
+	go get -v ./...
+
 .PHONY: build
-build: generate manifests fmt vet ## Build manager binary.
+build: sync generate manifests fmt vet ## Build manager binary.
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o bin/manager main.go
 
 .PHONY: buildAndPush
@@ -249,5 +253,6 @@ catalog-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG=$(CATALOG_IMG)
 
 # ------- CI-CD ------------
-ci-cd-build:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o bin/manager main.go
+.PHONY: ci-cd-build
+ci-cd-build: sync generate manifests
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/manager main.go

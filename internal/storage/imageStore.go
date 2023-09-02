@@ -1,15 +1,18 @@
 package storage
 
 import (
+	"context"
 	"github.com/zerok-ai/zk-operator/internal/utils"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
+	redisConfig "github.com/zerok-ai/zk-utils-go/storage/redis/config"
 	"sync"
 
-	"github.com/go-redis/redis"
+	"github.com/redis/go-redis/v9"
 	"github.com/zerok-ai/zk-operator/internal/common"
 	"github.com/zerok-ai/zk-operator/internal/config"
 )
 
+var ctx = context.Background()
 var LOG_TAG_STORE = "ImageStore"
 
 type ImageStore struct {
@@ -18,7 +21,7 @@ type ImageStore struct {
 }
 
 func (zkRedis *ImageStore) GetHashSetVersion() (int64, error) {
-	data, err := zkRedis.redisClient.Get(common.HashSetVersionKey).Int64()
+	data, err := zkRedis.redisClient.Get(ctx, common.HashSetVersionKey).Int64()
 	if err != nil {
 		logger.Error(LOG_TAG_STORE, "Error caught while getting hash set version from redis ", err)
 		return -1, err
@@ -27,7 +30,7 @@ func (zkRedis *ImageStore) GetHashSetVersion() (int64, error) {
 }
 
 func GetNewRedisStore(config config.ZkOperatorConfig) *ImageStore {
-	_redisClient := utils.GetRedisClient(config, config.Redis.DBs[common.RedisImageDbName])
+	_redisClient := redisConfig.GetRedisConnection(common.RedisImageDbName, config.Redis)
 
 	imgRedis := &ImageStore{
 		redisClient: _redisClient,
@@ -44,7 +47,7 @@ func (zkRedis *ImageStore) SyncDataFromRedis(currMap *sync.Map) {
 	for {
 		var err error
 		//Getting 10 fields at once.
-		data, cursor, err = zkRedis.redisClient.HScan(common.HashSetName, cursor, "*", 10).Result()
+		data, cursor, err = zkRedis.redisClient.HScan(ctx, common.HashSetName, cursor, "*", 10).Result()
 		if err != nil {
 			logger.Error(LOG_TAG_STORE, "Error while scan from redis ", err)
 		}
@@ -70,7 +73,7 @@ func (zkRedis *ImageStore) SyncDataFromRedis(currMap *sync.Map) {
 }
 
 func (zkRedis *ImageStore) GetString(key string) (*string, error) {
-	output := zkRedis.redisClient.HGet(zkRedis.hashSetName, key)
+	output := zkRedis.redisClient.HGet(ctx, zkRedis.hashSetName, key)
 	err := output.Err()
 	if err != nil {
 		return nil, err

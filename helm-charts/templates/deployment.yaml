@@ -20,12 +20,30 @@ spec:
         control-plane: controller-manager
     spec:
       initContainers:
-        - name: init-container
-          image: "{{ index .Values.global.zkInitContainerRepo }}:{{ index .Values.global.zkInitContainerTag }}"
-          imagePullPolicy: Always
+        - command:
+            - sh
+            - -c
+            - 'set -xe; URL="${PROTOCOL}://${SERVICE_NAME}:${SERVICE_PORT}${HEALTH_PATH}";
+              until [ $(curl -m 0.5 -s -o /dev/null -w "%{http_code}" -k ${URL}) -eq 200 ];
+              do echo "waiting for ${URL}"; sleep 2; done;'
+          name: wsp-wait
           env:
-            - name: URL
-              value: "http://zk-wsp-client.zk-client.svc.cluster.local:8987/status"
+            - name: PROTOCOL
+              value: http
+            - name: SERVICE_NAME
+              value: zk-wsp-client.zk-client.svc.cluster.local
+            - name: SERVICE_PORT
+              value: "80"
+            - name: HEALTH_PATH
+              value: "/healthz"
+          image: us-west1-docker.pkg.dev/zerok-dev/stage/curl:latest
+          imagePullPolicy: IfNotPresent
+          resources: { }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
       containers:
       - args:
         - --secure-listen-address=0.0.0.0:8443
@@ -63,6 +81,11 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: ZK_REDIS_PASSWORD # Setting Redis password from Secret
+          valueFrom:
+            secretKeyRef:
+              name: redis
+              key: redis-password
         image: "{{ index .Values.global.dockerBase }}/{{ index .Values.image.repo }}:{{ index .Values.image.tag  }}"
         imagePullPolicy: {{ .Values.global.image.pullPolicy }}
 
