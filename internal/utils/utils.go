@@ -91,6 +91,9 @@ func StringToSyncMap(str string) (*sync.Map, error) {
 	return newMap, nil
 }
 func GetIndexOfEnv(envVars []corev1.EnvVar, targetEnv string) int {
+	if len(envVars) == 0 {
+		return -1
+	}
 	for index, envVar := range envVars {
 		if envVar.Name == targetEnv {
 			return index

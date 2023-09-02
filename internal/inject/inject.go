@@ -183,7 +183,7 @@ func (h *Injector) getContainerPatches(pod *corev1.Pod) []map[string]interface{}
 		switch language {
 		case common.JavaProgrammingLanguage:
 			//Adding env variable patch in case the prog language is java.
-			javaEnvPatch := h.addJavaToolEnvPatch(container, index)
+			javaEnvPatch := h.addJavaToolEnvPatch(container, index, override)
 			patches = append(patches, javaEnvPatch...)
 			orchLabelPatch := getZerokLabelPatch(common.ZkOrchOrchestrated)
 			patches = append(patches, orchLabelPatch)
@@ -200,7 +200,6 @@ func (h *Injector) getContainerPatches(pod *corev1.Pod) []map[string]interface{}
 
 		patches = append(patches, addVolumeMount)
 
-		//TODO: Check if we are also considering the env values that we got from daemonset.
 		patches = append(patches, h.addEnvOverridePatch(container, index, override.Env)...)
 
 		cmdOverride := override.CmdOverride
@@ -261,7 +260,7 @@ func (h *Injector) addEnvObjectPatch(containerIndex int) map[string]interface{} 
 	return envInitialize
 }
 
-func (h *Injector) addJavaToolEnvPatch(container *corev1.Container, containerIndex int) []map[string]interface{} {
+func (h *Injector) addJavaToolEnvPatch(container *corev1.Container, containerIndex int, override *v1alpha1.ImageOverride) []map[string]interface{} {
 	envVars := container.Env
 	envIndex := -1
 	patches := []map[string]interface{}{}
@@ -270,30 +269,57 @@ func (h *Injector) addJavaToolEnvPatch(container *corev1.Container, containerInd
 	if len(envVars) == 0 {
 		patches = append(patches, h.addEnvObjectPatch(containerIndex))
 	} else {
-		envIndex = utils.GetIndexOfEnv(envVars, common.JavalToolOptions)
+		envIndex = utils.GetIndexOfEnv(envVars, common.JavaToolOptions)
 	}
 
 	var patch map[string]interface{}
+
+	// case 1: Override value present for java tool options.
+	overrideEnvVars := override.Env
+	currentJavaToolVersion := ""
+	if len(overrideEnvVars) > 0 {
+		for _, overrideEnv := range overrideEnvVars {
+			name := overrideEnv.Name
+			value := overrideEnv.Value
+			if name == common.JavaToolOptions {
+				currentJavaToolVersion = value
+				break
+			}
+		}
+	}
+
+	if len(currentJavaToolVersion) == 0 {
+		//Getting env vars from daemonset.
+		runtime := h.ImageRuntimeCache.GetRuntimeForImage(container.Image)
+		runtimeEnvVars := runtime.EnvMap
+		runtimeJavaToolVer, ok := runtimeEnvVars[common.JavaToolOptions]
+
+		if envIndex > 0 {
+			// case 2: No override present. But value present in pod spec.
+			currentJavaToolVersion = container.Env[envIndex].Value
+		} else if ok {
+			// case 3: Command found in daemonset .
+			currentJavaToolVersion = runtimeJavaToolVer
+		}
+	}
+
 	//Scenario where java_tool_options is not present.
-	if envIndex == -1 {
-		patch = h.getAddEnvPatch(containerIndex, common.JavalToolOptions, h.Config.Instrumentation.OtelArgument)
+	if len(currentJavaToolVersion) == 0 {
+		patch = h.getAddEnvPatch(containerIndex, common.JavaToolOptions, h.Config.Instrumentation.OtelArgument)
 	} else {
-		//Scenario where java_tool_options is already present.
 		splitResult := strings.Split(h.Config.Instrumentation.OtelArgument, " ")
 		prefix := "-Dotel."
-		existingValue := container.Env[envIndex].Value
-		//TODO: Check if we are also handling the case where the flag is not present?
 		for _, str := range splitResult {
 			if strings.HasPrefix(str, prefix) {
 				splitResultNew := strings.Split(str, "=")
 				if len(splitResultNew) == 2 {
 					flag := splitResultNew[0]
 					value := splitResultNew[1]
-					existingValue = h.ImageRuntimeCache.AddorUpdateFlags(existingValue, flag, value)
+					currentJavaToolVersion = h.ImageRuntimeCache.AddorUpdateFlags(currentJavaToolVersion, flag, value)
 				}
 			}
 		}
-		patch = h.getReplaceEnvPatch(containerIndex, envIndex, common.JavalToolOptions, existingValue)
+		patch = h.getReplaceEnvPatch(containerIndex, envIndex, common.JavaToolOptions, currentJavaToolVersion)
 	}
 	patches = append(patches, patch)
 	return patches
@@ -313,7 +339,7 @@ func (h *Injector) addEnvOverridePatch(container *corev1.Container, containerInd
 		name := overrideEnv.Name
 		value := overrideEnv.Value
 		//Ignoring java_tool_versions to add a special handling for that.
-		if name == common.JavalToolOptions {
+		if name == common.JavaToolOptions {
 			continue
 		}
 		var patch map[string]interface{}

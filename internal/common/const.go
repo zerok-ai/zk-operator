@@ -9,7 +9,7 @@ const (
 	ZkOrchProcessed    = "processed"
 	ZkOrchInProcess    = "in-process"
 
-	JavalToolOptions = "JAVA_TOOL_OPTIONS"
+	JavaToolOptions  = "JAVA_TOOL_OPTIONS"
 	ZkInjectionKey   = "zk-injection"
 	ZkInjectionValue = "enabled"
 
