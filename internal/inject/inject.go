@@ -126,7 +126,6 @@ func (h *Injector) getPatches(pod *corev1.Pod) []map[string]interface{} {
 }
 
 func (h *Injector) modifyExistingCmd(existingCmd []string) []string {
-	var newCmd []string
 	otelSplitResult := strings.Split(h.Config.Instrumentation.OtelArgument, " ")
 	otelSplitResultMap := make(map[string]string)
 	for _, result := range otelSplitResult {
@@ -160,7 +159,7 @@ func (h *Injector) modifyExistingCmd(existingCmd []string) []string {
 		existingCmd[i] = strings.Join(cmdSplitArr, "")
 	}
 
-	return newCmd
+	return existingCmd
 }
 
 // These patches orchestrate the container based on language.
