@@ -23,7 +23,7 @@ type AppInitContainerData struct {
 
 func (h *AppInitContainerData) Init(cfg ZkOperatorConfig) {
 	//Creating a timer for periodic app init container sync.
-	interval := cfg.InitContainer.SyncInterval
+	interval := cfg.InitContainer.PollingInterval
 	var duration = 2 * time.Minute
 	if interval > 0 {
 		duration = time.Duration(cfg.ScenarioSync.PollingInterval) * time.Second

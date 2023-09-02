@@ -36,7 +36,7 @@ type ZkCloudConfig struct {
 }
 
 type InitContainerConfig struct {
-	SyncInterval int `yaml:"SyncInterval"`
+	PollingInterval int `yaml:"pollingInterval"`
 }
 
 type InstrumentationConfig struct {
