@@ -275,35 +275,33 @@ func (h *Injector) addJavaToolEnvPatch(container *corev1.Container, containerInd
 
 	// case 1: Override value present for java tool options.
 	overrideEnvVars := override.Env
-	currentJavaToolVersion := ""
+	currentJavaToolOptions := ""
 	if len(overrideEnvVars) > 0 {
 		for _, overrideEnv := range overrideEnvVars {
 			name := overrideEnv.Name
 			value := overrideEnv.Value
 			if name == common.JavaToolOptions {
-				currentJavaToolVersion = value
+				currentJavaToolOptions = value
 				break
 			}
 		}
-	}
-
-	if len(currentJavaToolVersion) == 0 {
+	} else {
 		//Getting env vars from daemonset.
 		runtime := h.ImageRuntimeCache.GetRuntimeForImage(container.Image)
 		runtimeEnvVars := runtime.EnvMap
-		runtimeJavaToolVer, ok := runtimeEnvVars[common.JavaToolOptions]
+		runtimeJavaToolOpt, ok := runtimeEnvVars[common.JavaToolOptions]
 
 		if envIndex > 0 {
 			// case 2: No override present. But value present in pod spec.
-			currentJavaToolVersion = container.Env[envIndex].Value
+			currentJavaToolOptions = container.Env[envIndex].Value
 		} else if ok {
 			// case 3: Command found in daemonset .
-			currentJavaToolVersion = runtimeJavaToolVer
+			currentJavaToolOptions = runtimeJavaToolOpt
 		}
 	}
 
-	//Scenario where java_tool_options is not present.
-	if len(currentJavaToolVersion) == 0 {
+	//Scenario where java_tool_options is not found in any of above scenarios.
+	if len(currentJavaToolOptions) == 0 {
 		patch = h.getAddEnvPatch(containerIndex, common.JavaToolOptions, h.Config.Instrumentation.OtelArgument)
 	} else {
 		splitResult := strings.Split(h.Config.Instrumentation.OtelArgument, " ")
@@ -314,11 +312,11 @@ func (h *Injector) addJavaToolEnvPatch(container *corev1.Container, containerInd
 				if len(splitResultNew) == 2 {
 					flag := splitResultNew[0]
 					value := splitResultNew[1]
-					currentJavaToolVersion = h.ImageRuntimeCache.AddorUpdateFlags(currentJavaToolVersion, flag, value)
+					currentJavaToolOptions = h.ImageRuntimeCache.AddorUpdateFlags(currentJavaToolOptions, flag, value)
 				}
 			}
 		}
-		patch = h.getReplaceEnvPatch(containerIndex, envIndex, common.JavaToolOptions, currentJavaToolVersion)
+		patch = h.getReplaceEnvPatch(containerIndex, envIndex, common.JavaToolOptions, currentJavaToolOptions)
 	}
 	patches = append(patches, patch)
 	return patches
@@ -342,17 +340,14 @@ func (h *Injector) addEnvOverridePatch(container *corev1.Container, containerInd
 			continue
 		}
 		var patch map[string]interface{}
+		envIndex = utils.GetIndexOfEnv(specEnvVars, name)
 
-		if len(specEnvVars) == 0 {
+		if envIndex == -1 {
 			patch = h.getAddEnvPatch(containerIndex, name, value)
 		} else {
-			envIndex = utils.GetIndexOfEnv(specEnvVars, name)
-			if envIndex == -1 {
-				patch = h.getAddEnvPatch(containerIndex, name, value)
-			} else {
-				patch = h.getReplaceEnvPatch(containerIndex, envIndex, name, value)
-			}
+			patch = h.getReplaceEnvPatch(containerIndex, envIndex, name, value)
 		}
+
 		patches = append(patches, patch)
 	}
 	return patches
