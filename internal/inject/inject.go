@@ -204,18 +204,10 @@ func (h *Injector) getContainerPatches(pod *corev1.Pod) []map[string]interface{}
 		patches = append(patches, h.addEnvOverridePatch(container, index, override.Env)...)
 
 		cmdOverride := override.CmdOverride
-		runtime := h.ImageRuntimeCache.GetRuntimeForImage(container.Image)
 
-		//TODO: What is the role of zk-override and user-override here?
-		//TODO: Should we explicitly ask users to add zk-override for all of them?
 		if len(cmdOverride) > 0 {
-			//We will have to make changes to cmdOverride and add it here.
-			//TODO: Which one should take precedence here?
+			newCmd := h.modifyExistingCmd(cmdOverride)
 			if len(container.Command) > 0 {
-				//Container cmd already present
-				//We will have to give a replace patch here.
-				//Create a new command and create a replace patch.
-				newCmd := h.modifyExistingCmd(container.Command)
 				patch := map[string]interface{}{
 					"op":    "replace",
 					"path":  fmt.Sprintf("/spec/containers/%v/command", index),
@@ -223,10 +215,6 @@ func (h *Injector) getContainerPatches(pod *corev1.Pod) []map[string]interface{}
 				}
 				patches = append(patches, patch)
 			} else {
-				//Container cmd not present.
-				//Take the command we got from runtime and change that.
-				//We will have to give an add patch here.
-				newCmd := h.modifyExistingCmd(runtime.Cmd)
 				patch := map[string]interface{}{
 					"op":    "add",
 					"path":  fmt.Sprintf("/spec/containers/%v/command", index),
