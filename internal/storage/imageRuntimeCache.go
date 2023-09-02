@@ -2,10 +2,12 @@ package storage
 
 import (
 	"fmt"
+	"github.com/zerok-ai/zk-operator/api/v1alpha1"
 	common "github.com/zerok-ai/zk-operator/internal/common"
 	utils "github.com/zerok-ai/zk-operator/internal/utils"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
 	zktick "github.com/zerok-ai/zk-utils-go/ticker"
+	"regexp"
 	"sync"
 	"time"
 
@@ -16,6 +18,8 @@ import (
 var LOG_TAG = "ImageRuntimeCache"
 
 type ImageRuntimeCache struct {
+	//Key will be regex and value will be *v1alpha1.ImageOverride
+	ImageOverrideMap  *sync.Map
 	ImageRuntimeMap   *sync.Map
 	RuntimeMapVersion int64
 	ImageStore        *ImageStore
@@ -48,10 +52,16 @@ func (h *ImageRuntimeCache) SyncDataFromRedis() error {
 	if h.RuntimeMapVersion == -1 || h.RuntimeMapVersion != versionFromRedis {
 		h.RuntimeMapVersion = versionFromRedis
 		h.ImageStore.SyncDataFromRedis(h.ImageRuntimeMap)
-		logger.Debug(LOG_TAG, "Updating config map.")
-		err := utils.CreateOrUpdateConfigMap(utils.GetCurrentNamespace(), common.ZkConfigMapName, h.ImageRuntimeMap)
+		logger.Debug(LOG_TAG, "Updating image config map.")
+		err := utils.CreateOrUpdateZkImageConfigMap(utils.GetCurrentNamespace(), common.ZkImageConfigMapName, h.ImageRuntimeMap)
 		if err != nil {
-			logger.Error(LOG_TAG, "Error while create/update confimap ", err)
+			logger.Error(LOG_TAG, "Error while create/update image configmap ", err)
+			return err
+		}
+		logger.Debug(LOG_TAG, "Updating process config map.")
+		err = utils.CreateOrUpdateProcessInfoConfigMap(utils.GetCurrentNamespace(), common.ZkProcessConfigMapName, h.ImageRuntimeMap)
+		if err != nil {
+			logger.Error(LOG_TAG, "Error while create/update process info configmap ", err)
 			return err
 		}
 	}
@@ -63,7 +73,7 @@ func (h *ImageRuntimeCache) Init(config config.ZkOperatorConfig) {
 	h.ImageStore = GetNewRedisStore(config)
 	h.RuntimeMapVersion = -1
 	var err error
-	h.ImageRuntimeMap, err = utils.GetDataFromConfigMap(utils.GetCurrentNamespace(), common.ZkConfigMapName)
+	h.ImageRuntimeMap, err = utils.GetSyncMapFromConfigMap(utils.GetCurrentNamespace(), common.ZkImageConfigMapName)
 	logger.Debug(LOG_TAG, "ImageMap from configMap is ", h.ImageRuntimeMap)
 	if err != nil {
 		h.ImageRuntimeMap = &sync.Map{}
@@ -71,9 +81,23 @@ func (h *ImageRuntimeCache) Init(config config.ZkOperatorConfig) {
 	}
 	var duration = time.Duration(config.Instrumentation.PollingInterval) * time.Second
 	h.ticker = zktick.GetNewTickerTask("images_sync", duration, h.periodicSync)
+	h.ImageOverrideMap = &sync.Map{}
 }
 
-func (h *ImageRuntimeCache) getRuntimeForImage(imageID string) *common.ContainerRuntime {
+func (h *ImageRuntimeCache) GetOverrideForImage(imageID string) *v1alpha1.ImageOverride {
+	value, ok := h.ImageRuntimeMap.Load(imageID)
+	if !ok {
+		return nil
+	}
+	switch y := value.(type) {
+	case *v1alpha1.ImageOverride:
+		return y
+	default:
+		return nil
+	}
+}
+
+func (h *ImageRuntimeCache) GetRuntimeForImage(imageID string) *common.ContainerRuntime {
 	value, ok := h.ImageRuntimeMap.Load(imageID)
 	if !ok {
 		return nil
@@ -86,10 +110,10 @@ func (h *ImageRuntimeCache) getRuntimeForImage(imageID string) *common.Container
 	}
 }
 
-func (h *ImageRuntimeCache) GetContainerLanguage(container *corev1.Container, pod *corev1.Pod) common.ProgrammingLanguage {
+func (h *ImageRuntimeCache) GetContainerLanguage(container *corev1.Container) common.ProgrammingLanguage {
 	imageId := container.Image
 	logger.Debug(LOG_TAG, "Image is ", imageId)
-	runtime := h.getRuntimeForImage(imageId)
+	runtime := h.GetRuntimeForImage(imageId)
 	if runtime == nil {
 		return common.NotYetProcessed
 	}
@@ -108,4 +132,33 @@ func (h *ImageRuntimeCache) CleanUpOnkill() error {
 	logger.Debug(LOG_TAG, "Kill method in update orchestration.\n")
 	h.ticker.Stop()
 	return nil
+}
+
+func (h *ImageRuntimeCache) ProcessOverrideValues(values []v1alpha1.ImageOverride) error {
+	logger.Debug(LOG_TAG, "Processing override values.")
+	for _, imageOverride := range values {
+		imageId := imageOverride.ImageID
+		h.ImageOverrideMap.Store(imageId, &imageOverride)
+		logger.Debug(LOG_TAG, "Saving override value for imageId ", imageId)
+	}
+	return nil
+}
+
+func (h *ImageRuntimeCache) AddorUpdateFlags(inputString, flag, value string) string {
+	re := regexp.MustCompile(fmt.Sprintf(`%s=([^ ]+)`, flag))
+	matches := re.FindStringSubmatch(inputString)
+
+	newString := inputString
+
+	if len(matches) > 1 {
+		// Flag is already present, append the new value
+		newValue := fmt.Sprintf("%s,%s", matches[1], value)
+		newString = re.ReplaceAllString(inputString, fmt.Sprintf("%s=%s", flag, newValue))
+
+	} else {
+		// Flag is not present, add it with value
+		newString = fmt.Sprintf("%s=%s %s", flag, value, inputString)
+	}
+
+	return newString
 }

@@ -3,7 +3,6 @@ module github.com/zerok-ai/zk-operator
 go 1.19
 
 require (
-	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/ilyakaznacheev/cleanenv v1.4.2
 	github.com/kataras/iris/v12 v12.2.0
 	github.com/onsi/ginkgo v1.16.5

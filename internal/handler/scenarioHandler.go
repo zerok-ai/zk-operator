@@ -167,7 +167,7 @@ func (h *ScenarioHandler) getScenariosFromZkCloud(cfg config.ZkOperatorConfig, r
 		return nil, err
 	}
 
-	logger.Debug(LOG_TAG, "Scenario response body ", body)
+	//logger.Debug(LOG_TAG, "Scenario response body ", body)
 
 	var apiResponse ScenariosApiResponse
 

@@ -9,15 +9,18 @@ const (
 	ZkOrchProcessed    = "processed"
 	ZkOrchInProcess    = "in-process"
 
-	JavalToolOptions = "JAVA_TOOL_OPTIONS"
+	JavaToolOptions  = "JAVA_TOOL_OPTIONS"
 	ZkInjectionKey   = "zk-injection"
 	ZkInjectionValue = "enabled"
 
 	ZkAutoRestartKey   = "zk-auto-restart"
 	ZkAutoRestartValue = "enabled"
 
-	ZkConfigMapName = "zk-image"
-	ZkConfigMapKey  = "zk-image-map"
+	ZkImageConfigMapName = "zk-image"
+	ZkImageConfigMapKey  = "zk-image-map"
+
+	ZkProcessConfigMapName = "zk-process-info"
+	ZkProcessConfigMapKey  = "processes"
 
 	NamespaceEnvVariable = "POD_NAMESPACE"
 

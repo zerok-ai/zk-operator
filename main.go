@@ -86,7 +86,12 @@ func main() {
 	var d time.Duration = 15 * time.Minute
 
 	setupLog.Info("Starting Operator.")
-	initOperator()
+	imageRuntimeCache, err := initOperator()
+	if err != nil {
+		message := "Failed to initialize operator with error " + err.Error()
+		setupLog.Info(message)
+		return
+	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
@@ -104,8 +109,9 @@ func main() {
 	}
 
 	if err = (&controllers.ZerokopReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:            mgr.GetClient(),
+		Scheme:            mgr.GetScheme(),
+		ImageRuntimeCache: imageRuntimeCache,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Zerokop")
 		panic("unable to create controller")
@@ -130,19 +136,19 @@ func main() {
 
 // TODO:
 // Unit testing.
-func initOperator() {
+func initOperator() (*storage.ImageRuntimeCache, error) {
 
 	configPath := env.GetString("CONFIG_FILE", "")
 	if configPath == "" {
 		fmt.Println("Config yaml path not found.")
-		return
+		return nil, fmt.Errorf("config yaml path not found")
 	}
 
 	var zkConfig config.ZkOperatorConfig
 
 	if err := cleanenv.ReadConfig(configPath, &zkConfig); err != nil {
 		fmt.Println("Error while reading config ", err)
-		return
+		return nil, err
 	}
 
 	zklogger.Init(zkConfig.LogsConfig)
@@ -154,7 +160,7 @@ func initOperator() {
 	if err != nil {
 		msg := fmt.Sprintf("Failed to create keys and certificates for webhook %v. Stopping initialization of the pod.\n", err)
 		zklogger.Error(LOG_TAG, msg)
-		return
+		return nil, err
 	}
 
 	irisConfig := iris.WithConfiguration(iris.Configuration{
@@ -180,7 +186,7 @@ func initOperator() {
 	versionedStore, err := zkredis.GetVersionedStore[model.Scenario](&zkConfig.Redis, common.RedisVersionDbName, common.ScenarioSyncInterval)
 	if err != nil {
 		//logger.ZkLogger.Err(LOG_TAG, "Error while creating versionedStore ", err.Error())
-		return
+		return nil, err
 	}
 	scenarioHandler.Init(versionedStore, opLogin, zkConfig)
 	zkModules = append(zkModules, &scenarioHandler)
@@ -190,6 +196,10 @@ func initOperator() {
 
 	opLogin.RegisterZkModules(zkModules)
 
+	appInitData := config.AppInitContainerData{}
+	appInitData.Init(zkConfig)
+	appInitData.StartPeriodicSync()
+
 	//Starting syncing of image,runtime data from redis
 	go imageRuntimeCache.StartPeriodicSync()
 
@@ -198,7 +208,7 @@ func initOperator() {
 	app := newApp()
 
 	// start webhook server
-	go server.StartWebHookServer(app, zkConfig, cert, key, imageRuntimeCache, irisConfig)
+	go server.StartWebHookServer(app, zkConfig, cert, key, imageRuntimeCache, irisConfig, &appInitData)
 
 	app1 := newApp()
 
@@ -206,14 +216,13 @@ func initOperator() {
 	go server.StartHttpServer(app1, irisConfig, zkConfig, &clusterContextHandler)
 
 	go restart.ListenToNamespaceDeletion(&zkConfig)
-
 	// we want to wait for the pod to be ready before we start the restart ticker
 	go func() {
 		time.Sleep(time.Duration(2) * time.Minute)
 		podRestartTicker := restart.NewOrchestrateRestart(imageRuntimeCache)
 		podRestartTicker.Ticker.Start()
 	}()
-
+	return imageRuntimeCache, nil
 }
 
 func newApp() *iris.Application {

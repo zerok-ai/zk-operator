@@ -69,7 +69,7 @@ func RestartMarkedNamespacesIfNeeded(orchestratedPods bool, imageRuntimeCache *s
 				for _, pod := range pods {
 					containers := pod.Spec.Containers
 					for _, container := range containers {
-						language := imageRuntimeCache.GetContainerLanguage(&container, nil)
+						language := imageRuntimeCache.GetContainerLanguage(&container)
 						if language == common.JavaProgrammingLanguage {
 							podsToOrchestrate = append(podsToOrchestrate, pod)
 							break

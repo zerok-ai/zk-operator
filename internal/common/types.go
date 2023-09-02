@@ -13,9 +13,12 @@ const (
 )
 
 type ContainerRuntime struct {
-	Image     string   `json:"image"`
-	ImageID   string   `json:"imageId"`
-	Languages []string `json:"language"`
+	Image     string            `json:"image"`
+	ImageID   string            `json:"imageId"`
+	Languages []string          `json:"language"`
+	Process   string            `json:"process,omitempty"`
+	Cmd       []string          `json:"cmd,omitempty"`
+	EnvMap    map[string]string `json:"env"`
 }
 
 type RestartRequest struct {

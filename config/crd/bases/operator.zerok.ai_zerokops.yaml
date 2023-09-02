@@ -34,6 +34,36 @@ spec:
             type: object
           spec:
             description: ZerokopSpec defines the desired state of Zerokop
+            properties:
+              images:
+                items:
+                  description: ImageOverride defines overrides for a specific image.
+                  properties:
+                    cmd_override:
+                      items:
+                        type: string
+                      type: array
+                    env:
+                      items:
+                        description: EnvVar defines environment variables to override.
+                        properties:
+                          name:
+                            type: string
+                          value:
+                            type: string
+                        required:
+                        - name
+                        - value
+                        type: object
+                      type: array
+                    imageID:
+                      type: string
+                  required:
+                  - imageID
+                  type: object
+                type: array
+            required:
+            - images
             type: object
           status:
             description: ZerokopStatus defines the observed state of Zerokop

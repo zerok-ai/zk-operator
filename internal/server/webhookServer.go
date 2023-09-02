@@ -43,16 +43,16 @@ func webhookErrorResponse(err error, ctx iris.Context, message string) {
 	ctx.StatusCode(iris.StatusInternalServerError)
 }
 
-func handleRoutes(app *iris.Application, cfg config.ZkOperatorConfig, runtimeMap *storage.ImageRuntimeCache) {
+func handleRoutes(app *iris.Application, cfg config.ZkOperatorConfig, runtimeMap *storage.ImageRuntimeCache, appInitContainerData *config.AppInitContainerData) {
 	injectHandler := &WebhookRequestHandler{
-		injector: &inject.Injector{ImageRuntimeHandler: runtimeMap, Config: cfg},
+		injector: &inject.Injector{ImageRuntimeCache: runtimeMap, Config: cfg, InitContainerData: appInitContainerData},
 	}
 	app.Post(cfg.Webhook.Path, injectHandler.ServeHTTP)
 }
 
-func StartWebHookServer(app *iris.Application, cfg config.ZkOperatorConfig, cert *bytes.Buffer, key *bytes.Buffer, runtimeMap *storage.ImageRuntimeCache, config iris.Configurator) {
+func StartWebHookServer(app *iris.Application, cfg config.ZkOperatorConfig, cert *bytes.Buffer, key *bytes.Buffer, runtimeMap *storage.ImageRuntimeCache, config iris.Configurator, appInitContainerData *config.AppInitContainerData) {
 	logger.Debug(LOG_TAG, "Starting webhook server.")
-	handleRoutes(app, cfg, runtimeMap)
+	handleRoutes(app, cfg, runtimeMap, appInitContainerData)
 	err := app.Run(iris.TLS(":"+cfg.Webhook.Port, cert.String(), key.String()), config)
 	if err != nil {
 		logger.Error(LOG_TAG, "Error while starting webhook server ", err)

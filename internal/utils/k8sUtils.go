@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/zerok-ai/zk-operator/internal/common"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
+	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"sync"
 	"time"
 
@@ -184,7 +185,7 @@ func GetK8sClient() (*kubernetes.Clientset, error) {
 	return clientset, nil
 }
 
-func CreateOrUpdateConfigMap(namespace, name string, imageMap *sync.Map) error {
+func CreateOrUpdateZkImageConfigMap(namespace, name string, imageMap *sync.Map) error {
 
 	clientSet, err := GetK8sClient()
 	if err != nil {
@@ -199,11 +200,40 @@ func CreateOrUpdateConfigMap(namespace, name string, imageMap *sync.Map) error {
 	jsonString, err := SyncMapToString(imageMap)
 	if err != nil {
 		logger.Error(LOG_TAG, "Error while converting scenario.Map to string ", err)
+		return err
+	}
+
+	//logger.Debug(LOG_TAG, "The json string is ", jsonString)
+	data[common.ZkImageConfigMapKey] = jsonString
+
+	return CreateOrUpdateConfigMap(namespace, name, configMaps, data)
+}
+
+func CreateOrUpdateProcessInfoConfigMap(namespace, name string, imageMap *sync.Map) error {
+
+	clientSet, err := GetK8sClient()
+	if err != nil {
+		logger.Error(LOG_TAG, " Error while getting k8s client.")
+		return err
+	}
+
+	configMaps := clientSet.CoreV1().ConfigMaps(namespace)
+
+	data := make(map[string]string)
+	logger.Debug(LOG_TAG, imageMap)
+	jsonString, err := CreateProcessMap(imageMap)
+	if err != nil {
+		logger.Error(LOG_TAG, "Error while converting scenario.Map to string ", err)
+		return err
 	}
 
 	logger.Debug(LOG_TAG, "The json string is ", jsonString)
-	data[common.ZkConfigMapKey] = jsonString
+	data[common.ZkProcessConfigMapKey] = jsonString
 
+	return CreateOrUpdateConfigMap(namespace, name, configMaps, data)
+}
+
+func CreateOrUpdateConfigMap(namespace string, name string, configMaps v1.ConfigMapInterface, data map[string]string) error {
 	configMap, err := configMaps.Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		// If the ConfigMap doesn't exist, create it
@@ -226,7 +256,7 @@ func CreateOrUpdateConfigMap(namespace, name string, imageMap *sync.Map) error {
 	return err
 }
 
-func GetDataFromConfigMap(namespace, name string) (*sync.Map, error) {
+func GetSyncMapFromConfigMap(namespace, name string) (*sync.Map, error) {
 	clientSet, err := GetK8sClient()
 	if err != nil {
 		logger.Error(LOG_TAG, " Error while getting k8s client.")
@@ -240,7 +270,7 @@ func GetDataFromConfigMap(namespace, name string) (*sync.Map, error) {
 		return nil, err
 	}
 
-	imageMap, err := StringToSyncMap(configMap.Data[common.ZkConfigMapKey])
+	imageMap, err := StringToSyncMap(configMap.Data[common.ZkImageConfigMapKey])
 	if err != nil {
 		logger.Error(LOG_TAG, "Error caught while unmarshalling the data from configmap ", err)
 		return nil, err

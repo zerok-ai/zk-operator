@@ -36,8 +36,7 @@ type ZkCloudConfig struct {
 }
 
 type InitContainerConfig struct {
-	Image string `yaml:"image"`
-	Tag   string `yaml:"tag"`
+	PollingInterval int `yaml:"pollingInterval"`
 }
 
 type InstrumentationConfig struct {

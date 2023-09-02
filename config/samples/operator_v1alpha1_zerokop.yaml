@@ -3,3 +3,12 @@ kind: Zerokop
 metadata:
   name: zerokop-sample
 spec:
+  images:
+    - imageID: "us-west1-docker.pkg.dev/zerok-dev/java-spring-boot-demo/inventory:configurable"
+      user_override: true
+      env:
+        - name: "JAVA_TOOL_OPTIONS"
+          value: ""
+      cmd_override: ""
+    - imageID: "us-west1-docker.pkg.dev/zerok-dev/java-spring-boot-demo/inventory:configurable"
+      zk_override: true

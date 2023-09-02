@@ -3,12 +3,14 @@ package inject
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/zerok-ai/zk-operator/api/v1alpha1"
 	common "github.com/zerok-ai/zk-operator/internal/common"
 	"github.com/zerok-ai/zk-operator/internal/config"
 	"github.com/zerok-ai/zk-operator/internal/storage"
 	"github.com/zerok-ai/zk-operator/internal/utils"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
 	"strconv"
+	"strings"
 	"time"
 
 	v1 "k8s.io/api/admission/v1"
@@ -20,8 +22,9 @@ var LOG_TAG = "inject"
 
 // Injector is a struct that implements an admission controller webhook for Kubernetes pods.
 type Injector struct {
-	ImageRuntimeHandler *storage.ImageRuntimeCache
-	Config              config.ZkOperatorConfig
+	ImageRuntimeCache *storage.ImageRuntimeCache
+	Config            config.ZkOperatorConfig
+	InitContainerData *config.AppInitContainerData
 }
 
 // GetEmptyResponse returns an empty admission response as a JSON byte array.
@@ -122,6 +125,43 @@ func (h *Injector) getPatches(pod *corev1.Pod) []map[string]interface{} {
 	return patches
 }
 
+func (h *Injector) modifyExistingCmd(existingCmd []string) []string {
+	otelSplitResult := strings.Split(h.Config.Instrumentation.OtelArgument, " ")
+	otelSplitResultMap := make(map[string]string)
+	for _, result := range otelSplitResult {
+		otelSplitResultItem := strings.Split(result, "=")
+		if len(otelSplitResultItem) == 2 {
+			flag := otelSplitResultItem[0]
+			value := otelSplitResultItem[1]
+			otelSplitResultMap[flag] = value
+		}
+	}
+
+	prefix := "-Dotel."
+	for i, cmd := range existingCmd {
+		cmdSplitArr := strings.Split(cmd, " ")
+		for i, cmdSplit := range cmdSplitArr {
+			if strings.HasPrefix(cmdSplit, prefix) {
+				cmdSplitItems := strings.Split(cmdSplit, "=")
+				if len(cmdSplitItems) == 2 {
+					existingFlag := cmdSplitItems[0]
+					existingValue := cmdSplitItems[1]
+					otelValue, ok := otelSplitResultMap[existingFlag]
+					if ok {
+						existingValue = existingValue + "," + otelValue
+						delete(otelSplitResultMap, existingFlag)
+					}
+					newCmdItem := fmt.Sprintf("%s=%s", existingFlag, existingValue)
+					cmdSplitArr[i] = newCmdItem
+				}
+			}
+		}
+		existingCmd[i] = strings.Join(cmdSplitArr, "")
+	}
+
+	return existingCmd
+}
+
 // These patches orchestrate the container based on language.
 func (h *Injector) getContainerPatches(pod *corev1.Pod) []map[string]interface{} {
 
@@ -133,15 +173,17 @@ func (h *Injector) getContainerPatches(pod *corev1.Pod) []map[string]interface{}
 
 		container := &pod.Spec.Containers[index]
 
-		language := h.ImageRuntimeHandler.GetContainerLanguage(container, pod)
+		language := h.ImageRuntimeCache.GetContainerLanguage(container)
+
+		override := h.ImageRuntimeCache.GetOverrideForImage(container.Image)
 
 		logger.Debug(LOG_TAG, "Found language ", language, " for container ", container.Name)
 
 		switch language {
 		case common.JavaProgrammingLanguage:
 			//Adding env variable patch in case the prog language is java.
-			javaToolsPatch := h.modifyJavaToolsEnvVariablePatch(container, index)
-			patches = append(patches, javaToolsPatch...)
+			javaEnvPatch := h.addJavaToolEnvPatch(container, index, override)
+			patches = append(patches, javaEnvPatch...)
 			orchLabelPatch := getZerokLabelPatch(common.ZkOrchOrchestrated)
 			patches = append(patches, orchLabelPatch)
 		case common.NotYetProcessed:
@@ -157,56 +199,158 @@ func (h *Injector) getContainerPatches(pod *corev1.Pod) []map[string]interface{}
 
 		patches = append(patches, addVolumeMount)
 
-		envPatch := h.getEnvVarPatches(index)
+		patches = append(patches, h.addEnvOverridePatch(container, index, override.Env)...)
 
-		patches = append(patches, envPatch)
+		cmdOverride := override.CmdOverride
+
+		if len(cmdOverride) > 0 {
+			newCmd := h.modifyExistingCmd(cmdOverride)
+			if len(container.Command) > 0 {
+				patch := map[string]interface{}{
+					"op":    "replace",
+					"path":  fmt.Sprintf("/spec/containers/%v/command", index),
+					"value": newCmd,
+				}
+				patches = append(patches, patch)
+			} else {
+				patch := map[string]interface{}{
+					"op":    "add",
+					"path":  fmt.Sprintf("/spec/containers/%v/command", index),
+					"value": newCmd,
+				}
+				patches = append(patches, patch)
+			}
+		}
 
 	}
 
 	return patches
 }
 
-func (h *Injector) modifyJavaToolsEnvVariablePatch(container *corev1.Container, containerIndex int) []map[string]interface{} {
+func (h *Injector) getAddEnvPatch(containerIndex int, name, value string) map[string]interface{} {
+	patch := map[string]interface{}{
+		"op":   "add",
+		"path": fmt.Sprintf("/spec/containers/%v/env/-", containerIndex),
+		"value": corev1.EnvVar{
+			Name:  name,
+			Value: value,
+		},
+	}
+	return patch
+}
+
+func (h *Injector) getReplaceEnvPatch(containerIndex, envIndex int, name, value string) map[string]interface{} {
+	patch := map[string]interface{}{
+		"op":   "replace",
+		"path": fmt.Sprintf("/spec/containers/%v/env/%v", containerIndex, envIndex),
+		"value": corev1.EnvVar{
+			Name:  name,
+			Value: value,
+		},
+	}
+	return patch
+}
+
+func (h *Injector) addEnvObjectPatch(containerIndex int) map[string]interface{} {
+	envInitialize := map[string]interface{}{
+		"op":    "add",
+		"path":  fmt.Sprintf("/spec/containers/%v/env", containerIndex),
+		"value": []corev1.EnvVar{},
+	}
+	return envInitialize
+}
+
+func (h *Injector) addJavaToolEnvPatch(container *corev1.Container, containerIndex int, override *v1alpha1.ImageOverride) []map[string]interface{} {
 	envVars := container.Env
 	envIndex := -1
 	patches := []map[string]interface{}{}
 
 	//If there are no env variables in container, adding an empty array first.
 	if len(envVars) == 0 {
-		envInitialize := map[string]interface{}{
-			"op":    "add",
-			"path":  fmt.Sprintf("/spec/containers/%v/env", containerIndex),
-			"value": []corev1.EnvVar{},
-		}
-		patches = append(patches, envInitialize)
+		patches = append(patches, h.addEnvObjectPatch(containerIndex))
 	} else {
-		envIndex = utils.GetIndexOfEnv(envVars, common.JavalToolOptions)
+		envIndex = utils.GetIndexOfEnv(envVars, common.JavaToolOptions)
 	}
 
 	var patch map[string]interface{}
-	//Scenario where java_tool_options is not present.
-	if envIndex == -1 {
-		patch = map[string]interface{}{
-			"op":   "add",
-			"path": fmt.Sprintf("/spec/containers/%v/env/-", containerIndex),
-			"value": corev1.EnvVar{
-				Name:  common.JavalToolOptions,
-				Value: h.Config.Instrumentation.OtelArgument,
-			},
-		}
 
+	// case 1: Override value present for java tool options.
+	overrideEnvVars := override.Env
+	currentJavaToolOptions := ""
+	if len(overrideEnvVars) > 0 {
+		for _, overrideEnv := range overrideEnvVars {
+			name := overrideEnv.Name
+			value := overrideEnv.Value
+			if name == common.JavaToolOptions {
+				currentJavaToolOptions = value
+				break
+			}
+		}
 	} else {
-		//Scenario where java_tool_options is already present.
-		patch = map[string]interface{}{
-			"op":   "replace",
-			"path": fmt.Sprintf("/spec/containers/%v/env/%v", containerIndex, envIndex),
-			"value": corev1.EnvVar{
-				Name:  common.JavalToolOptions,
-				Value: container.Env[envIndex].Value + h.Config.Instrumentation.OtelArgument,
-			},
+		//Getting env vars from daemonset.
+		runtime := h.ImageRuntimeCache.GetRuntimeForImage(container.Image)
+		runtimeEnvVars := runtime.EnvMap
+		runtimeJavaToolOpt, ok := runtimeEnvVars[common.JavaToolOptions]
+
+		if envIndex > 0 {
+			// case 2: No override present. But value present in pod spec.
+			currentJavaToolOptions = container.Env[envIndex].Value
+		} else if ok {
+			// case 3: Command found in daemonset .
+			currentJavaToolOptions = runtimeJavaToolOpt
 		}
 	}
+
+	//Scenario where java_tool_options is not found in any of above scenarios.
+	if len(currentJavaToolOptions) == 0 {
+		patch = h.getAddEnvPatch(containerIndex, common.JavaToolOptions, h.Config.Instrumentation.OtelArgument)
+	} else {
+		splitResult := strings.Split(h.Config.Instrumentation.OtelArgument, " ")
+		prefix := "-Dotel."
+		for _, str := range splitResult {
+			if strings.HasPrefix(str, prefix) {
+				splitResultNew := strings.Split(str, "=")
+				if len(splitResultNew) == 2 {
+					flag := splitResultNew[0]
+					value := splitResultNew[1]
+					currentJavaToolOptions = h.ImageRuntimeCache.AddorUpdateFlags(currentJavaToolOptions, flag, value)
+				}
+			}
+		}
+		patch = h.getReplaceEnvPatch(containerIndex, envIndex, common.JavaToolOptions, currentJavaToolOptions)
+	}
 	patches = append(patches, patch)
+	return patches
+}
+
+func (h *Injector) addEnvOverridePatch(container *corev1.Container, containerIndex int, overrideEnv []v1alpha1.EnvVar) []map[string]interface{} {
+	specEnvVars := container.Env
+	envIndex := -1
+	patches := []map[string]interface{}{}
+
+	//If there are no env variables in container, adding an empty array first.
+	if len(specEnvVars) == 0 {
+		patches = append(patches, h.addEnvObjectPatch(containerIndex))
+	}
+
+	for _, overrideEnv := range overrideEnv {
+		name := overrideEnv.Name
+		value := overrideEnv.Value
+		//Ignoring java_tool_versions to add a special handling for that.
+		if name == common.JavaToolOptions {
+			continue
+		}
+		var patch map[string]interface{}
+		envIndex = utils.GetIndexOfEnv(specEnvVars, name)
+
+		if envIndex == -1 {
+			patch = h.getAddEnvPatch(containerIndex, name, value)
+		} else {
+			patch = h.getReplaceEnvPatch(containerIndex, envIndex, name, value)
+		}
+
+		patches = append(patches, patch)
+	}
 	return patches
 }
 
@@ -268,6 +412,12 @@ func (h *Injector) getVolumePatch() map[string]interface{} {
 func (h *Injector) getInitContainerPatches(pod *corev1.Pod) []map[string]interface{} {
 	p := make([]map[string]interface{}, 0)
 
+	initImage := h.InitContainerData.Image
+	initTag := h.InitContainerData.Tag
+	if len(initImage) == 0 || len(initTag) == 0 {
+		return p
+	}
+
 	if pod.Spec.InitContainers == nil {
 		initInitialize := map[string]interface{}{
 			"op":    "add",
@@ -284,7 +434,7 @@ func (h *Injector) getInitContainerPatches(pod *corev1.Pod) []map[string]interfa
 		"value": &corev1.Container{
 			Name:            "zerok-init",
 			Command:         []string{"cp", "-r", "/opt/zerok/.", "/opt/temp"},
-			Image:           h.Config.InitContainer.Image + ":" + h.Config.InitContainer.Tag,
+			Image:           initImage + ":" + initTag,
 			ImagePullPolicy: corev1.PullAlways,
 			VolumeMounts: []corev1.VolumeMount{
 				{
