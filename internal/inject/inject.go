@@ -137,6 +137,10 @@ func (h *Injector) modifyExistingCmd(overrideCmd []string) []string {
 		}
 	}
 
+	logger.Debug(LOG_TAG, "otelSplitResultMap ", otelSplitResultMap)
+
+	logger.Debug(LOG_TAG, "First time ", overrideCmd)
+
 	prefix := "-Dotel."
 	for i, cmd := range overrideCmd {
 		cmdSplitArr := strings.Split(cmd, " ")
@@ -160,20 +164,27 @@ func (h *Injector) modifyExistingCmd(overrideCmd []string) []string {
 	}
 
 	//Add missing flags
-	var missingFlagsString string
+	missingFlagsArr := []string{}
 	for name, value := range otelSplitResultMap {
-		missingFlagsString = missingFlagsString + name + "=" + value
+		item := name + "=" + value
+		missingFlagsArr = append(missingFlagsArr, item)
 	}
 
-	if len(missingFlagsString) > 0 {
-		for _, cmd := range overrideCmd {
+	logger.Debug(LOG_TAG, "Second time ", overrideCmd)
+
+	jarIndex := -1
+	if len(missingFlagsArr) > 0 {
+		for i, cmd := range overrideCmd {
 			if strings.Contains(cmd, "-jar") {
-				replacement := "-jar " + missingFlagsString
-				cmd = strings.Replace(cmd, "-jar", replacement, 1)
+				jarIndex = i
 				break
 			}
 		}
 	}
+
+	logger.Debug(LOG_TAG, "Second time ", overrideCmd)
+
+	overrideCmd = append(overrideCmd[:jarIndex], append(missingFlagsArr, overrideCmd[jarIndex:]...)...)
 
 	return overrideCmd
 }
