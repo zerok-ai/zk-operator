@@ -253,6 +253,9 @@ func (h *Injector) getContainerPatches(pod *corev1.Pod) []map[string]interface{}
 			logger.Debug(LOG_TAG, "Did not find any override for the image ", container.Image)
 		}
 
+		//Adding zk redis env patches
+		patches = append(patches, h.getRedisEnvVarPatches(index))
+
 	}
 
 	return patches
@@ -400,22 +403,22 @@ func getZerokLabelPatch(value string) map[string]interface{} {
 	return labelPod
 }
 
-func (h *Injector) getEnvVarPatches(i int) map[string]interface{} {
-	addVolumeMount := map[string]interface{}{
+func (h *Injector) getRedisEnvVarPatches(containerIndex int) map[string]interface{} {
+	redisEnvPatch := map[string]interface{}{
 		"op":   "add",
-		"path": "/spec/containers/" + strconv.Itoa(i) + "/env/-",
+		"path": "/spec/containers/" + strconv.Itoa(containerIndex) + "/env/-",
 		"value": []corev1.EnvVar{
 			{
-				Name:  "REDIS_HOST",
+				Name:  "ZK_REDIS_HOSTNAME",
 				Value: h.Config.Redis.Host,
 			},
 			{
-				Name:  "REDIS_PASSWORD",
+				Name:  "ZK_REDIS_PASSWORD",
 				Value: h.Config.Redis.Password,
 			},
 		},
 	}
-	return addVolumeMount
+	return redisEnvPatch
 }
 
 func (*Injector) getVolumeMount(i int) map[string]interface{} {
