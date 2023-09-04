@@ -61,7 +61,7 @@ type ZerokopReconciler struct {
 func (r *ZerokopReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 
-	instance := &operatorv1alpha1.Zerokop{}
+	instance := &operatorv1alpha1.Zerokinstrumentation{}
 	err := r.Get(ctx, req.NamespacedName, instance)
 	if err != nil {
 		return reconcile.Result{}, err
@@ -85,7 +85,7 @@ func (r *ZerokopReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 // SetupWithManager sets up the controller with the Manager.
 func (r *ZerokopReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&operatorv1alpha1.Zerokop{}).
+		For(&operatorv1alpha1.Zerokinstrumentation{}).
 		Owns(&appsv1.Deployment{}).
 		Complete(r)
 }
