@@ -79,7 +79,7 @@ rules:
 - apiGroups:
   - operator.zerok.ai
   resources:
-  - zerokops
+  - zerokinstrumentations
   verbs:
   - create
   - get
