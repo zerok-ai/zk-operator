@@ -125,7 +125,7 @@ func (h *Injector) getPatches(pod *corev1.Pod) []map[string]interface{} {
 	return patches
 }
 
-func (h *Injector) modifyExistingCmd(existingCmd []string) []string {
+func (h *Injector) modifyExistingCmd(overrideCmd []string) []string {
 	otelSplitResult := strings.Split(h.Config.Instrumentation.OtelArgument, " ")
 	otelSplitResultMap := make(map[string]string)
 	for _, result := range otelSplitResult {
@@ -137,8 +137,12 @@ func (h *Injector) modifyExistingCmd(existingCmd []string) []string {
 		}
 	}
 
+	logger.Debug(LOG_TAG, "otelSplitResultMap ", otelSplitResultMap)
+
+	logger.Debug(LOG_TAG, "First time ", overrideCmd)
+
 	prefix := "-Dotel."
-	for i, cmd := range existingCmd {
+	for i, cmd := range overrideCmd {
 		cmdSplitArr := strings.Split(cmd, " ")
 		for i, cmdSplit := range cmdSplitArr {
 			if strings.HasPrefix(cmdSplit, prefix) {
@@ -156,10 +160,33 @@ func (h *Injector) modifyExistingCmd(existingCmd []string) []string {
 				}
 			}
 		}
-		existingCmd[i] = strings.Join(cmdSplitArr, "")
+		overrideCmd[i] = strings.Join(cmdSplitArr, " ")
 	}
 
-	return existingCmd
+	//Add missing flags
+	missingFlagsArr := []string{}
+	for name, value := range otelSplitResultMap {
+		item := name + "=" + value
+		missingFlagsArr = append(missingFlagsArr, item)
+	}
+
+	logger.Debug(LOG_TAG, "Second time ", overrideCmd)
+
+	jarIndex := -1
+	if len(missingFlagsArr) > 0 {
+		for i, cmd := range overrideCmd {
+			if strings.Contains(cmd, "-jar") {
+				jarIndex = i
+				break
+			}
+		}
+	}
+
+	logger.Debug(LOG_TAG, "Second time ", overrideCmd)
+
+	overrideCmd = append(overrideCmd[:jarIndex], append(missingFlagsArr, overrideCmd[jarIndex:]...)...)
+
+	return overrideCmd
 }
 
 // These patches orchestrate the container based on language.
@@ -199,27 +226,31 @@ func (h *Injector) getContainerPatches(pod *corev1.Pod) []map[string]interface{}
 
 		patches = append(patches, addVolumeMount)
 
-		patches = append(patches, h.addEnvOverridePatch(container, index, override.Env)...)
+		if override != nil {
+			patches = append(patches, h.addEnvOverridePatch(container, index, override.Env)...)
 
-		cmdOverride := override.CmdOverride
+			cmdOverride := override.CmdOverride
 
-		if len(cmdOverride) > 0 {
-			newCmd := h.modifyExistingCmd(cmdOverride)
-			if len(container.Command) > 0 {
-				patch := map[string]interface{}{
-					"op":    "replace",
-					"path":  fmt.Sprintf("/spec/containers/%v/command", index),
-					"value": newCmd,
+			if len(cmdOverride) > 0 {
+				newCmd := h.modifyExistingCmd(cmdOverride)
+				if len(container.Command) > 0 {
+					patch := map[string]interface{}{
+						"op":    "replace",
+						"path":  fmt.Sprintf("/spec/containers/%v/command", index),
+						"value": newCmd,
+					}
+					patches = append(patches, patch)
+				} else {
+					patch := map[string]interface{}{
+						"op":    "add",
+						"path":  fmt.Sprintf("/spec/containers/%v/command", index),
+						"value": newCmd,
+					}
+					patches = append(patches, patch)
 				}
-				patches = append(patches, patch)
-			} else {
-				patch := map[string]interface{}{
-					"op":    "add",
-					"path":  fmt.Sprintf("/spec/containers/%v/command", index),
-					"value": newCmd,
-				}
-				patches = append(patches, patch)
 			}
+		} else {
+			logger.Debug(LOG_TAG, "Did not find any override for the image ", container.Image)
 		}
 
 	}
@@ -275,7 +306,11 @@ func (h *Injector) addJavaToolEnvPatch(container *corev1.Container, containerInd
 	var patch map[string]interface{}
 
 	// case 1: Override value present for java tool options.
-	overrideEnvVars := override.Env
+	var overrideEnvVars []v1alpha1.EnvVar
+	if override != nil {
+		overrideEnvVars = override.Env
+	}
+
 	currentJavaToolOptions := ""
 	if len(overrideEnvVars) > 0 {
 		for _, overrideEnv := range overrideEnvVars {
@@ -327,6 +362,8 @@ func (h *Injector) addEnvOverridePatch(container *corev1.Container, containerInd
 	specEnvVars := container.Env
 	envIndex := -1
 	patches := []map[string]interface{}{}
+
+	logger.Debug(LOG_TAG, "Override env vars ", overrideEnv)
 
 	//If there are no env variables in container, adding an empty array first.
 	if len(specEnvVars) == 0 {

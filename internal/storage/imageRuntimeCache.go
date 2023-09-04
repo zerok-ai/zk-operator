@@ -85,7 +85,7 @@ func (h *ImageRuntimeCache) Init(config config.ZkOperatorConfig) {
 }
 
 func (h *ImageRuntimeCache) GetOverrideForImage(imageID string) *v1alpha1.ImageOverride {
-	value, ok := h.ImageRuntimeMap.Load(imageID)
+	value, ok := h.ImageOverrideMap.Load(imageID)
 	if !ok {
 		return nil
 	}

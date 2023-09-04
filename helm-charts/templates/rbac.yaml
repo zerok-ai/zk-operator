@@ -111,6 +111,7 @@ rules:
   - list
   - delete
   - watch
+  - get
 - apiGroups:
   - v1
   - ""
@@ -138,10 +139,13 @@ rules:
   - apps
   resources:
   - deployments
+  - daemonsets
+  - statefulsets
   verbs:
   - patch
   - list
   - watch
+  - get
 - apiGroups:
   - apps
   resources:

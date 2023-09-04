@@ -4,11 +4,9 @@ metadata:
   name: zerokop-sample
 spec:
   images:
-    - imageID: "us-west1-docker.pkg.dev/zerok-dev/java-spring-boot-demo/inventory:configurable"
-      user_override: true
+    - imageID: "docker.io/rajeevzerok/dropwizardexample-service:latest"
       env:
-        - name: "JAVA_TOOL_OPTIONS"
-          value: ""
-      cmd_override: ""
-    - imageID: "us-west1-docker.pkg.dev/zerok-dev/java-spring-boot-demo/inventory:configurable"
-      zk_override: true
+        - name: "TEST"
+          value: "testing"
+      cmd_override:
+        - "java -jar app.jar server config.yml"
