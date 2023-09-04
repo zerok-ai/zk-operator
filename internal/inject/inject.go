@@ -407,6 +407,13 @@ func (h *Injector) getRedisEnvVarPatches(containerIndex int) []map[string]interf
 	var patches []map[string]interface{}
 	patches = append(patches, h.getAddEnvPatch(containerIndex, "ZK_REDIS_HOSTNAME", h.Config.Redis.Host))
 	patches = append(patches, h.getAddEnvPatch(containerIndex, "ZK_REDIS_PASSWORD", h.Config.Redis.Password))
+	patches = append(patches, h.getAddEnvPatch(containerIndex, "ZK_REDIS_PORT", "6379"))
+	patches = append(patches, h.getAddEnvPatch(containerIndex, "ZK_REDIS_DB", "3"))
+	patches = append(patches, h.getAddEnvPatch(containerIndex, "ZK_REDIS_TTL", "900"))
+	patches = append(patches, h.getAddEnvPatch(containerIndex, "ZK_REDIS_BATCH_SIZE", "100"))
+	patches = append(patches, h.getAddEnvPatch(containerIndex, "ZK_REDIS_DURATION_MILLIS", "5000"))
+	patches = append(patches, h.getAddEnvPatch(containerIndex, "ZK_REDIS_TIMER_SYNC_DURATION", "30000"))
+
 	return patches
 }
 
