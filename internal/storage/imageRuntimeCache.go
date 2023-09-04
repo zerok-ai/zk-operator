@@ -8,6 +8,7 @@ import (
 	logger "github.com/zerok-ai/zk-utils-go/logs"
 	zktick "github.com/zerok-ai/zk-utils-go/ticker"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -153,7 +154,7 @@ func (h *ImageRuntimeCache) AddorUpdateFlags(inputString, flag, value string) st
 	if len(matches) > 1 {
 		existingValue := matches[1]
 		logger.Debug(LOG_TAG, "Existing value is ", existingValue)
-		if existingValue != value {
+		if strings.Contains(existingValue, value) {
 			// Flag is already present, append the new value
 			newValue := fmt.Sprintf("%s,%s", matches[1], value)
 			newString = re.ReplaceAllString(inputString, fmt.Sprintf("%s=%s", flag, newValue))
