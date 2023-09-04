@@ -9,4 +9,8 @@ spec:
         - name: "TEST"
           value: "testing"
       cmd_override:
-        - "java -jar app.jar server config.yml"
+        - java
+        - -jar
+        - app.jar
+        - server
+        - config.yml
