@@ -254,7 +254,7 @@ func (h *Injector) getContainerPatches(pod *corev1.Pod) []map[string]interface{}
 		}
 
 		//Adding zk redis env patches
-		patches = append(patches, h.getRedisEnvVarPatches(index))
+		patches = append(patches, h.getRedisEnvVarPatches(index)...)
 
 	}
 
@@ -403,22 +403,11 @@ func getZerokLabelPatch(value string) map[string]interface{} {
 	return labelPod
 }
 
-func (h *Injector) getRedisEnvVarPatches(containerIndex int) map[string]interface{} {
-	redisEnvPatch := map[string]interface{}{
-		"op":   "add",
-		"path": "/spec/containers/" + strconv.Itoa(containerIndex) + "/env/-",
-		"value": []corev1.EnvVar{
-			{
-				Name:  "ZK_REDIS_HOSTNAME",
-				Value: h.Config.Redis.Host,
-			},
-			{
-				Name:  "ZK_REDIS_PASSWORD",
-				Value: h.Config.Redis.Password,
-			},
-		},
-	}
-	return redisEnvPatch
+func (h *Injector) getRedisEnvVarPatches(containerIndex int) []map[string]interface{} {
+	var patches []map[string]interface{}
+	patches = append(patches, h.getAddEnvPatch(containerIndex, "ZK_REDIS_HOSTNAME", h.Config.Redis.Host))
+	patches = append(patches, h.getAddEnvPatch(containerIndex, "ZK_REDIS_PASSWORD", h.Config.Redis.Password))
+	return patches
 }
 
 func (*Injector) getVolumeMount(i int) map[string]interface{} {
