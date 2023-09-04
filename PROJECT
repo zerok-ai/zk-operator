@@ -13,7 +13,7 @@ resources:
   controller: true
   domain: zerok.ai
   group: operator
-  kind: zerokop
+  kind: Zerokinstrumentation
   path: github.com/zerok-ai/zk-operator/api/v1alpha1
   version: v1alpha1
 version: "3"

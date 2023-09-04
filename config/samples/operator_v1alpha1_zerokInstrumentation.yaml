@@ -1,7 +1,7 @@
 apiVersion: operator.zerok.ai/v1alpha1
-kind: Zerokop
+kind: Zerokinstrumentation
 metadata:
-  name: zerokop-sample
+  name: zerokinstrumentation-sample
 spec:
   images:
     - imageID: "docker.io/rajeevzerok/dropwizardexample-service:latest"
@@ -9,4 +9,8 @@ spec:
         - name: "TEST"
           value: "testing"
       cmd_override:
-        - "java -jar app.jar server config.yml"
+        - java
+        - -jar
+        - app.jar
+        - server
+        - config.yml

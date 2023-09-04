@@ -4,7 +4,7 @@ metadata:
   name: zk-operator-role
 rules:
 - apiGroups: ["operator.zerok.ai"]
-  resources: ["zerokops"]
+  resources: ["zerokinstrumentations"]
   verbs: ["create", "get", "delete", "list", "patch", "update", "watch"]
 - apiGroups: ["operator.zerok.ai"]
   resources: ["zerokops/finalizers"]
