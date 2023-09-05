@@ -36,7 +36,7 @@ spec:
               value: "80"
             - name: HEALTH_PATH
               value: "/healthz"
-          image: us-west1-docker.pkg.dev/zerok-dev/stage/curl:latest
+          image: us-west1-docker.pkg.dev/black-scope-358204/zk-client/prod/curl:latest
           imagePullPolicy: IfNotPresent
           resources: { }
           securityContext:
