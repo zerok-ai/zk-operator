@@ -194,6 +194,8 @@ func (h *Injector) getContainerPatches(pod *corev1.Pod) []map[string]interface{}
 
 	containers := pod.Spec.Containers
 
+	shouldAddStandardPatches := false
+
 	for index := range containers {
 
 		container := &pod.Spec.Containers[index]
@@ -204,7 +206,7 @@ func (h *Injector) getContainerPatches(pod *corev1.Pod) []map[string]interface{}
 
 		logger.Debug(LOG_TAG, "Found language ", language, " for container ", container.Name)
 
-		shouldAddStandardPatches := false
+		shouldAddStandardPatchesToContainer := false
 
 		switch language {
 		case common.JavaProgrammingLanguage:
@@ -213,6 +215,7 @@ func (h *Injector) getContainerPatches(pod *corev1.Pod) []map[string]interface{}
 			patches = append(patches, javaEnvPatch...)
 			orchLabelPatch := getZerokLabelPatch(common.ZkOrchOrchestrated)
 			patches = append(patches, orchLabelPatch)
+			shouldAddStandardPatchesToContainer = true
 			shouldAddStandardPatches = true
 		case common.NotYetProcessed:
 			//Setting zk-status as in-process since there is not runtime info in redis.
@@ -223,7 +226,7 @@ func (h *Injector) getContainerPatches(pod *corev1.Pod) []map[string]interface{}
 			patches = append(patches, orchLabelPatch)
 		}
 
-		if shouldAddStandardPatches {
+		if shouldAddStandardPatchesToContainer {
 			addVolumeMount := h.getVolumeMount(index)
 
 			patches = append(patches, addVolumeMount)
@@ -259,6 +262,12 @@ func (h *Injector) getContainerPatches(pod *corev1.Pod) []map[string]interface{}
 			patches = append(patches, h.getRedisEnvVarPatches(index)...)
 		}
 
+	}
+
+	if shouldAddStandardPatches {
+		standardPatches := h.getStandardPatches(pod)
+		standardPatches = append(standardPatches, patches...)
+		patches = standardPatches
 	}
 
 	return patches
@@ -365,7 +374,11 @@ func (h *Injector) addJavaToolEnvPatch(container *corev1.Container, containerInd
 				}
 			}
 		}
-		patch = h.getReplaceEnvPatch(containerIndex, envIndex, common.JavaToolOptions, currentJavaToolOptions)
+		if envIndex == -1 {
+			patch = h.getAddEnvPatch(containerIndex, common.JavaToolOptions, currentJavaToolOptions)
+		} else {
+			patch = h.getReplaceEnvPatch(containerIndex, envIndex, common.JavaToolOptions, currentJavaToolOptions)
+		}
 	}
 	patches = append(patches, patch)
 	return patches
