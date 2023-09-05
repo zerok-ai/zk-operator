@@ -140,6 +140,8 @@ func (h *OperatorLogin) getOpTokenFromZkCloud() error {
 	if err != nil {
 		logger.Error(LOG_TAG, "Error while getting cluster key from secrets :", err)
 		return err
+	} else {
+		fmt.Printf("clusterKey=%s", clusterKey)
 	}
 
 	requestPayload := OperatorLoginRequest{ClusterKey: clusterKey}
