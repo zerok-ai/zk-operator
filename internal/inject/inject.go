@@ -116,8 +116,6 @@ func (h *Injector) getPatches(pod *corev1.Pod) []map[string]interface{} {
 
 	patches := make([]map[string]interface{}, 0)
 
-	patches = append(patches, h.getInitContainerPatches(pod)...)
-	patches = append(patches, h.getVolumePatch())
 	patches = append(patches, h.getContainerPatches(pod)...)
 
 	logger.Debug(LOG_TAG, "The patches created are ", patches)
@@ -206,6 +204,8 @@ func (h *Injector) getContainerPatches(pod *corev1.Pod) []map[string]interface{}
 
 		logger.Debug(LOG_TAG, "Found language ", language, " for container ", container.Name)
 
+		shouldAddStandardPatches := false
+
 		switch language {
 		case common.JavaProgrammingLanguage:
 			//Adding env variable patch in case the prog language is java.
@@ -213,6 +213,7 @@ func (h *Injector) getContainerPatches(pod *corev1.Pod) []map[string]interface{}
 			patches = append(patches, javaEnvPatch...)
 			orchLabelPatch := getZerokLabelPatch(common.ZkOrchOrchestrated)
 			patches = append(patches, orchLabelPatch)
+			shouldAddStandardPatches = true
 		case common.NotYetProcessed:
 			//Setting zk-status as in-process since there is not runtime info in redis.
 			orchLabelPatch := getZerokLabelPatch(common.ZkOrchInProcess)
@@ -222,42 +223,51 @@ func (h *Injector) getContainerPatches(pod *corev1.Pod) []map[string]interface{}
 			patches = append(patches, orchLabelPatch)
 		}
 
-		addVolumeMount := h.getVolumeMount(index)
+		if shouldAddStandardPatches {
+			addVolumeMount := h.getVolumeMount(index)
 
-		patches = append(patches, addVolumeMount)
+			patches = append(patches, addVolumeMount)
 
-		if override != nil {
-			patches = append(patches, h.addEnvOverridePatch(container, index, override.Env)...)
+			if override != nil {
+				patches = append(patches, h.addEnvOverridePatch(container, index, override.Env)...)
 
-			cmdOverride := override.CmdOverride
+				cmdOverride := override.CmdOverride
 
-			if len(cmdOverride) > 0 {
-				newCmd := h.modifyExistingCmd(cmdOverride)
-				if len(container.Command) > 0 {
-					patch := map[string]interface{}{
-						"op":    "replace",
-						"path":  fmt.Sprintf("/spec/containers/%v/command", index),
-						"value": newCmd,
+				if len(cmdOverride) > 0 {
+					newCmd := h.modifyExistingCmd(cmdOverride)
+					if len(container.Command) > 0 {
+						patch := map[string]interface{}{
+							"op":    "replace",
+							"path":  fmt.Sprintf("/spec/containers/%v/command", index),
+							"value": newCmd,
+						}
+						patches = append(patches, patch)
+					} else {
+						patch := map[string]interface{}{
+							"op":    "add",
+							"path":  fmt.Sprintf("/spec/containers/%v/command", index),
+							"value": newCmd,
+						}
+						patches = append(patches, patch)
 					}
-					patches = append(patches, patch)
-				} else {
-					patch := map[string]interface{}{
-						"op":    "add",
-						"path":  fmt.Sprintf("/spec/containers/%v/command", index),
-						"value": newCmd,
-					}
-					patches = append(patches, patch)
 				}
+			} else {
+				logger.Debug(LOG_TAG, "Did not find any override for the image ", container.Image)
 			}
-		} else {
-			logger.Debug(LOG_TAG, "Did not find any override for the image ", container.Image)
-		}
 
-		//Adding zk redis env patches
-		patches = append(patches, h.getRedisEnvVarPatches(index)...)
+			//Adding zk redis env patches
+			patches = append(patches, h.getRedisEnvVarPatches(index)...)
+		}
 
 	}
 
+	return patches
+}
+
+func (h *Injector) getStandardPatches(pod *corev1.Pod) []map[string]interface{} {
+	var patches []map[string]interface{}
+	patches = append(patches, h.getInitContainerPatches(pod)...)
+	patches = append(patches, h.getVolumePatch())
 	return patches
 }
 
@@ -369,7 +379,7 @@ func (h *Injector) addEnvOverridePatch(container *corev1.Container, containerInd
 	logger.Debug(LOG_TAG, "Override env vars ", overrideEnv)
 
 	//If there are no env variables in container, adding an empty array first.
-	if len(specEnvVars) == 0 {
+	if len(specEnvVars) == 0 && len(overrideEnv) > 0 {
 		patches = append(patches, h.addEnvObjectPatch(containerIndex))
 	}
 
