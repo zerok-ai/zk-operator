@@ -86,6 +86,12 @@ spec:
             secretKeyRef:
               name: redis
               key: redis-password
+        - name: ZK_REDIS_HOST # Setting Redis password from Secret
+          valueFrom:
+            configMapKeyRef:
+              name: zk-redis-config
+              key: redisHost
+
         image: "{{ index .Values.global.dockerBase }}/{{ index .Values.image.repo }}:{{ index .Values.image.tag  }}"
         imagePullPolicy: {{ .Values.global.image.pullPolicy }}
 
