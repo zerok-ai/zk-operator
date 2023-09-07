@@ -6,7 +6,8 @@ data:
       readTimeout: 20
       dbs:
         image_db: 7
-        version_db: 6
+        scenario_db: 6
+        integration_db: 9
     webhook:
       namespace: zk-client
       service: zk-operator-inject
@@ -27,6 +28,10 @@ data:
       path: /v1/o/cluster/scenario
       pollingInterval: 300
       db: 6
+    integrationSync:
+      path: /v1/o/cluster/integration
+      pollingInterval: 300
+      db: 9
     operatorLogin:
       path: /v1/o/auth/login
       clusterSecretName: cluster-info
