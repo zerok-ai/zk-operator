@@ -201,7 +201,7 @@ func (h *OperatorLogin) getOpTokenFromZkCloud() error {
 		logger.Info(LOG_TAG, "Api response came as killed.")
 		h.killed = true
 		for _, module := range h.zkModules {
-			err := module.CleanUpOnkill()
+			err := module.CleanUpOnKill()
 			if err != nil {
 				logger.Error(LOG_TAG, "Error while cleaning up on kill method for module ", reflect.TypeOf(module).Name())
 			}

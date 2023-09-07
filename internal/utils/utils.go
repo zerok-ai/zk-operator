@@ -7,6 +7,7 @@ import (
 	logger "github.com/zerok-ai/zk-utils-go/logs"
 	corev1 "k8s.io/api/core/v1"
 	"os"
+	"reflect"
 	"sync"
 )
 
@@ -110,4 +111,9 @@ func RespCodeIsOk(status int) bool {
 	}
 	return false
 
+}
+
+func GetTypeName(i interface{}) string {
+	// Use reflect.TypeOf().Name() to get the type name.
+	return reflect.TypeOf(i).Name()
 }

@@ -129,7 +129,7 @@ func (h *ImageRuntimeCache) GetContainerLanguage(container *corev1.Container) co
 	return common.UnknownLanguage
 }
 
-func (h *ImageRuntimeCache) CleanUpOnkill() error {
+func (h *ImageRuntimeCache) CleanUpOnKill() error {
 	logger.Debug(LOG_TAG, "Kill method in update orchestration.\n")
 	h.ticker.Stop()
 	return nil

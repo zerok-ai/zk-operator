@@ -28,7 +28,7 @@ func (h *ClusterContextHandler) Handler(ctx iris.Context) {
 
 	response := ClusterContextResponse{}
 	response.ClusterId = h.OpLogin.GetClusterId()
-	logger.Debug(LOG_TAG, h.ZkConfig.ZkCloud)
+	logger.Debug(scenarioLogTag, h.ZkConfig.ZkCloud)
 	addr := fmt.Sprintf("%v:%v", h.ZkConfig.ClusterContext.CloudAddr, h.ZkConfig.ClusterContext.Port)
 	response.CloudAddr = addr
 
@@ -51,7 +51,7 @@ func (h *ClusterContextHandler) Handler(ctx iris.Context) {
 
 }
 
-func (h *ClusterContextHandler) CleanUpOnkill() error {
+func (h *ClusterContextHandler) CleanUpOnKill() error {
 	logger.Debug(LOG_TAG2, "Nothing to clean here.")
 	return nil
 }

@@ -25,17 +25,14 @@ import (
 	"fmt"
 	"github.com/zerok-ai/zk-operator/internal"
 	"github.com/zerok-ai/zk-operator/internal/auth"
-	"github.com/zerok-ai/zk-operator/internal/common"
 	"github.com/zerok-ai/zk-operator/internal/restart"
 	"github.com/zerok-ai/zk-operator/internal/webhook"
-	"github.com/zerok-ai/zk-utils-go/scenario/model"
 	"time"
 
 	handler "github.com/zerok-ai/zk-operator/internal/handler"
 	server "github.com/zerok-ai/zk-operator/internal/server"
 	"github.com/zerok-ai/zk-operator/internal/storage"
 	zklogger "github.com/zerok-ai/zk-utils-go/logs"
-	zkredis "github.com/zerok-ai/zk-utils-go/storage/redis"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -183,13 +180,21 @@ func initOperator() (*storage.ImageRuntimeCache, error) {
 
 	//Module for syncing rules
 	scenarioHandler := handler.ScenarioHandler{}
-	versionedStore, err := zkredis.GetVersionedStore[model.Scenario](&zkConfig.Redis, common.RedisVersionDbName, common.ScenarioSyncInterval)
+	err = scenarioHandler.Init(opLogin, zkConfig)
 	if err != nil {
-		//logger.ZkLogger.Err(LOG_TAG, "Error while creating versionedStore ", err.Error())
+		zklogger.Error(LOG_TAG, "Error while creating scenarioHandler ", err)
 		return nil, err
 	}
-	scenarioHandler.Init(versionedStore, opLogin, zkConfig)
 	zkModules = append(zkModules, &scenarioHandler)
+
+	//Module for syncing rules
+	integrationHandler := handler.IntegrationsHandler{}
+	err = integrationHandler.Init(opLogin, zkConfig)
+	if err != nil {
+		zklogger.Error(LOG_TAG, "Error while creating integrationHandler ", err)
+		return nil, err
+	}
+	zkModules = append(zkModules, &integrationHandler)
 
 	clusterContextHandler := handler.ClusterContextHandler{OpLogin: opLogin, ZkConfig: &zkConfig}
 	zkModules = append(zkModules, &clusterContextHandler)
@@ -205,6 +210,10 @@ func initOperator() (*storage.ImageRuntimeCache, error) {
 
 	//Staring syncing scenarios from zk cloud.
 	go scenarioHandler.StartPeriodicSync()
+
+	//Staring syncing integrations from zk cloud.
+	go integrationHandler.StartPeriodicSync()
+
 	app := newApp()
 
 	// start webhook server

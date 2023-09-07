@@ -148,7 +148,7 @@ func areWebHookConfigsSame(foundWebhookConfig *admissionregistrationv1.MutatingW
 	return true
 }
 
-func (h *WebhookHandler) CleanUpOnkill() error {
+func (h *WebhookHandler) CleanUpOnKill() error {
 	logger.Info(LOG_TAG, "Kill method in webhook.")
 	return utils.DeleteMutatingWebhookConfiguration(h.webhookConfig.Name)
 }

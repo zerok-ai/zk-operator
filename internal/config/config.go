@@ -18,6 +18,12 @@ type ScenarioSyncConfig struct {
 	DB              int    `yaml:"db"`
 }
 
+type IntegrationSyncConfig struct {
+	Path            string `yaml:"path"`
+	PollingInterval int    `yaml:"pollingInterval"`
+	DB              int    `yaml:"db"`
+}
+
 type WebhookConfig struct {
 	Namespace string `yaml:"namespace"`
 	Service   string `yaml:"service"`
@@ -63,6 +69,7 @@ type ZkOperatorConfig struct {
 	Webhook         WebhookConfig         `yaml:"webhook"`
 	Http            HttpServerConfig      `yaml:"http"`
 	ScenarioSync    ScenarioSyncConfig    `yaml:"scenarioSync"`
+	IntegrationSync IntegrationSyncConfig `yaml:"integrationSync"`
 	OperatorLogin   OperatorLoginConfig   `yaml:"operatorLogin"`
 	InitContainer   InitContainerConfig   `yaml:"initContainer"`
 	Instrumentation InstrumentationConfig `yaml:"instrumentation"`
