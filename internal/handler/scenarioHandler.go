@@ -150,3 +150,7 @@ func (h *ScenarioHandler) CleanUpOnKill() error {
 	h.zkCloudSyncHandler.StopSync()
 	return nil
 }
+
+func (h *ScenarioHandler) IsHealthy() bool {
+	return true
+}

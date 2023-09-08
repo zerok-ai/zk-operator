@@ -50,8 +50,12 @@ func (h *ZkCloudSyncHandler[T]) GetDataFromZkCloud(urlPath string, callback auth
 
 	baseURL := protocol + "://" + h.config.ZkCloud.Host + ":" + h.config.ZkCloud.Port + urlPath
 
-	//Adding query params
-	url := fmt.Sprintf("%s?%s=%s", baseURL, "last_sync_ts", latestUpdateTime)
+	url := baseURL
+
+	if len(latestUpdateTime) > 0 {
+		//Adding query params
+		url = fmt.Sprintf("%s?%s=%s", baseURL, "last_sync_ts", latestUpdateTime)
+	}
 
 	logger.Debug(cloudSyncLogTag, "Url for ", h.TaskName, " is ", url)
 

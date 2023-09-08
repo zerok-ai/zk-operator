@@ -24,6 +24,9 @@ data:
     zkcloud:
       host: "api.{{ .Values.global.zkcloud.host }}"
       port: {{ .Values.global.zkcloud.port }}
+    configurationSync:
+      path: /v1/o/cluster/configuration
+      pollingInterval: 1800
     scenarioSync:
       path: /v1/o/cluster/scenario
       pollingInterval: 300

@@ -108,3 +108,7 @@ func (h *IntegrationsHandler) CleanUpOnKill() error {
 	h.zkCloudSyncHandler.StopSync()
 	return nil
 }
+
+func (h *IntegrationsHandler) IsHealthy() bool {
+	return true
+}

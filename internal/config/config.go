@@ -12,6 +12,11 @@ type OperatorLoginConfig struct {
 	MaxRetries          int    `yaml:"maxRetries"`
 }
 
+type ConfigSyncConfig struct {
+	Path            string `yaml:"path"`
+	PollingInterval int    `yaml:"pollingInterval"`
+}
+
 type ScenarioSyncConfig struct {
 	Path            string `yaml:"path"`
 	PollingInterval int    `yaml:"pollingInterval"`
@@ -64,16 +69,17 @@ type WspClientConfig struct {
 }
 
 type ZkOperatorConfig struct {
-	ZkCloud         ZkCloudConfig         `yaml:"zkcloud"`
-	Redis           config.RedisConfig    `yaml:"redis"`
-	Webhook         WebhookConfig         `yaml:"webhook"`
-	Http            HttpServerConfig      `yaml:"http"`
-	ScenarioSync    ScenarioSyncConfig    `yaml:"scenarioSync"`
-	IntegrationSync IntegrationSyncConfig `yaml:"integrationSync"`
-	OperatorLogin   OperatorLoginConfig   `yaml:"operatorLogin"`
-	InitContainer   InitContainerConfig   `yaml:"initContainer"`
-	Instrumentation InstrumentationConfig `yaml:"instrumentation"`
-	LogsConfig      logsConfig.LogsConfig `yaml:"logs"`
-	ClusterContext  ClusterContextConfig  `yaml:"clusterContext"`
-	WspClient       WspClientConfig       `yaml:"wspClient"`
+	ZkCloud           ZkCloudConfig         `yaml:"zkcloud"`
+	Redis             config.RedisConfig    `yaml:"redis"`
+	Webhook           WebhookConfig         `yaml:"webhook"`
+	Http              HttpServerConfig      `yaml:"http"`
+	ScenarioSync      ScenarioSyncConfig    `yaml:"scenarioSync"`
+	IntegrationSync   IntegrationSyncConfig `yaml:"integrationSync"`
+	ConfigurationSync ConfigSyncConfig      `yaml:"configurationSync"`
+	OperatorLogin     OperatorLoginConfig   `yaml:"operatorLogin"`
+	InitContainer     InitContainerConfig   `yaml:"initContainer"`
+	Instrumentation   InstrumentationConfig `yaml:"instrumentation"`
+	LogsConfig        logsConfig.LogsConfig `yaml:"logs"`
+	ClusterContext    ClusterContextConfig  `yaml:"clusterContext"`
+	WspClient         WspClientConfig       `yaml:"wspClient"`
 }

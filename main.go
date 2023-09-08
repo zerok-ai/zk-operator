@@ -178,7 +178,7 @@ func initOperator() (*storage.ImageRuntimeCache, error) {
 	//Creating operator login module
 	opLogin := auth.CreateOperatorLogin(zkConfig)
 
-	//Module for syncing rules
+	//Module for syncing scenarios
 	scenarioHandler := handler.ScenarioHandler{}
 	err = scenarioHandler.Init(opLogin, zkConfig)
 	if err != nil {
@@ -187,7 +187,7 @@ func initOperator() (*storage.ImageRuntimeCache, error) {
 	}
 	zkModules = append(zkModules, &scenarioHandler)
 
-	//Module for syncing rules
+	//Module for syncing integrations
 	integrationHandler := handler.IntegrationsHandler{}
 	err = integrationHandler.Init(opLogin, zkConfig)
 	if err != nil {
@@ -195,6 +195,15 @@ func initOperator() (*storage.ImageRuntimeCache, error) {
 		return nil, err
 	}
 	zkModules = append(zkModules, &integrationHandler)
+
+	//Module for syncing integrations
+	serviceConfigHandler := handler.ServiceConfigHandler{}
+	err = serviceConfigHandler.Init(opLogin, zkConfig)
+	if err != nil {
+		zklogger.Error(LOG_TAG, "Error while creating serviceConfigHandler ", err)
+		return nil, err
+	}
+	zkModules = append(zkModules, &serviceConfigHandler)
 
 	clusterContextHandler := handler.ClusterContextHandler{OpLogin: opLogin, ZkConfig: &zkConfig}
 	zkModules = append(zkModules, &clusterContextHandler)
@@ -213,6 +222,9 @@ func initOperator() (*storage.ImageRuntimeCache, error) {
 
 	//Staring syncing integrations from zk cloud.
 	go integrationHandler.StartPeriodicSync()
+
+	//Staring syncing configurations from zk cloud.
+	go serviceConfigHandler.StartPeriodicSync()
 
 	app := newApp()
 

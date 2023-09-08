@@ -69,11 +69,16 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        - name: "REDIS_PASSWORD"
+        - name: "ZK_REDIS_PASSWORD"
           valueFrom:
             secretKeyRef:
               name: "redis"
               key: "redis-password"
+        - name: "ZK_REDIS_HOST" # Setting Redis password from Secret
+          valueFrom:
+            configMapKeyRef:
+              name: "zk-redis-config"
+              key: "redisHost"
         name: manager
         securityContext:
           allowPrivilegeEscalation: false

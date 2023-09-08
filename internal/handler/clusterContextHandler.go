@@ -18,6 +18,10 @@ type ClusterContextHandler struct {
 	ZkConfig *config.ZkOperatorConfig
 }
 
+func (h *ClusterContextHandler) IsHealthy() bool {
+	return true
+}
+
 type ClusterContextResponse struct {
 	ApiKey    string `json:"apiKey"`
 	CloudAddr string `json:"cloudAddr"`

@@ -135,6 +135,10 @@ func (h *ImageRuntimeCache) CleanUpOnKill() error {
 	return nil
 }
 
+func (h *ImageRuntimeCache) IsHealthy() bool {
+	return true
+}
+
 func (h *ImageRuntimeCache) ProcessOverrideValues(values []v1alpha1.ImageOverride) error {
 	logger.Debug(LOG_TAG, "Processing override values.")
 	for _, imageOverride := range values {
