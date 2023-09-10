@@ -35,7 +35,8 @@ data:
       db: 9
     configurationSync:
       path: /v1/o/cluster/configuration
-      pollingInterval: 1800
+      pollingInterval: 30
+      apiPath: /i/configuration
     operatorLogin:
       path: /v1/o/auth/login
       clusterSecretName: cluster-info

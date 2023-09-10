@@ -13,8 +13,9 @@ type OperatorLoginConfig struct {
 }
 
 type ConfigSyncConfig struct {
-	Path            string `yaml:"path"`
+	CloudPath       string `yaml:"path"`
 	PollingInterval int    `yaml:"pollingInterval"`
+	ApiPath         string `yaml:"apiPath"`
 }
 
 type ScenarioSyncConfig struct {

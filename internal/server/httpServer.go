@@ -14,7 +14,7 @@ func exceptionHandler(ctx iris.Context) {
 }
 
 func StartHttpServer(app *iris.Application, config iris.Configurator, zkConfig config.ZkOperatorConfig,
-	clusterContextHandler *handler.ClusterContextHandler) {
+	clusterContextHandler *handler.ClusterContextHandler, configHandler *handler.ServiceConfigHandler) {
 
 	httpServerConfig := zkConfig.Http
 
@@ -23,6 +23,8 @@ func StartHttpServer(app *iris.Application, config iris.Configurator, zkConfig c
 	logger.Debug(LOG_TAG_HTTP, zkConfig.ClusterContext.Path)
 
 	app.Get(zkConfig.ClusterContext.Path, clusterContextHandler.Handler)
+
+	app.Get(zkConfig.ConfigurationSync.ApiPath, configHandler.Handler)
 
 	//healthCheckHandler := handler.HealthCheckHandler{}
 	//healthCheckHandler.Init(modules)

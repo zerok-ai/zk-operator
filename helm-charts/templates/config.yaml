@@ -27,6 +27,7 @@ data:
     configurationSync:
       path: /v1/o/cluster/configuration
       pollingInterval: 1800
+      apiPath: /i/configuration
     scenarioSync:
       path: /v1/o/cluster/scenario
       pollingInterval: 300

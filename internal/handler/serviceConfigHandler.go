@@ -51,7 +51,7 @@ func (h *ServiceConfigHandler) updateServiceConfig(refreshAuthToken bool) {
 	callback := func() {
 		h.updateServiceConfig(false)
 	}
-	serviceConfigResponse, err := h.zkCloudSyncHandler.GetDataFromZkCloud(h.config.IntegrationSync.Path, callback, "", refreshAuthToken)
+	serviceConfigResponse, err := h.zkCloudSyncHandler.GetDataFromZkCloud(h.config.ConfigurationSync.CloudPath, callback, "", refreshAuthToken)
 	if err != nil {
 		if errors.Is(err, RefreshAuthTokenError) {
 			logger.Debug(serviceConfigTag, "Ignore this, since we are making another call after refreshing auth token.")
