@@ -134,6 +134,8 @@ func (h *ZkCloudSyncHandler[T]) GetDataFromZkCloud(urlPath string, callback auth
 		return nil, fmt.Errorf(message)
 	}
 
+	logger.Debug(cloudSyncLogTag, "Api response for ", h.TaskName, " is ", apiResponse)
+
 	return &apiResponse, nil
 }
 

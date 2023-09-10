@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/zerok-ai/zk-operator/internal/auth"
 	"github.com/zerok-ai/zk-operator/internal/common"
 	"github.com/zerok-ai/zk-operator/internal/config"
@@ -10,10 +11,9 @@ import (
 	"github.com/zerok-ai/zk-utils-go/interfaces"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
 	zkredis "github.com/zerok-ai/zk-utils-go/storage/redis"
-	"time"
 )
 
-var integrationResponseTag = "IntegrationResponseTag"
+var integrationLogTag = "IntegrationLogTag"
 
 type IntegrationResponseObj struct {
 	ID             int             `json:"id"`
@@ -22,8 +22,8 @@ type IntegrationResponseObj struct {
 	URL            string          `json:"url"`
 	Authentication json.RawMessage `json:"authentication"`
 	Level          string          `json:"level"`
-	CreatedAt      time.Time       `json:"created_at"`
-	UpdatedAt      time.Time       `json:"updated_at"`
+	CreatedAt      int64           `json:"created_at"`
+	UpdatedAt      int64           `json:"updated_at"`
 	Deleted        bool            `json:"deleted"`
 	Disabled       bool            `json:"disabled"`
 }
@@ -39,6 +39,7 @@ func (r IntegrationApiResponse) GetError() *zkhttp.ZkHttpError {
 
 type IntegrationResponse struct {
 	Response []IntegrationResponseObj `json:"integrations"`
+	Deleted  []string                 `json:"deleted_integration_id,omitempty"`
 }
 
 func (i IntegrationResponseObj) Equals(other interfaces.ZKComparable) bool {
@@ -73,38 +74,74 @@ func (h *IntegrationsHandler) StartPeriodicSync() {
 }
 
 func (h *IntegrationsHandler) periodicSync() {
-	logger.Debug(integrationResponseTag, "Sync integrations triggered.")
+	logger.Debug(integrationLogTag, "Sync integrations triggered.")
 	h.updateIntegrations(h.config, true)
 }
 
 func (h *IntegrationsHandler) updateIntegrations(cfg config.ZkOperatorConfig, refreshAuthToken bool) {
-	logger.Debug(integrationResponseTag, "Update integrations method called.", refreshAuthToken)
+	logger.Debug(integrationLogTag, "Update integrations method called.", refreshAuthToken)
 	callback := func() {
 		h.updateIntegrations(cfg, false)
 	}
 	integrationResponse, err := h.zkCloudSyncHandler.GetDataFromZkCloud(h.config.IntegrationSync.Path, callback, h.latestUpdateTime, refreshAuthToken)
 	if err != nil {
 		if errors.Is(err, RefreshAuthTokenError) {
-			logger.Debug(integrationResponseTag, "Ignore this, since we are making another call after refreshing auth token.")
+			logger.Debug(integrationLogTag, "Ignore this, since we are making another call after refreshing auth token.")
 			return
 		}
-		logger.Error(integrationResponseTag, "Error while getting integrationResponse from zkcloud ", err)
+		logger.Error(integrationLogTag, "Error while getting integrationResponse from zkcloud ", err)
 		return
 	}
 	latestUpdateTime, err := h.processIntegrations(integrationResponse)
 	if err != nil {
-		logger.Error(integrationResponseTag, "Error while saving integrationResponse to redis ", err)
+		logger.Error(integrationLogTag, "Error while saving integrationResponse to redis ", err)
 	} else {
 		h.latestUpdateTime = latestUpdateTime
 	}
 }
 
 func (h *IntegrationsHandler) processIntegrations(response *IntegrationApiResponse) (string, error) {
-	return "", nil
+	if response == nil {
+		logger.Error(integrationLogTag, "integrations Api response is nil.")
+		return "", fmt.Errorf("integrations Api response is nil")
+	}
+	payload := response.Payload
+	var latestUpdateTime int64
+	for _, integration := range payload.Response {
+		updatedAt := integration.UpdatedAt
+
+		if updatedAt > latestUpdateTime {
+			latestUpdateTime = updatedAt
+		}
+
+		integrationId := fmt.Sprintf("%v", integration.ID)
+
+		err := h.VersionedStore.SetValue(integrationId, integration)
+		if err != nil {
+			if errors.Is(err, zkredis.LATEST) {
+				logger.Info(integrationLogTag, "Latest value is already present in redis for integration Id ", integrationId)
+			} else {
+				logger.Error(integrationLogTag, "Error while setting filter integration to redis ", err)
+				return "", err
+			}
+		}
+	}
+
+	for _, integrationId := range payload.Deleted {
+		err := h.VersionedStore.Delete(integrationId)
+		if err != nil {
+			logger.Error(integrationLogTag, "Error while deleting integration id ", integrationId, " from redis ", err)
+			return "", err
+		}
+	}
+
+	latestUpdateTimeStr := fmt.Sprintf("%v", latestUpdateTime)
+
+	return latestUpdateTimeStr, nil
 }
 
 func (h *IntegrationsHandler) CleanUpOnKill() error {
-	logger.Debug(integrationResponseTag, "Kill method in scenario rules.")
+	logger.Debug(integrationLogTag, "Kill method in scenario rules.")
 	h.zkCloudSyncHandler.StopSync()
 	return nil
 }

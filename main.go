@@ -81,9 +81,9 @@ func main() {
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	var d time.Duration = 15 * time.Minute
-
 	setupLog.Info("Starting Operator.")
-	imageRuntimeCache, err := initOperator()
+	imageRuntimeCache, zkModules, err := initOperator()
+	fmt.Println("zkModules", zkModules)
 	if err != nil {
 		message := "Failed to initialize operator with error " + err.Error()
 		setupLog.Info(message)
@@ -133,22 +133,24 @@ func main() {
 
 // TODO:
 // Unit testing.
-func initOperator() (*storage.ImageRuntimeCache, error) {
+func initOperator() (*storage.ImageRuntimeCache, []internal.ZkOperatorModule, error) {
 
 	configPath := env.GetString("CONFIG_FILE", "")
 	if configPath == "" {
 		fmt.Println("Config yaml path not found.")
-		return nil, fmt.Errorf("config yaml path not found")
+		return nil, nil, fmt.Errorf("config yaml path not found")
 	}
 
 	var zkConfig config.ZkOperatorConfig
 
 	if err := cleanenv.ReadConfig(configPath, &zkConfig); err != nil {
 		fmt.Println("Error while reading config ", err)
-		return nil, err
+		return nil, nil, err
 	}
 
 	zklogger.Init(zkConfig.LogsConfig)
+
+	zklogger.Debug(LOG_TAG, "Successfully read configs.")
 
 	zkModules := make([]internal.ZkOperatorModule, 0)
 
@@ -157,13 +159,15 @@ func initOperator() (*storage.ImageRuntimeCache, error) {
 	if err != nil {
 		msg := fmt.Sprintf("Failed to create keys and certificates for webhook %v. Stopping initialization of the pod.\n", err)
 		zklogger.Error(LOG_TAG, msg)
-		return nil, err
+		return nil, nil, err
 	}
 
 	irisConfig := iris.WithConfiguration(iris.Configuration{
 		DisablePathCorrection: true,
 		LogLevel:              zkConfig.LogsConfig.Level,
 	})
+
+	zklogger.Debug(LOG_TAG, "About to create webhook.")
 
 	// creating mutating webhook
 	webhookHandler := webhook.WebhookHandler{}
@@ -175,33 +179,41 @@ func initOperator() (*storage.ImageRuntimeCache, error) {
 	imageRuntimeCache.Init(zkConfig)
 	zkModules = append(zkModules, imageRuntimeCache)
 
+	zklogger.Debug(LOG_TAG, "Creating operation login handler.")
+
 	//Creating operator login module
 	opLogin := auth.CreateOperatorLogin(zkConfig)
+
+	zklogger.Debug(LOG_TAG, "Creating scenario handler.")
 
 	//Module for syncing scenarios
 	scenarioHandler := handler.ScenarioHandler{}
 	err = scenarioHandler.Init(opLogin, zkConfig)
 	if err != nil {
 		zklogger.Error(LOG_TAG, "Error while creating scenarioHandler ", err)
-		return nil, err
+		return nil, nil, err
 	}
 	zkModules = append(zkModules, &scenarioHandler)
+
+	zklogger.Debug(LOG_TAG, "Creating integrations handler.")
 
 	//Module for syncing integrations
 	integrationHandler := handler.IntegrationsHandler{}
 	err = integrationHandler.Init(opLogin, zkConfig)
 	if err != nil {
 		zklogger.Error(LOG_TAG, "Error while creating integrationHandler ", err)
-		return nil, err
+		return nil, nil, err
 	}
 	zkModules = append(zkModules, &integrationHandler)
+
+	zklogger.Debug(LOG_TAG, "Creating service config handler.")
 
 	//Module for syncing integrations
 	serviceConfigHandler := handler.ServiceConfigHandler{}
 	err = serviceConfigHandler.Init(opLogin, zkConfig)
 	if err != nil {
 		zklogger.Error(LOG_TAG, "Error while creating serviceConfigHandler ", err)
-		return nil, err
+		return nil, nil, err
 	}
 	zkModules = append(zkModules, &serviceConfigHandler)
 
@@ -226,6 +238,8 @@ func initOperator() (*storage.ImageRuntimeCache, error) {
 	//Staring syncing configurations from zk cloud.
 	go serviceConfigHandler.StartPeriodicSync()
 
+	zklogger.Debug(LOG_TAG, "Starting webhook server.")
+
 	app := newApp()
 
 	// start webhook server
@@ -243,7 +257,7 @@ func initOperator() (*storage.ImageRuntimeCache, error) {
 		podRestartTicker := restart.NewOrchestrateRestart(imageRuntimeCache)
 		podRestartTicker.Ticker.Start()
 	}()
-	return imageRuntimeCache, nil
+	return imageRuntimeCache, zkModules, nil
 }
 
 func newApp() *iris.Application {

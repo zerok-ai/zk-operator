@@ -23,15 +23,15 @@ data:
       cloudAddr: px.devcloud01.getanton.com
       port: 443
     zkcloud:
-      host: api.devcloud01.getanton.com
-      port: 80
+      host: f55556ab-eb5e-4d45-9257-4953ddf67819.mock.pstmn.io
+      port: 443
     scenarioSync:
       path: /v1/o/cluster/scenario
-      pollingInterval: 300
+      pollingInterval: 30
       db: 6
     integrationSync:
       path: /v1/o/cluster/integration
-      pollingInterval: 300
+      pollingInterval: 30
       db: 9
     configurationSync:
       path: /v1/o/cluster/configuration

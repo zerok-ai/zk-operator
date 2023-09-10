@@ -24,6 +24,11 @@ func StartHttpServer(app *iris.Application, config iris.Configurator, zkConfig c
 
 	app.Get(zkConfig.ClusterContext.Path, clusterContextHandler.Handler)
 
+	//healthCheckHandler := handler.HealthCheckHandler{}
+	//healthCheckHandler.Init(modules)
+	//
+	//app.Get("/healthz", clusterContextHandler.Handler)
+
 	err := app.Run(iris.Addr(":"+httpServerConfig.Port), config)
 	if err != nil {
 		logger.Error(LOG_TAG_HTTP, "Error while starting http server ", err)
