@@ -248,7 +248,7 @@ func initOperator() (*storage.ImageRuntimeCache, []internal.ZkOperatorModule, er
 	app1 := newApp()
 
 	// start http server
-	go server.StartHttpServer(app1, irisConfig, zkConfig, &clusterContextHandler, &serviceConfigHandler)
+	go server.StartHttpServer(app1, irisConfig, zkConfig, &clusterContextHandler, &serviceConfigHandler, zkModules)
 
 	go restart.ListenToNamespaceDeletion(&zkConfig)
 	// we want to wait for the pod to be ready before we start the restart ticker

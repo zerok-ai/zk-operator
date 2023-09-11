@@ -11,6 +11,7 @@ import (
 	"github.com/zerok-ai/zk-utils-go/interfaces"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
 	zkredis "github.com/zerok-ai/zk-utils-go/storage/redis"
+	"time"
 )
 
 var integrationLogTag = "IntegrationLogTag"
@@ -22,8 +23,8 @@ type IntegrationResponseObj struct {
 	URL            string          `json:"url"`
 	Authentication json.RawMessage `json:"authentication"`
 	Level          string          `json:"level"`
-	CreatedAt      int64           `json:"created_at"`
-	UpdatedAt      int64           `json:"updated_at"`
+	CreatedAt      time.Time       `json:"created_at"`
+	UpdatedAt      time.Time       `json:"updated_at"`
 	Deleted        bool            `json:"deleted"`
 	Disabled       bool            `json:"disabled"`
 }
@@ -39,7 +40,7 @@ func (r IntegrationApiResponse) GetError() *zkhttp.ZkHttpError {
 
 type IntegrationResponse struct {
 	Response []IntegrationResponseObj `json:"integrations"`
-	Deleted  []string                 `json:"deleted_integration_id,omitempty"`
+	//Deleted  []string                 `json:"deleted_integration_id,omitempty"`
 }
 
 func (i IntegrationResponseObj) Equals(other interfaces.ZKComparable) bool {
@@ -60,7 +61,7 @@ func (h *IntegrationsHandler) Init(OpLogin *auth.OperatorLogin, cfg config.ZkOpe
 	}
 	h.VersionedStore = store
 	h.config = cfg
-	h.latestUpdateTime = "0"
+	h.latestUpdateTime = ""
 
 	syncHandler := ZkCloudSyncHandler[IntegrationApiResponse]{}
 	syncHandler.Init(OpLogin, cfg, cfg.ScenarioSync.PollingInterval, "integration_sync", h.periodicSync)
@@ -106,13 +107,13 @@ func (h *IntegrationsHandler) processIntegrations(response *IntegrationApiRespon
 		return "", fmt.Errorf("integrations Api response is nil")
 	}
 	payload := response.Payload
-	var latestUpdateTime int64
+	//var latestUpdateTime int64
 	for _, integration := range payload.Response {
-		updatedAt := integration.UpdatedAt
-
-		if updatedAt > latestUpdateTime {
-			latestUpdateTime = updatedAt
-		}
+		//updatedAt := integration.UpdatedAt
+		//
+		//if updatedAt > latestUpdateTime {
+		//	latestUpdateTime = updatedAt
+		//}
 
 		integrationId := fmt.Sprintf("%v", integration.ID)
 
@@ -127,17 +128,17 @@ func (h *IntegrationsHandler) processIntegrations(response *IntegrationApiRespon
 		}
 	}
 
-	for _, integrationId := range payload.Deleted {
-		err := h.VersionedStore.Delete(integrationId)
-		if err != nil {
-			logger.Error(integrationLogTag, "Error while deleting integration id ", integrationId, " from redis ", err)
-			return "", err
-		}
-	}
+	//for _, integrationId := range payload.Deleted {
+	//	err := h.VersionedStore.Delete(integrationId)
+	//	if err != nil {
+	//		logger.Error(integrationLogTag, "Error while deleting integration id ", integrationId, " from redis ", err)
+	//		return "", err
+	//	}
+	//}
 
-	latestUpdateTimeStr := fmt.Sprintf("%v", latestUpdateTime)
+	//latestUpdateTimeStr := fmt.Sprintf("%v", latestUpdateTime)
 
-	return latestUpdateTimeStr, nil
+	return "", nil
 }
 
 func (h *IntegrationsHandler) CleanUpOnKill() error {

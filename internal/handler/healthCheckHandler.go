@@ -33,6 +33,6 @@ func (h *HealthCheckHandler) Handler(ctx iris.Context) {
 	if isHealthy {
 		ctx.StatusCode(200)
 	} else {
-		ctx.StatusCode(502)
+		ctx.StatusCode(500)
 	}
 }
