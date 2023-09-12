@@ -43,6 +43,7 @@ type ScenariosApiResponse struct {
 type ScenariosObj struct {
 	Scenarios []ScenarioModelResponse `json:"scenarios"`
 	Deleted   []string                `json:"deleted_scenario_id,omitempty"`
+	Disabled  []string                `json:"disabled_scenario_id,omitempty"`
 }
 
 type ScenarioModelResponse struct {
@@ -238,6 +239,14 @@ func (h *ScenarioHandler) processScenarios(rulesApiResponse *ScenariosApiRespons
 		err := h.VersionedStore.Delete(scenarioId)
 		if err != nil {
 			logger.Error(LOG_TAG, "Error while deleting filter id ", scenarioId, " from redis ", err)
+			return "", err
+		}
+	}
+
+	for _, scenarioId := range payload.Disabled {
+		err := h.VersionedStore.Delete(scenarioId)
+		if err != nil {
+			logger.Error(LOG_TAG, "Error while deleting disabled filter id ", scenarioId, " from redis ", err)
 			return "", err
 		}
 	}
