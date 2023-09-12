@@ -1,33 +1,18 @@
 package handler
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/zerok-ai/zk-operator/internal/auth"
 	"github.com/zerok-ai/zk-operator/internal/common"
 	"github.com/zerok-ai/zk-operator/internal/config"
 	zkhttp "github.com/zerok-ai/zk-utils-go/http"
-	"github.com/zerok-ai/zk-utils-go/interfaces"
+	model "github.com/zerok-ai/zk-utils-go/integration/model"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
 	zkredis "github.com/zerok-ai/zk-utils-go/storage/redis"
-	"time"
 )
 
 var integrationLogTag = "IntegrationLogTag"
-
-type IntegrationResponseObj struct {
-	ID             int             `json:"id"`
-	ClusterId      string          `json:"cluster_id"`
-	Type           string          `json:"type"`
-	URL            string          `json:"url"`
-	Authentication json.RawMessage `json:"authentication"`
-	Level          string          `json:"level"`
-	CreatedAt      time.Time       `json:"created_at"`
-	UpdatedAt      time.Time       `json:"updated_at"`
-	Deleted        bool            `json:"deleted"`
-	Disabled       bool            `json:"disabled"`
-}
 
 type IntegrationApiResponse struct {
 	Payload IntegrationResponse `json:"payload"`
@@ -39,23 +24,18 @@ func (r IntegrationApiResponse) GetError() *zkhttp.ZkHttpError {
 }
 
 type IntegrationResponse struct {
-	Response []IntegrationResponseObj `json:"integrations"`
-	//Deleted  []string                 `json:"deleted_integration_id,omitempty"`
-}
-
-func (i IntegrationResponseObj) Equals(other interfaces.ZKComparable) bool {
-	return false
+	Response []model.IntegrationResponseObj `json:"integrations"`
 }
 
 type IntegrationsHandler struct {
-	VersionedStore     *zkredis.VersionedStore[IntegrationResponseObj]
+	VersionedStore     *zkredis.VersionedStore[model.IntegrationResponseObj]
 	config             config.ZkOperatorConfig
 	latestUpdateTime   string
 	zkCloudSyncHandler *ZkCloudSyncHandler[IntegrationApiResponse]
 }
 
 func (h *IntegrationsHandler) Init(OpLogin *auth.OperatorLogin, cfg config.ZkOperatorConfig) error {
-	store, err := zkredis.GetVersionedStore[IntegrationResponseObj](&cfg.Redis, common.RedisIntegrationsDbName, common.RedisSyncInterval)
+	store, err := zkredis.GetVersionedStore[model.IntegrationResponseObj](&cfg.Redis, common.RedisIntegrationsDbName, common.RedisSyncInterval)
 	if err != nil {
 		return err
 	}
@@ -106,37 +86,24 @@ func (h *IntegrationsHandler) processIntegrations(response *IntegrationApiRespon
 		logger.Error(integrationLogTag, "integrations Api response is nil.")
 		return "", fmt.Errorf("integrations Api response is nil")
 	}
+	//Deleting existing integrations.
+	err := h.VersionedStore.DeleteAllKeys()
+	if err != nil {
+		logger.Error(integrationLogTag, "Error while deleting all keys from redis ", err)
+	}
 	payload := response.Payload
-	//var latestUpdateTime int64
 	for _, integration := range payload.Response {
-		//updatedAt := integration.UpdatedAt
-		//
-		//if updatedAt > latestUpdateTime {
-		//	latestUpdateTime = updatedAt
-		//}
 
-		integrationId := fmt.Sprintf("%v", integration.ID)
-
-		err := h.VersionedStore.SetValue(integrationId, integration)
+		err := h.VersionedStore.SetValue(integration.ID, integration)
 		if err != nil {
 			if errors.Is(err, zkredis.LATEST) {
-				logger.Info(integrationLogTag, "Latest value is already present in redis for integration Id ", integrationId)
+				logger.Info(integrationLogTag, "Latest value is already present in redis for integration Id ", integration.ID)
 			} else {
 				logger.Error(integrationLogTag, "Error while setting filter integration to redis ", err)
 				return "", err
 			}
 		}
 	}
-
-	//for _, integrationId := range payload.Deleted {
-	//	err := h.VersionedStore.Delete(integrationId)
-	//	if err != nil {
-	//		logger.Error(integrationLogTag, "Error while deleting integration id ", integrationId, " from redis ", err)
-	//		return "", err
-	//	}
-	//}
-
-	//latestUpdateTimeStr := fmt.Sprintf("%v", latestUpdateTime)
 
 	return "", nil
 }
