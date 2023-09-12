@@ -144,7 +144,7 @@ func (h *ScenarioHandler) processScenarios(rulesApiResponse *ScenariosApiRespons
 	for _, scenarioId := range payload.Disabled {
 		err := h.VersionedStore.Delete(scenarioId)
 		if err != nil {
-			logger.Error(LOG_TAG, "Error while deleting disabled filter id ", scenarioId, " from redis ", err)
+			logger.Error(scenarioLogTag, "Error while deleting disabled filter id ", scenarioId, " from redis ", err)
 			return "", err
 		}
 	}
