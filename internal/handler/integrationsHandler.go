@@ -10,6 +10,7 @@ import (
 	model "github.com/zerok-ai/zk-utils-go/integration/model"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
 	zkredis "github.com/zerok-ai/zk-utils-go/storage/redis"
+	"strings"
 )
 
 var integrationLogTag = "IntegrationLogTag"
@@ -32,6 +33,7 @@ type IntegrationsHandler struct {
 	config             config.ZkOperatorConfig
 	latestUpdateTime   string
 	zkCloudSyncHandler *ZkCloudSyncHandler[IntegrationApiResponse]
+	OpLogin            *auth.OperatorLogin
 }
 
 func (h *IntegrationsHandler) Init(OpLogin *auth.OperatorLogin, cfg config.ZkOperatorConfig) error {
@@ -46,6 +48,7 @@ func (h *IntegrationsHandler) Init(OpLogin *auth.OperatorLogin, cfg config.ZkOpe
 	syncHandler := ZkCloudSyncHandler[IntegrationApiResponse]{}
 	syncHandler.Init(OpLogin, cfg, cfg.ScenarioSync.PollingInterval, "integration_sync", h.periodicSync)
 	h.zkCloudSyncHandler = &syncHandler
+	h.OpLogin = OpLogin
 	return nil
 }
 
@@ -64,7 +67,9 @@ func (h *IntegrationsHandler) updateIntegrations(cfg config.ZkOperatorConfig, re
 	callback := func() {
 		h.updateIntegrations(cfg, false)
 	}
-	integrationResponse, err := h.zkCloudSyncHandler.GetDataFromZkCloud(h.config.IntegrationSync.Path, callback, h.latestUpdateTime, refreshAuthToken)
+	path := h.config.IntegrationSync.Path
+	path = strings.ReplaceAll(path, "<clusterid>", h.OpLogin.GetClusterId())
+	integrationResponse, err := h.zkCloudSyncHandler.GetDataFromZkCloud(path, callback, h.latestUpdateTime, refreshAuthToken)
 	if err != nil {
 		if errors.Is(err, RefreshAuthTokenError) {
 			logger.Debug(integrationLogTag, "Ignore this, since we are making another call after refreshing auth token.")

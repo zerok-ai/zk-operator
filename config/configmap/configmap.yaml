@@ -26,15 +26,15 @@ data:
       host: api.devcloud01.getanton.com
       port: 443
     scenarioSync:
-      path: /v1/o/cluster/scenario
+      path: /v1/o/cluster/<clusterid>/scenario
       pollingInterval: 30
       db: 6
     integrationSync:
-      path: /v1/o/cluster/integration
+      path: /v1/o/cluster/<clusterid>/integration
       pollingInterval: 30
       db: 9
     configurationSync:
-      path: /v1/o/cluster/configuration
+      path: /v1/o/cluster/<clusterid>/configuration
       pollingInterval: 30
       apiPath: /i/configuration
     operatorLogin:

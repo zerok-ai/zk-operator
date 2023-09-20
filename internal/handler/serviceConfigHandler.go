@@ -8,6 +8,7 @@ import (
 	"github.com/zerok-ai/zk-operator/internal/config"
 	zkhttp "github.com/zerok-ai/zk-utils-go/http"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
+	"strings"
 )
 
 var serviceConfigTag = "ServiceConfigHandler"
@@ -17,6 +18,7 @@ type ServiceConfigHandler struct {
 	ConfigData         map[string]json.RawMessage
 	config             config.ZkOperatorConfig
 	zkCloudSyncHandler *ZkCloudSyncHandler[ConfigApiResponse]
+	OpLogin            *auth.OperatorLogin
 }
 
 type ConfigApiResponse struct {
@@ -33,6 +35,7 @@ func (h *ServiceConfigHandler) Init(OpLogin *auth.OperatorLogin, cfg config.ZkOp
 	syncHandler := ZkCloudSyncHandler[ConfigApiResponse]{}
 	syncHandler.Init(OpLogin, cfg, cfg.ConfigurationSync.PollingInterval, "configuration_sync", h.periodicSync)
 	h.zkCloudSyncHandler = &syncHandler
+	h.OpLogin = OpLogin
 	return nil
 }
 
@@ -51,7 +54,9 @@ func (h *ServiceConfigHandler) updateServiceConfig(refreshAuthToken bool) {
 	callback := func() {
 		h.updateServiceConfig(false)
 	}
-	serviceConfigResponse, err := h.zkCloudSyncHandler.GetDataFromZkCloud(h.config.ConfigurationSync.CloudPath, callback, "", refreshAuthToken)
+	path := h.config.ConfigurationSync.CloudPath
+	path = strings.ReplaceAll(path, "<clusterid>", h.OpLogin.GetClusterId())
+	serviceConfigResponse, err := h.zkCloudSyncHandler.GetDataFromZkCloud(path, callback, "", refreshAuthToken)
 	if err != nil {
 		if errors.Is(err, RefreshAuthTokenError) {
 			logger.Debug(serviceConfigTag, "Ignore this, since we are making another call after refreshing auth token.")

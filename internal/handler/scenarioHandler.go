@@ -11,6 +11,7 @@ import (
 	logger "github.com/zerok-ai/zk-utils-go/logs"
 	"github.com/zerok-ai/zk-utils-go/scenario/model"
 	zkredis "github.com/zerok-ai/zk-utils-go/storage/redis"
+	"strings"
 )
 
 var scenarioLogTag = "ScenarioHandler"
@@ -24,6 +25,7 @@ type ScenarioHandler struct {
 	config             config.ZkOperatorConfig
 	latestUpdateTime   string
 	zkCloudSyncHandler *ZkCloudSyncHandler[ScenariosApiResponse]
+	OpLogin            *auth.OperatorLogin
 }
 
 type ScenariosApiResponse struct {
@@ -60,6 +62,7 @@ func (h *ScenarioHandler) Init(OpLogin *auth.OperatorLogin, cfg config.ZkOperato
 	syncHandler := ZkCloudSyncHandler[ScenariosApiResponse]{}
 	syncHandler.Init(OpLogin, cfg, cfg.ScenarioSync.PollingInterval, "scenario_sync", h.periodicSync)
 	h.zkCloudSyncHandler = &syncHandler
+	h.OpLogin = OpLogin
 
 	return nil
 }
@@ -79,7 +82,9 @@ func (h *ScenarioHandler) updateScenarios(cfg config.ZkOperatorConfig, refreshAu
 	callback := func() {
 		h.updateScenarios(cfg, false)
 	}
-	scenarioResponse, err := h.zkCloudSyncHandler.GetDataFromZkCloud(h.config.ScenarioSync.Path, callback, h.latestUpdateTime, refreshAuthToken)
+	path := h.config.ScenarioSync.Path
+	path = strings.ReplaceAll(path, "<clusterid>", h.OpLogin.GetClusterId())
+	scenarioResponse, err := h.zkCloudSyncHandler.GetDataFromZkCloud(path, callback, h.latestUpdateTime, refreshAuthToken)
 	if err != nil {
 		if errors.Is(err, RefreshAuthTokenError) {
 			logger.Debug(scenarioLogTag, "Ignore this, since we are making another call after refreshing auth token.")
