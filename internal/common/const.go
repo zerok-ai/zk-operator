@@ -33,9 +33,13 @@ const (
 	NamespaceDeleteRetryLimit = 3
 	NamespaceDeleteRetryDelay = 2 * time.Second
 
-	RedisSyncInterval = 15 * time.Second
+	RedisSyncInterval        = 15 * time.Second
+	ScenarioSyncInterval     = 5 * time.Minute
+	ExecutorAttrSyncInterval = 5 * time.Minute
 
-	RedisImageDbName        = "image_db"
 	RedisScenarioDbName     = "scenario_db"
 	RedisIntegrationsDbName = "integration_db"
+	RedisImageDbName        = "image_db"
+	RedisVersionDbName      = "version_db"
+	ExecutorAttrDbName      = "executor_attr_db"
 )

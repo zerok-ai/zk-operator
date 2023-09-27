@@ -69,18 +69,25 @@ type WspClientConfig struct {
 	DestinationHeader string `yaml:"destinationHeader"`
 }
 
+type ExecutorAttributesSyncConfig struct {
+	Path            string `yaml:"path"`
+	PollingInterval int    `yaml:"pollingInterval"`
+	DB              int    `yaml:"db"`
+}
+
 type ZkOperatorConfig struct {
-	ZkCloud           ZkCloudConfig         `yaml:"zkcloud"`
-	Redis             config.RedisConfig    `yaml:"redis"`
-	Webhook           WebhookConfig         `yaml:"webhook"`
-	Http              HttpServerConfig      `yaml:"http"`
-	ScenarioSync      ScenarioSyncConfig    `yaml:"scenarioSync"`
-	IntegrationSync   IntegrationSyncConfig `yaml:"integrationSync"`
-	ConfigurationSync ConfigSyncConfig      `yaml:"configurationSync"`
-	OperatorLogin     OperatorLoginConfig   `yaml:"operatorLogin"`
-	InitContainer     InitContainerConfig   `yaml:"initContainer"`
-	Instrumentation   InstrumentationConfig `yaml:"instrumentation"`
-	LogsConfig        logsConfig.LogsConfig `yaml:"logs"`
-	ClusterContext    ClusterContextConfig  `yaml:"clusterContext"`
-	WspClient         WspClientConfig       `yaml:"wspClient"`
+	ZkCloud                ZkCloudConfig                `yaml:"zkcloud"`
+	Redis                  config.RedisConfig           `yaml:"redis"`
+	Webhook                WebhookConfig                `yaml:"webhook"`
+	Http                   HttpServerConfig             `yaml:"http"`
+	ScenarioSync           ScenarioSyncConfig           `yaml:"scenarioSync"`
+	IntegrationSync        IntegrationSyncConfig        `yaml:"integrationSync"`
+	ConfigurationSync      ConfigSyncConfig             `yaml:"configurationSync"`
+	ExecutorAttributesSync ExecutorAttributesSyncConfig `yaml:"executorAttributesSync"`
+	OperatorLogin          OperatorLoginConfig          `yaml:"operatorLogin"`
+	InitContainer          InitContainerConfig          `yaml:"initContainer"`
+	Instrumentation        InstrumentationConfig        `yaml:"instrumentation"`
+	LogsConfig             logsConfig.LogsConfig        `yaml:"logs"`
+	ClusterContext         ClusterContextConfig         `yaml:"clusterContext"`
+	WspClient              WspClientConfig              `yaml:"wspClient"`
 }
