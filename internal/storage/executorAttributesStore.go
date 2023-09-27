@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"github.com/go-redis/redis"
+	"github.com/redis/go-redis/v9"
 	"github.com/zerok-ai/zk-operator/internal/common"
 	"github.com/zerok-ai/zk-operator/internal/config"
 	"github.com/zerok-ai/zk-operator/internal/utils"
@@ -13,7 +13,7 @@ type ExecutorAttributesStore struct {
 }
 
 func GetExecutorAttributesRedisStore(config config.ZkOperatorConfig) *ExecutorAttributesStore {
-	_redisClient := utils.GetRedisClient(config, config.Redis.DBs[common.ExecutorAttrDbName])
+	_redisClient := utils.GetRedisClient(common.ExecutorAttrDbName, config.Redis)
 
 	executorAttributesStore := &ExecutorAttributesStore{
 		redisClient: _redisClient,
@@ -23,7 +23,7 @@ func GetExecutorAttributesRedisStore(config config.ZkOperatorConfig) *ExecutorAt
 }
 
 func (zkRedis *ExecutorAttributesStore) UploadExecutorAttributes(executorVersionKey string, executorAttributesMap map[string]interface{}) error {
-	_, err := zkRedis.redisClient.HMSet(executorVersionKey, executorAttributesMap).Result()
+	_, err := zkRedis.redisClient.HMSet(ctx, executorVersionKey, executorAttributesMap).Result()
 	if err != nil {
 		return err
 	}
