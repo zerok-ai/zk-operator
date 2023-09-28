@@ -9,8 +9,6 @@ import (
 
 func GetRedisConnection(dbName string, redisConfig config.RedisConfig) *redis.Client {
 	readTimeout := time.Duration(redisConfig.ReadTimeout) * time.Second
-	//password := os.Getenv("ZK_REDIS_PASSWORD")
-	//host := os.Getenv("ZK_REDIS_HOST")
 	fmt.Print("config.ZK_REDIS_PASSWORD=" + redisConfig.Password)
 	fmt.Print("config.ZK_REDIS_HOST=" + redisConfig.Host)
 	return redis.NewClient(&redis.Options{

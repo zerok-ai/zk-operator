@@ -61,7 +61,7 @@ func (h *ExecutorAttributesHandler) getExecutorAttributesFromZkCloud() (models.E
 }
 
 func (h *ExecutorAttributesHandler) updateExecutorAttributes(cfg config.ZkOperatorConfig, forceUpdate bool) {
-	logger.Debug("In executor attributes update method")
+	logger.Debug(LOG_TAG, "In executor attributes update method")
 	var executorAttributesResponse, err = h.getExecutorAttributesFromZkCloud()
 	if err != nil {
 		logger.Error(LOG_TAG, "Error in getting executor attributes from zk cloud ", err)
