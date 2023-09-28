@@ -26,6 +26,10 @@ func GetExecutorAttributesRedisStore(config config.ZkOperatorConfig) *ExecutorAt
 
 func (zkRedis *ExecutorAttributesStore) UploadExecutorAttributes(executorVersionKey string, executorAttributesMap map[string]interface{}) error {
 	logger.Debug(LOG_TAG_ATTR_STORE, "Uploading executor attributes to redis for executorVersionKey: "+executorVersionKey)
+	logger.Debug(LOG_TAG_ATTR_STORE, "Key and value are ")
+	for key, value := range executorAttributesMap {
+		logger.Debug(LOG_TAG_ATTR_STORE, key, value)
+	}
 	_, err := zkRedis.redisClient.HMSet(ctx, executorVersionKey, executorAttributesMap).Result()
 	if err != nil {
 		return err
