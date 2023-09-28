@@ -8,7 +8,7 @@ import (
 	logger "github.com/zerok-ai/zk-utils-go/logs"
 )
 
-var LOG_TAG = "ExecutorAttributesStore"
+var LOG_TAG_ATTR_STORE = "ExecutorAttributesStore"
 
 type ExecutorAttributesStore struct {
 	redisClient *redis.Client
@@ -25,7 +25,7 @@ func GetExecutorAttributesRedisStore(config config.ZkOperatorConfig) *ExecutorAt
 }
 
 func (zkRedis *ExecutorAttributesStore) UploadExecutorAttributes(executorVersionKey string, executorAttributesMap map[string]interface{}) error {
-	logger.Debug(LOG_TAG, "Uploading executor attributes to redis for executorVersionKey: "+executorVersionKey)
+	logger.Debug(LOG_TAG_ATTR_STORE, "Uploading executor attributes to redis for executorVersionKey: "+executorVersionKey)
 	_, err := zkRedis.redisClient.HMSet(ctx, executorVersionKey, executorAttributesMap).Result()
 	if err != nil {
 		return err
@@ -36,8 +36,8 @@ func (zkRedis *ExecutorAttributesStore) UploadExecutorAttributes(executorVersion
 func (zkRedis *ExecutorAttributesStore) Close() {
 	err := zkRedis.redisClient.Close()
 	if err != nil {
-		logger.Error(LOG_TAG, "Error while closing redis connection ", err)
+		logger.Error(LOG_TAG_ATTR_STORE, "Error while closing redis connection ", err)
 		return
 	}
-	logger.Info(LOG_TAG, "Redis connection closed successfully")
+	logger.Info(LOG_TAG_ATTR_STORE, "Redis connection closed successfully")
 }
