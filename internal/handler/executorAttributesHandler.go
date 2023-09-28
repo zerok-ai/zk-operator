@@ -126,7 +126,7 @@ func (h *ExecutorAttributesHandler) getExecutorAttributesFromZkCloud() (*models.
 	}
 
 	respStr, err := json.Marshal(apiResponse)
-	logger.Debug(LOG_TAG, "Api response is ", respStr)
+	logger.Debug(LOG_TAG, "Api response is ", string(respStr))
 
 	return &apiResponse.Data, nil
 	//responseStr := `{
