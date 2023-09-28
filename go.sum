@@ -412,6 +412,8 @@ github.com/zerok-ai/zk-utils-go v0.4.11-0.20230927101024-1946497dcd4c h1:btAJ+iD
 github.com/zerok-ai/zk-utils-go v0.4.11-0.20230927101024-1946497dcd4c/go.mod h1:AkTJzKzvqxVTO9zOFtACNGnsKwHqqfaCnO7ISDlMHNk=
 github.com/zerok-ai/zk-utils-go v0.4.11-0.20230927101921-d24d9dacbae9 h1:ikeTYTJNaR51AY4kV4+LKpliQPYTeO33CqafIisvtaU=
 github.com/zerok-ai/zk-utils-go v0.4.11-0.20230927101921-d24d9dacbae9/go.mod h1:AkTJzKzvqxVTO9zOFtACNGnsKwHqqfaCnO7ISDlMHNk=
+github.com/zerok-ai/zk-utils-go v0.4.11-0.20230927102141-477ab0389616 h1:8huuSx11+f325J/Xi1rSEBGSeDO1hY3ezBQsYoZuGas=
+github.com/zerok-ai/zk-utils-go v0.4.11-0.20230927102141-477ab0389616/go.mod h1:AkTJzKzvqxVTO9zOFtACNGnsKwHqqfaCnO7ISDlMHNk=
 go.opencensus.io v0.21.0/go.mod h1:mSImk1erAIZhrmZN+AvHh14ztQfjbGwt4TtuofqLduU=
 go.opencensus.io v0.22.0/go.mod h1:+kGneAE2xo2IficOXnaByMWTGM9T73dGwxeWcUqIpI8=
 go.opencensus.io v0.22.2/go.mod h1:yxeiOL68Rb0Xd1ddK5vPZ/oVn4vY4Ynel7k9FzqtOIw=
