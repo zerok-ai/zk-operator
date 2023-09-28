@@ -67,13 +67,9 @@ func (h *ExecutorAttributesHandler) getExecutorAttributesFromZkCloud() (*models.
 		return nil, err
 	}
 
-	callback := func() {
-		logger.Debug(LOG_TAG, "Fetched operator token")
-	}
-
 	if h.OpLogin.GetOperatorToken() == "" {
 		logger.Debug(LOG_TAG, "Operator auth token is not present. Getting the auth token.")
-		err := h.refreshAuthToken(callback)
+		err := h.refreshAuthToken(h.periodicSync)
 		if err != nil {
 			return nil, err
 		}
@@ -94,7 +90,7 @@ func (h *ExecutorAttributesHandler) getExecutorAttributesFromZkCloud() (*models.
 
 	if statusCode == authTokenExpiredCode {
 		logger.Error(LOG_TAG, "Operator auth token has expired. Refreshing the auth token")
-		err := h.refreshAuthToken(callback)
+		err := h.refreshAuthToken(h.periodicSync)
 		if err != nil {
 			return nil, err
 		}
