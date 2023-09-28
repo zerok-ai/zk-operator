@@ -30,7 +30,7 @@ func (h *ExecutorAttributesHandler) Init(executorAttributesStore *storage.Execut
 
 	//Creating a timer for periodic scenario
 	var duration = time.Duration(cfg.ExecutorAttributesSync.PollingInterval) * time.Second
-	h.ticker = zktick.GetNewTickerTask("scenario_sync", duration, h.periodicSync)
+	h.ticker = zktick.GetNewTickerTask("executor_attributes_sync", duration, h.periodicSync)
 }
 
 func (h *ExecutorAttributesHandler) StartPeriodicSync() {
