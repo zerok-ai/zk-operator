@@ -59,20 +59,20 @@ func (h *ExecutorAttributesHandler) getExecutorAttributesFromZkCloud() (*models.
 
 	url := baseURL
 
-	logger.Debug(cloudSyncLogTag, "Url is ", url)
+	logger.Debug(LOG_TAG, "Url is ", url)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		logger.Error(cloudSyncLogTag, "Error creating request:", err)
+		logger.Error(LOG_TAG, "Error creating request:", err)
 		return nil, err
 	}
 
 	callback := func() {
-		logger.Debug("Fetched operator token")
+		logger.Debug(LOG_TAG, "Fetched operator token")
 	}
 
 	if h.OpLogin.GetOperatorToken() == "" {
-		logger.Debug(cloudSyncLogTag, "Operator auth token is not present. Getting the auth token.")
+		logger.Debug(LOG_TAG, "Operator auth token is not present. Getting the auth token.")
 		err := h.refreshAuthToken(callback)
 		if err != nil {
 			return nil, err
@@ -85,7 +85,7 @@ func (h *ExecutorAttributesHandler) getExecutorAttributesFromZkCloud() (*models.
 
 	resp, err := utils.RouteRequestFromWspClient(req, h.config)
 	if err != nil {
-		logger.Error(cloudSyncLogTag, "Error sending request for cloud sync ", err)
+		logger.Error(LOG_TAG, "Error sending request for cloud sync ", err)
 		return nil, err
 	}
 	defer resp.Body.Close()
@@ -93,7 +93,7 @@ func (h *ExecutorAttributesHandler) getExecutorAttributesFromZkCloud() (*models.
 	statusCode := resp.StatusCode
 
 	if statusCode == authTokenExpiredCode {
-		logger.Error(cloudSyncLogTag, "Operator auth token has expired. Refreshing the auth token")
+		logger.Error(LOG_TAG, "Operator auth token has expired. Refreshing the auth token")
 		err := h.refreshAuthToken(callback)
 		if err != nil {
 			return nil, err
@@ -103,13 +103,13 @@ func (h *ExecutorAttributesHandler) getExecutorAttributesFromZkCloud() (*models.
 
 	if !utils.RespCodeIsOk(statusCode) {
 		message := "response code is not ok for get sync api - " + strconv.Itoa(resp.StatusCode)
-		logger.Error(cloudSyncLogTag, message)
+		logger.Error(LOG_TAG, message)
 		return nil, fmt.Errorf(message)
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logger.Error(cloudSyncLogTag, "Error reading response from sync api :", err)
+		logger.Error(LOG_TAG, "Error reading response from sync api :", err)
 		return nil, err
 	}
 
@@ -118,19 +118,19 @@ func (h *ExecutorAttributesHandler) getExecutorAttributesFromZkCloud() (*models.
 	err = json.Unmarshal(body, &apiResponse)
 
 	if err != nil {
-		logger.Error(cloudSyncLogTag, "Error while unmarshalling sync api response :", err)
+		logger.Error(LOG_TAG, "Error while unmarshalling sync api response :", err)
 		return nil, err
 	}
 
 	responseError := apiResponse.Error
 	if responseError != nil {
 		message := "found error in response " + responseError.Message
-		logger.Error(cloudSyncLogTag, message)
+		logger.Error(LOG_TAG, message)
 		return nil, fmt.Errorf(message)
 	}
 
 	respStr, err := json.Marshal(apiResponse)
-	logger.Debug(cloudSyncLogTag, "Api response is ", respStr)
+	logger.Debug(LOG_TAG, "Api response is ", respStr)
 
 	return &apiResponse.Data, nil
 	//responseStr := `{
