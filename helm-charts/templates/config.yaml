@@ -8,7 +8,7 @@ data:
         image_db: 7
         scenario_db: 6
         integration_db: 9
-        executor_attributes_sync: 4
+        executor_attr_db: 4
     webhook:
       namespace: zk-client
       service: zk-operator-inject
