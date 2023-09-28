@@ -53,7 +53,7 @@ func (h *ExecutorAttributesHandler) getExecutorAttributesFromZkCloud() (models.E
 			}
 		],
 		"version": 12356645343,
-		"update": true,
+		"update": true
 	}`
 	var response models.ExecutorAttributesResponse
 	err := json.Unmarshal([]byte(responseStr), &response)
