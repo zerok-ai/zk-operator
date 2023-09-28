@@ -245,10 +245,10 @@ func initOperator() (*storage.ImageRuntimeCache, []internal.ZkOperatorModule, er
 	//Staring syncing configurations from zk cloud.
 	go serviceConfigHandler.StartPeriodicSync()
 
-	zklogger.Debug(LOG_TAG, "Starting webhook server.")
-
 	//Staring syncing Exxecutor Attributes from zk cloud.
 	go executorAttributesHandler.StartPeriodicSync()
+
+	zklogger.Debug(LOG_TAG, "Starting webhook server.")
 
 	app := newApp()
 
