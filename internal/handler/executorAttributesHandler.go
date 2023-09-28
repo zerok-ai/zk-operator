@@ -129,7 +129,8 @@ func (h *ExecutorAttributesHandler) getExecutorAttributesFromZkCloud() (*models.
 		return nil, fmt.Errorf(message)
 	}
 
-	logger.Debug(cloudSyncLogTag, "Api response is ", apiResponse)
+	respStr, err := json.Marshal(apiResponse)
+	logger.Debug(cloudSyncLogTag, "Api response is ", respStr)
 
 	return &apiResponse.Data, nil
 	//responseStr := `{
