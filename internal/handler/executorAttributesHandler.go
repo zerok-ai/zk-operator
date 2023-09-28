@@ -46,10 +46,10 @@ func (h *ExecutorAttributesHandler) getExecutorAttributesFromZkCloud() (models.E
 	responseStr := `{
 		"executor_attributes": [
 			{
-				executor: "EBPF",
-				version: "1.2",
-				protocol: "HTTP",
-				attributes: {"status_code": "\"attributes\".\"status_code\""}
+				"executor": "EBPF",
+				"version": "1.2",
+				"protocol": "HTTP",
+				"attributes": {"status_code": "\"attributes\".\"status_code\""}
 			}
 		],
 		"version": 12356645343,
