@@ -48,7 +48,7 @@ func (h *ExecutorAttributesHandler) periodicSync() {
 }
 
 func (h *ExecutorAttributesHandler) getExecutorAttributesFromZkCloud() (*models.ExecutorAttributesResponse, error) {
-	urlPath := "/v1/u/cluster/attribute?protocol=HTTP"
+	urlPath := "/v1/o/cluster/attribute?version=" + h.latestVersion
 	port := h.config.ZkCloud.Port
 	protocol := "http"
 	if port == "443" {
