@@ -47,7 +47,7 @@ func (h *ExecutorAttributesHandler) periodicSync() {
 	h.updateExecutorAttributes(h.config, false)
 }
 
-func (h *ExecutorAttributesHandler) getExecutorAttributesFromZkCloud() (*models.ExecutorAttributesResponse, error) {
+func (h *ExecutorAttributesHandler) getExecutorAttributesPayloadFromZkCloud() (*models.ExecutorAttributesPayload, error) {
 	urlPath := "/v1/o/cluster/attribute?version=" + h.latestVersion
 	port := h.config.ZkCloud.Port
 	protocol := "http"
@@ -156,27 +156,26 @@ func (h *ExecutorAttributesHandler) refreshAuthToken(callback auth.RefreshTokenC
 
 func (h *ExecutorAttributesHandler) updateExecutorAttributes(cfg config.ZkOperatorConfig, forceUpdate bool) {
 	logger.Debug(LOG_TAG, "In executor attributes update method")
-	var executorAttributesResponse, err = h.getExecutorAttributesFromZkCloud()
+	var executorAttributesPayload, err = h.getExecutorAttributesPayloadFromZkCloud()
 	if err != nil {
 		logger.Error(LOG_TAG, "Error in getting executor attributes from zk cloud ", err)
 		return
 	}
 
-	if !(executorAttributesResponse.Update || forceUpdate) {
+	if !(executorAttributesPayload.Update || forceUpdate) {
 		return
 	}
-	logger.Debug(LOG_TAG, "Updating executor attributes.")
 
-	for _, executorAttributes := range executorAttributesResponse.ExecutorAttributes {
+	logger.Debug(LOG_TAG, "Updating executor attributes.")
+	for _, executorAttributes := range executorAttributesPayload.ExecutorAttributes {
 		executorVersionKey := executorAttributes.Executor + "_" + executorAttributes.Version + "_" + executorAttributes.Protocol
 		err := h.executorAttributesStore.UploadExecutorAttributes(executorVersionKey, executorAttributes.Attributes)
 		if err != nil {
 			logger.Error(LOG_TAG, "Error in updating executor attributes in redis ", err)
 			return
 		}
-
 	}
-	h.latestVersion = strconv.FormatInt(executorAttributesResponse.Version, 10)
+	h.latestVersion = strconv.FormatInt(executorAttributesPayload.Version, 10)
 }
 
 func (h *ExecutorAttributesHandler) CleanUpOnKill() error {
