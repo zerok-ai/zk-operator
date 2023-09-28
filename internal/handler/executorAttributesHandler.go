@@ -43,7 +43,7 @@ func (h *ExecutorAttributesHandler) periodicSync() {
 }
 
 func (h *ExecutorAttributesHandler) getExecutorAttributesFromZkCloud() (models.ExecutorAttributesResponse, error) {
-	responseStr := `
+	responseStr := `{
 		"executor_attributes": [
 			{
 				executor: "EBPF",
