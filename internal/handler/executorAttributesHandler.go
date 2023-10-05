@@ -24,14 +24,12 @@ type ExecutorAttributesHandler struct {
 	OpLogin                 *auth.OperatorLogin
 	ticker                  *zktick.TickerTask
 	config                  config.ZkOperatorConfig
-	latestVersion           string
 }
 
 func (h *ExecutorAttributesHandler) Init(executorAttributesStore *storage.ExecutorAttributesStore, OpLogin *auth.OperatorLogin, cfg config.ZkOperatorConfig) {
 	h.executorAttributesStore = executorAttributesStore
 	h.OpLogin = OpLogin
 	h.config = cfg
-	h.latestVersion = "0"
 
 	//Creating a timer for periodic scenario
 	var duration = time.Duration(cfg.ExecutorAttributesSync.PollingInterval) * time.Second
@@ -47,8 +45,16 @@ func (h *ExecutorAttributesHandler) periodicSync() {
 	h.updateExecutorAttributes(h.config, false)
 }
 
+func (h *ExecutorAttributesHandler) updateLastSyncTime(latestVersion string) {
+	err := h.executorAttributesStore.UpdateLastSyncTime(latestVersion)
+	if err != nil {
+		logger.Error(LOG_TAG, "Error in updating latest version in redis ", err)
+	}
+}
+
 func (h *ExecutorAttributesHandler) getExecutorAttributesPayloadFromZkCloud() (*models.ExecutorAttributesPayload, error) {
-	urlPath := "/v1/o/cluster/attribute?version=" + h.latestVersion
+	lastSyncVersion := h.executorAttributesStore.GetLastSyncVersion()
+	urlPath := "/v1/o/cluster/attribute?version=" + lastSyncVersion
 	port := h.config.ZkCloud.Port
 	protocol := "http"
 	if port == "443" {
@@ -129,21 +135,6 @@ func (h *ExecutorAttributesHandler) getExecutorAttributesPayloadFromZkCloud() (*
 	logger.Debug(LOG_TAG, "Api response is ", string(respStr))
 
 	return &apiResponse.Data, nil
-	//responseStr := `{
-	//	"executor_attributes": [
-	//		{
-	//			"executor": "EBPF",
-	//			"version": "1.2",
-	//			"protocol": "HTTP",
-	//			"attributes": {"status_code": "\"attributes\".\"status_code\""}
-	//		}
-	//	],
-	//	"version": 12356645343,
-	//	"update": true
-	//}`
-	//var response models.ExecutorAttributesResponse
-	//err := json.Unmarshal([]byte(responseStr), &response)
-	//return response, err
 }
 
 func (h *ExecutorAttributesHandler) refreshAuthToken(callback auth.RefreshTokenCallback) error {
@@ -175,7 +166,7 @@ func (h *ExecutorAttributesHandler) updateExecutorAttributes(cfg config.ZkOperat
 			return
 		}
 	}
-	h.latestVersion = strconv.FormatInt(executorAttributesPayload.Version, 10)
+	h.updateLastSyncTime(strconv.FormatInt(executorAttributesPayload.Version, 10))
 }
 
 func (h *ExecutorAttributesHandler) CleanUpOnKill() error {

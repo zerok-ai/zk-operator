@@ -14,6 +14,10 @@ type ExecutorAttributesStore struct {
 	redisClient *redis.Client
 }
 
+const (
+	LatestVersionKey = "latest_version"
+)
+
 func GetExecutorAttributesRedisStore(config config.ZkOperatorConfig) *ExecutorAttributesStore {
 	_redisClient := utils.GetRedisClient(common.ExecutorAttrDbName, config.Redis)
 
@@ -35,6 +39,25 @@ func (zkRedis *ExecutorAttributesStore) UploadExecutorAttributes(executorVersion
 		return err
 	}
 	return nil
+}
+
+func (zkRedis *ExecutorAttributesStore) UpdateLastSyncTime(latestVersion string) error {
+	logger.Debug(LOG_TAG_ATTR_STORE, "Updating latest version to redis")
+	_, err := zkRedis.redisClient.Set(ctx, LatestVersionKey, latestVersion, 0).Result()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (zkRedis *ExecutorAttributesStore) GetLastSyncVersion() string {
+	logger.Debug(LOG_TAG_ATTR_STORE, "Getting latest version from redis")
+	latestVersion, err := zkRedis.redisClient.Get(ctx, LatestVersionKey).Result()
+	if err != nil {
+		logger.Error(LOG_TAG_ATTR_STORE, "Error in getting latest version from redis ", err)
+		return "0"
+	}
+	return latestVersion
 }
 
 func (zkRedis *ExecutorAttributesStore) Close() {
