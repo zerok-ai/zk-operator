@@ -2,10 +2,10 @@ package storage
 
 import (
 	"github.com/redis/go-redis/v9"
-	"github.com/zerok-ai/zk-operator/internal/common"
 	"github.com/zerok-ai/zk-operator/internal/config"
 	"github.com/zerok-ai/zk-operator/internal/utils"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
+	"github.com/zerok-ai/zk-utils-go/storage/redis/clientDBNames"
 )
 
 var LOG_TAG_ATTR_STORE = "ExecutorAttributesStore"
@@ -19,7 +19,7 @@ const (
 )
 
 func GetExecutorAttributesRedisStore(config config.ZkOperatorConfig) *ExecutorAttributesStore {
-	_redisClient := utils.GetRedisClient(common.ExecutorAttrDbName, config.Redis)
+	_redisClient := utils.GetRedisClient(clientDBNames.ExecutorAttrDBName, config.Redis)
 
 	executorAttributesStore := &ExecutorAttributesStore{
 		redisClient: _redisClient,

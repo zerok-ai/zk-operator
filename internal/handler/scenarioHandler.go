@@ -11,6 +11,7 @@ import (
 	logger "github.com/zerok-ai/zk-utils-go/logs"
 	"github.com/zerok-ai/zk-utils-go/scenario/model"
 	zkredis "github.com/zerok-ai/zk-utils-go/storage/redis"
+	dbNames "github.com/zerok-ai/zk-utils-go/storage/redis/clientDBNames"
 	"strings"
 )
 
@@ -51,7 +52,7 @@ type ScenarioModelResponse struct {
 }
 
 func (h *ScenarioHandler) Init(OpLogin *auth.OperatorLogin, cfg config.ZkOperatorConfig) error {
-	store, err := zkredis.GetVersionedStore[model.Scenario](&cfg.Redis, common.RedisScenarioDbName, common.RedisSyncInterval)
+	store, err := zkredis.GetVersionedStore[model.Scenario](&cfg.Redis, dbNames.ScenariosDBName, common.RedisSyncInterval)
 	if err != nil {
 		return err
 	}

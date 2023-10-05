@@ -10,6 +10,7 @@ import (
 	model "github.com/zerok-ai/zk-utils-go/integration/model"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
 	zkredis "github.com/zerok-ai/zk-utils-go/storage/redis"
+	dbNames "github.com/zerok-ai/zk-utils-go/storage/redis/clientDBNames"
 	"strings"
 )
 
@@ -37,7 +38,7 @@ type IntegrationsHandler struct {
 }
 
 func (h *IntegrationsHandler) Init(OpLogin *auth.OperatorLogin, cfg config.ZkOperatorConfig) error {
-	store, err := zkredis.GetVersionedStore[model.IntegrationResponseObj](&cfg.Redis, common.RedisIntegrationsDbName, common.RedisSyncInterval)
+	store, err := zkredis.GetVersionedStore[model.IntegrationResponseObj](&cfg.Redis, dbNames.IntegrationDetailsDBName, common.RedisSyncInterval)
 	if err != nil {
 		return err
 	}

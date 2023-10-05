@@ -8,7 +8,7 @@ require (
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.27.4
 	github.com/redis/go-redis/v9 v9.0.5
-	github.com/zerok-ai/zk-utils-go v0.4.11-0.20231004174415-49837e95f5b3
+	github.com/zerok-ai/zk-utils-go v0.4.11-0.20231005073233-b2177eafe060
 	k8s.io/api v0.26.0
 	k8s.io/apimachinery v0.26.0
 	k8s.io/client-go v0.26.0

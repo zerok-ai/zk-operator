@@ -37,9 +37,5 @@ const (
 	ScenarioSyncInterval     = 5 * time.Minute
 	ExecutorAttrSyncInterval = 5 * time.Minute
 
-	RedisScenarioDbName     = "scenario_db"
-	RedisIntegrationsDbName = "integration_db"
-	RedisImageDbName        = "image_db"
-	RedisVersionDbName      = "version_db"
-	ExecutorAttrDbName      = "executor_attr_db"
+	ExecutorAttrDbName = "executor_attr"
 )
