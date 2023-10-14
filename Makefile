@@ -3,12 +3,13 @@
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
-VERSION ?= integrations
+VERSION ?= multi-arch
 LOCATION ?= us-west1
 PROJECT_ID ?= zerok-dev
 REPOSITORY ?= stage
 IMAGE ?= zerok-operator
 ART_Repo_URI ?= $(LOCATION)-docker.pkg.dev/$(PROJECT_ID)/$(REPOSITORY)/$(IMAGE)
+BUILDER_NAME = multi-platform-builder
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "candidate,fast,stable")
@@ -118,10 +119,19 @@ sync:
 
 .PHONY: build
 build: sync generate manifests fmt vet ## Build manager binary.
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o bin/manager main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o bin/manager-amd64 main.go
 
-.PHONY: buildAndPush
+.PHONY: build-multiarch
+build-multiarch: sync generate manifests fmt vet ## Build manager binary.
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o bin/manager-amd64 main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -a -o bin/manager-arm64 main.go
+
+.PHONY: build-push
 buildAndPush: generate build
+	$(MAKE) gke docker-build docker-push
+
+.PHONY: build-push-multiarch
+build-push-multiarch: generate build
 	$(MAKE) gke docker-build docker-push
 
 .PHONY: run
@@ -131,6 +141,14 @@ run: manifests generate fmt vet ## Run a controller from your host.
 .PHONY: gke
 gke:
 	gcloud auth configure-docker ${LOCATION}-docker.pkg.dev
+
+.PHONY: docker-build--push-multiarch
+docker-build--push-multiarch: test ## Build docker image with the manager.
+	docker buildx rm ${BUILDER_NAME} || true
+	docker buildx create --use --platform=linux/arm64,linux/amd64 --name ${BUILDER_NAME}
+	docker buildx build --platform=linux/arm64,linux/amd64 --push \
+	--tag ${IMAGE} .
+	docker buildx rm ${BUILDER_NAME}
 
 .PHONY: docker-build
 docker-build: test ## Build docker image with the manager.
@@ -255,4 +273,5 @@ catalog-push: ## Push a catalog image.
 # ------- CI-CD ------------
 .PHONY: ci-cd-build
 ci-cd-build: sync generate manifests
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/manager main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/manager-amd64 main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o bin/manager-arm64 main.go
