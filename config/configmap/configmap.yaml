@@ -9,6 +9,7 @@ data:
         image_db: 7
         scenario_db: 6
         integration_db: 9
+        executor_attr_db: 4
     webhook:
       namespace: zk-client
       service: zk-operator-inject
@@ -37,6 +38,10 @@ data:
       path: /v1/o/cluster/<clusterid>/configuration
       pollingInterval: 30
       apiPath: /i/configuration
+    executorAttributesSync:
+      path: /v1/o/cluster/<clusterid>/executorAttributes
+      pollingInterval: 300
+      db: 4
     operatorLogin:
       path: /v1/o/auth/login
       clusterSecretName: cluster-info

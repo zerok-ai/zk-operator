@@ -4,10 +4,14 @@ data:
     redis:
       port: 6379
       readTimeout: 20
-      dbs:
-        image_db: 7
-        scenario_db: 6
-        integration_db: 9
+      dbs:    
+        filtered_traces: 1
+        scenarios: 2
+        traces: 3
+        executor_attr: 4
+        pod_details: 7
+        error_details: 8
+        integration_details: 9
     webhook:
       namespace: zk-client
       service: zk-operator-inject
@@ -36,6 +40,10 @@ data:
       path: /v1/o/cluster/<clusterid>/integration
       pollingInterval: 300
       db: 9
+    executorAttributesSync:
+      path: /v1/o/cluster/<clusterid>/executorAttributes
+      pollingInterval: 300
+      db: 4
     operatorLogin:
       path: /v1/o/auth/login
       clusterSecretName: cluster-info

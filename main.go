@@ -131,8 +131,8 @@ func main() {
 	}
 }
 
-// TODO:
-// Unit testing.
+// TODO: Unit testing.
+// TODO: Split the initOperator method to smaller sub-methods per handler. (e.g. initWebhook, initScenarioHandler, etc.)
 func initOperator() (*storage.ImageRuntimeCache, []internal.ZkOperatorModule, error) {
 
 	configPath := env.GetString("CONFIG_FILE", "")
@@ -220,7 +220,14 @@ func initOperator() (*storage.ImageRuntimeCache, []internal.ZkOperatorModule, er
 	clusterContextHandler := handler.ClusterContextHandler{OpLogin: opLogin, ZkConfig: &zkConfig}
 	zkModules = append(zkModules, &clusterContextHandler)
 
-	opLogin.RegisterZkModules(zkModules)
+	// Module for syncing Executor Attributes Map into Redis.
+	executorAttributesHandler := handler.ExecutorAttributesHandler{}
+	executorAttributesStore := storage.GetExecutorAttributesRedisStore(zkConfig)
+
+	executorAttributesHandler.Init(executorAttributesStore, opLogin, zkConfig)
+	zkModules = append(zkModules, &executorAttributesHandler)
+
+	go opLogin.RegisterZkModules(zkModules)
 
 	appInitData := config.AppInitContainerData{}
 	appInitData.Init(zkConfig)
@@ -237,6 +244,9 @@ func initOperator() (*storage.ImageRuntimeCache, []internal.ZkOperatorModule, er
 
 	//Staring syncing configurations from zk cloud.
 	go serviceConfigHandler.StartPeriodicSync()
+
+	//Staring syncing Exxecutor Attributes from zk cloud.
+	go executorAttributesHandler.StartPeriodicSync()
 
 	zklogger.Debug(LOG_TAG, "Starting webhook server.")
 

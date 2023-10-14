@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/zerok-ai/zk-operator/internal/utils"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
+	dbNames "github.com/zerok-ai/zk-utils-go/storage/redis/clientDBNames"
 	redisConfig "github.com/zerok-ai/zk-utils-go/storage/redis/config"
 	"sync"
 
@@ -30,7 +31,7 @@ func (zkRedis *ImageStore) GetHashSetVersion() (int64, error) {
 }
 
 func GetNewRedisStore(config config.ZkOperatorConfig) *ImageStore {
-	_redisClient := redisConfig.GetRedisConnection(common.RedisImageDbName, config.Redis)
+	_redisClient := redisConfig.GetRedisConnection(dbNames.PodDetailsDBName, config.Redis)
 
 	imgRedis := &ImageStore{
 		redisClient: _redisClient,
