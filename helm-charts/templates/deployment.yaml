@@ -1,0 +1,127 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    control-plane: controller-manager
+  name: zk-operator
+  namespace: zk-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zk-operator
+      control-plane: controller-manager
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: manager
+      labels:
+        app: zk-operator
+        control-plane: controller-manager
+    spec:
+      initContainers:
+        - command:
+            - sh
+            - -c
+            - 'set -xe; URL="${PROTOCOL}://${SERVICE_NAME}:${SERVICE_PORT}${HEALTH_PATH}";
+              until [ $(curl -m 0.5 -s -o /dev/null -w "%{http_code}" -k ${URL}) -eq 200 ];
+              do echo "waiting for ${URL}"; sleep 2; done;'
+          name: wsp-wait
+          env:
+            - name: PROTOCOL
+              value: http
+            - name: SERVICE_NAME
+              value: zk-wsp-client.zk-client.svc.cluster.local
+            - name: SERVICE_PORT
+              value: "80"
+            - name: HEALTH_PATH
+              value: "/healthz"
+          image: us-west1-docker.pkg.dev/black-scope-358204/zk-client/prod/curl:latest
+          imagePullPolicy: IfNotPresent
+          resources: { }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+      containers:
+      - args:
+        - --secure-listen-address=0.0.0.0:8443
+        - --upstream=http://127.0.0.1:8080/
+        - --logtostderr=true
+        - --v=0
+        image: gcr.io/kubebuilder/kube-rbac-proxy:v0.13.0
+        name: kube-rbac-proxy
+        ports:
+        - containerPort: 8443
+          name: https
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 5m
+            memory: 64Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+      - env:
+        - name: CONFIG_FILE
+          value: /opt/operator-config.yaml
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: ZK_REDIS_PASSWORD # Setting Redis password from Secret
+          valueFrom:
+            secretKeyRef:
+              name: redis
+              key: redis-password
+        - name: ZK_REDIS_HOST # Setting Redis password from Secret
+          valueFrom:
+            configMapKeyRef:
+              name: zk-redis-config
+              key: redisHost
+
+        image: "{{ index .Values.global.dockerBase }}/{{ index .Values.image.repo }}:{{ index .Values.image.tag  }}"
+        imagePullPolicy: {{ .Values.global.image.pullPolicy }}
+
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        name: manager
+        ports:
+        - containerPort: 8472
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 64Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - mountPath: /opt
+          name: zk-operator-config
+      serviceAccountName: zk-operator
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - configMap:
+          name: zk-operator
+        name: zk-operator-config
