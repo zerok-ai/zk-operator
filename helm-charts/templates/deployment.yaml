@@ -68,13 +68,7 @@ spec:
           capabilities:
             drop:
             - ALL
-      - args:
-        - --health-probe-bind-address=:8081
-        - --metrics-bind-address=127.0.0.1:8080
-        - --leader-elect
-        command:
-        - /manager
-        env:
+      - env:
         - name: CONFIG_FILE
           value: /opt/operator-config.yaml
         - name: POD_NAMESPACE
