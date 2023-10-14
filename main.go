@@ -82,8 +82,7 @@ func main() {
 
 	var d time.Duration = 15 * time.Minute
 	setupLog.Info("Starting Operator.")
-	imageRuntimeCache, zkModules, err := initOperator()
-	fmt.Println("zkModules", zkModules)
+	imageRuntimeCache, _, err := initOperator()
 	if err != nil {
 		message := "Failed to initialize operator with error " + err.Error()
 		setupLog.Info(message)
@@ -137,14 +136,14 @@ func initOperator() (*storage.ImageRuntimeCache, []internal.ZkOperatorModule, er
 
 	configPath := env.GetString("CONFIG_FILE", "")
 	if configPath == "" {
-		fmt.Println("Config yaml path not found.")
+		zklogger.Error(LOG_TAG, "Config yaml path not found.")
 		return nil, nil, fmt.Errorf("config yaml path not found")
 	}
 
 	var zkConfig config.ZkOperatorConfig
 
 	if err := cleanenv.ReadConfig(configPath, &zkConfig); err != nil {
-		fmt.Println("Error while reading config ", err)
+		zklogger.Error(LOG_TAG, "Error while reading config ", err)
 		return nil, nil, err
 	}
 
