@@ -3,7 +3,7 @@
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
-VERSION ?= multi-arch
+VERSION ?= multiarch
 LOCATION ?= us-west1
 PROJECT_ID ?= zerok-dev
 REPOSITORY ?= stage
@@ -119,20 +119,20 @@ sync:
 
 .PHONY: build
 build: sync generate manifests fmt vet ## Build manager binary.
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o bin/manager-amd64 main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o bin/zk-operator-amd64 main.go
 
 .PHONY: build-multiarch
 build-multiarch: sync generate manifests fmt vet ## Build manager binary.
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o bin/manager-amd64 main.go
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -a -o bin/manager-arm64 main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o bin/zk-operator-amd64 main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -a -o bin/zk-operator-arm64 main.go
 
 .PHONY: build-push
-buildAndPush: generate build
+build-push: generate build
 	$(MAKE) gke docker-build docker-push
 
 .PHONY: build-push-multiarch
-build-push-multiarch: generate build
-	$(MAKE) gke docker-build docker-push
+build-push-multiarch: generate build-multiarch
+	$(MAKE) gke docker-build-push-multiarch
 
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
@@ -142,12 +142,11 @@ run: manifests generate fmt vet ## Run a controller from your host.
 gke:
 	gcloud auth configure-docker ${LOCATION}-docker.pkg.dev
 
-.PHONY: docker-build--push-multiarch
-docker-build--push-multiarch: test ## Build docker image with the manager.
+.PHONY: docker-build-push-multiarch
+docker-build-push-multiarch: test ## Build docker image with the manager.
 	docker buildx rm ${BUILDER_NAME} || true
 	docker buildx create --use --platform=linux/arm64,linux/amd64 --name ${BUILDER_NAME}
-	docker buildx build --platform=linux/arm64,linux/amd64 --push \
-	--tag ${IMAGE} .
+	docker buildx build --platform=linux/arm64,linux/amd64 --push --tag ${IMG} .
 	docker buildx rm ${BUILDER_NAME}
 
 .PHONY: docker-build

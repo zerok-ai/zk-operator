@@ -51,11 +51,7 @@ spec:
               drop:
                 - ALL
       containers:
-      - command:
-        - /manager
-        args:
-        - --leader-elect
-        image: controller:latest
+      - image: controller:latest
         imagePullPolicy: Always
         ports:
           - containerPort: 8472

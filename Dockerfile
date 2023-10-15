@@ -1,11 +1,20 @@
-# Build the operator binary
 FROM alpine:latest
-WORKDIR /
-COPY bin/manager-amd64 .
-COPY *bin/manager-arm64 .
+WORKDIR /zk
 
-COPY app-start.sh /app-start.sh
-RUN chmod +x /app-start.sh
+# base name of the executable e.g. "zk-scenario-manager"
+ENV exeBaseName=zk-operator
 
-CMD ["./app-start.sh","-amd64","manager-amd64 --health-probe-bind-address=:8081 --metrics-bind-address=127.0.0.1:8080 --leader-elect","-arm64","manager-arm64 --health-probe-bind-address=:8081 --metrics-bind-address=127.0.0.1:8080 --leader-elect"]
+# full path to the all the executables
+ENV exeAMD64="${exeBaseName}-amd64"
+ENV exeARM64="${exeBaseName}-arm64"
 
+# copy the executables
+COPY *"bin/$exeAMD64" .
+COPY *"bin/$exeARM64" .
+
+# copy the start script
+COPY app-start.sh .
+RUN chmod +x app-start.sh
+
+# call the start script
+CMD ["sh","-c","./app-start.sh --amd64 ${exeAMD64} --arm64 ${exeARM64}"]
