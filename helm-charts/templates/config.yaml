@@ -62,8 +62,8 @@ data:
       otelArgument: -javaagent:/opt/zerok/opentelemetry-javaagent-1.27.0.jar -Dotel.javaagent.extensions=/opt/zerok/zk-otel-extension-1.0.jar -Dotel.traces.exporter=zerok
       pollingInterval: 30 #seconds
     logs:
-      color: true
-      level: DEBUG
+      color: {{ .Values.serviceConfigs.logs.color }}
+      level: {{ .Values.serviceConfigs.logs.level }}
 kind: ConfigMap
 metadata:
   name: zk-operator
