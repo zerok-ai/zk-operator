@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"github.com/redis/go-redis/v9"
 	"github.com/zerok-ai/zk-operator/internal/config"
 	"github.com/zerok-ai/zk-operator/internal/utils"
@@ -9,6 +10,7 @@ import (
 )
 
 var LOG_TAG_ATTR_STORE = "ExecutorAttributesStore"
+var ctx = context.Background()
 
 type ExecutorAttributesStore struct {
 	redisClient *redis.Client

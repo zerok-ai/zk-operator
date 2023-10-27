@@ -19,7 +19,6 @@ package controllers
 import (
 	"context"
 	"encoding/json"
-	"github.com/zerok-ai/zk-operator/internal/storage"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -38,8 +37,7 @@ var LOG_TAG = "ZerokopReconciler"
 // ZerokopReconciler reconciles a Zerokop object
 type ZerokopReconciler struct {
 	client.Client
-	Scheme            *runtime.Scheme
-	ImageRuntimeCache *storage.ImageRuntimeCache
+	Scheme *runtime.Scheme
 }
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
@@ -71,12 +69,6 @@ func (r *ZerokopReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 	logger.Debug(string(specJSON))
-
-	err = r.ImageRuntimeCache.ProcessOverrideValues(instance.Spec.Images)
-	if err != nil {
-		logger.Error("Error caught while processing override values ", err)
-		return ctrl.Result{}, err
-	}
 
 	// Print the spec in a m
 	return ctrl.Result{}, nil
