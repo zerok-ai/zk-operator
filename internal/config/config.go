@@ -30,14 +30,6 @@ type IntegrationSyncConfig struct {
 	DB              int    `yaml:"db"`
 }
 
-type WebhookConfig struct {
-	Namespace string `yaml:"namespace"`
-	Service   string `yaml:"service"`
-	Name      string `yaml:"name"`
-	Path      string `yaml:"path"`
-	Port      string `yaml:"port"`
-}
-
 type HttpServerConfig struct {
 	Port          string `yaml:"port"`
 	ExceptionPath string `yaml:"exceptionPath"`
@@ -45,15 +37,6 @@ type HttpServerConfig struct {
 type ZkCloudConfig struct {
 	Host string `yaml:"host"`
 	Port string `yaml:"port"`
-}
-
-type InitContainerConfig struct {
-	PollingInterval int `yaml:"pollingInterval"`
-}
-
-type InstrumentationConfig struct {
-	OtelArgument    string `yaml:"otelArgument"`
-	PollingInterval int    `yaml:"pollingInterval"`
 }
 
 type ClusterContextConfig struct {
@@ -78,15 +61,12 @@ type ExecutorAttributesSyncConfig struct {
 type ZkOperatorConfig struct {
 	ZkCloud                ZkCloudConfig                `yaml:"zkcloud"`
 	Redis                  config.RedisConfig           `yaml:"redis"`
-	Webhook                WebhookConfig                `yaml:"webhook"`
 	Http                   HttpServerConfig             `yaml:"http"`
 	ScenarioSync           ScenarioSyncConfig           `yaml:"scenarioSync"`
 	IntegrationSync        IntegrationSyncConfig        `yaml:"integrationSync"`
 	ConfigurationSync      ConfigSyncConfig             `yaml:"configurationSync"`
 	ExecutorAttributesSync ExecutorAttributesSyncConfig `yaml:"executorAttributesSync"`
 	OperatorLogin          OperatorLoginConfig          `yaml:"operatorLogin"`
-	InitContainer          InitContainerConfig          `yaml:"initContainer"`
-	Instrumentation        InstrumentationConfig        `yaml:"instrumentation"`
 	LogsConfig             logsConfig.LogsConfig        `yaml:"logs"`
 	ClusterContext         ClusterContextConfig         `yaml:"clusterContext"`
 	WspClient              WspClientConfig              `yaml:"wspClient"`

@@ -6,16 +6,9 @@ data:
       port: 6379
       readTimeout: 20
       dbs:
-        image_db: 7
         scenario_db: 6
         integration_db: 9
         executor_attr_db: 4
-    webhook:
-      namespace: zk-client
-      service: zk-operator-inject
-      name: zk-webhook
-      path: /zk-injector
-      port: 8473
     http:
       port: 8472
       exceptionPath: /exception
@@ -54,11 +47,6 @@ data:
       port: 8987
       path: /request
       destinationHeader: X-PROXY-DESTINATION
-    initContainer:
-      pollingInterval: 30
-    instrumentation:
-      otelArgument: -javaagent:/opt/zerok/opentelemetry-javaagent-1.27.0.jar -Dotel.javaagent.extensions=/opt/zerok/zk-otel-extension-1.0.jar -Dotel.traces.exporter=zerok
-      pollingInterval: 30 #seconds
     logs:
       color: true
       level: DEBUG
