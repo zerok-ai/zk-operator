@@ -89,6 +89,15 @@ rules:
   - update
   - watch
 - apiGroups:
+    - apps
+  resources:
+    - deployments
+  verbs:
+    - patch
+    - list
+    - watch
+    - get
+- apiGroups:
   - operator.zerok.ai
   resources:
   - zerokops/finalizers
