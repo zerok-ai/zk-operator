@@ -11,6 +11,7 @@ data:
         executor_attr: 4
         error_details: 8
         integration_details: 9
+        obfuscation_rules: 10
     http:
       port: 8472
       exceptionPath: /exception
@@ -29,6 +30,10 @@ data:
       path: /v1/o/cluster/<clusterid>/scenario
       pollingInterval: 300
       db: 6
+    obfuscationRulesSync:
+      path: /v1/o/org/obfuscation/rule/list
+      pollingInterval: 300
+      db: 10
     integrationSync:
       path: /v1/o/cluster/<clusterid>/integration
       pollingInterval: 300

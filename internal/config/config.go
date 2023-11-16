@@ -24,6 +24,12 @@ type ScenarioSyncConfig struct {
 	DB              int    `yaml:"db"`
 }
 
+type ObfuscationSyncConfig struct {
+	Path            string `yaml:"path"`
+	PollingInterval int    `yaml:"pollingInterval"`
+	DB              int    `yaml:"db"`
+}
+
 type IntegrationSyncConfig struct {
 	Path            string `yaml:"path"`
 	PollingInterval int    `yaml:"pollingInterval"`
@@ -65,6 +71,7 @@ type ZkOperatorConfig struct {
 	ScenarioSync           ScenarioSyncConfig           `yaml:"scenarioSync"`
 	IntegrationSync        IntegrationSyncConfig        `yaml:"integrationSync"`
 	ConfigurationSync      ConfigSyncConfig             `yaml:"configurationSync"`
+	ObfuscationSync        ObfuscationSyncConfig        `yaml:"obfuscationRulesSync"`
 	ExecutorAttributesSync ExecutorAttributesSyncConfig `yaml:"executorAttributesSync"`
 	OperatorLogin          OperatorLoginConfig          `yaml:"operatorLogin"`
 	LogsConfig             logsConfig.LogsConfig        `yaml:"logs"`

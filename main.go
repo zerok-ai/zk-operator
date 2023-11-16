@@ -171,6 +171,18 @@ func initOperator() ([]internal.ZkOperatorModule, error) {
 	}
 	zkModules = append(zkModules, &scenarioHandler)
 
+	zklogger.Debug(LOG_TAG, "Creating obfuscation handler.")
+
+	// Module for managing obfuscation rules
+	obfuscationHandler := handler.ObfuscationHandler{}
+	err = obfuscationHandler.Init(opLogin, zkConfig)
+	if err != nil {
+		zklogger.Error(LOG_TAG, "Error while creating obfuscationHandler ", err)
+		return nil, err
+	}
+
+	zkModules = append(zkModules, &obfuscationHandler)
+
 	zklogger.Debug(LOG_TAG, "Creating integrations handler.")
 
 	//Module for syncing integrations
@@ -207,6 +219,9 @@ func initOperator() ([]internal.ZkOperatorModule, error) {
 
 	//Staring syncing scenarios from zk cloud.
 	go scenarioHandler.StartPeriodicSync()
+
+	//Staring syncing obfuscations from zk cloud.
+	go obfuscationHandler.StartPeriodicSync()
 
 	//Staring syncing integrations from zk cloud.
 	go integrationHandler.StartPeriodicSync()

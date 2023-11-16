@@ -47,7 +47,7 @@ func (h *IntegrationsHandler) Init(OpLogin *auth.OperatorLogin, cfg config.ZkOpe
 	h.latestUpdateTime = ""
 
 	syncHandler := ZkCloudSyncHandler[IntegrationApiResponse]{}
-	syncHandler.Init(OpLogin, cfg, cfg.ScenarioSync.PollingInterval, "integration_sync", h.periodicSync)
+	syncHandler.Init(OpLogin, cfg, cfg.IntegrationSync.PollingInterval, "integration_sync", h.periodicSync)
 	h.zkCloudSyncHandler = &syncHandler
 	h.OpLogin = OpLogin
 	return nil
