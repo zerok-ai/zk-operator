@@ -57,7 +57,8 @@ func (h *ObfuscationHandler) Init(OpLogin *auth.OperatorLogin, cfg config.ZkOper
 }
 
 func (h *ObfuscationHandler) periodicSync() {
-
+	logger.Debug(integrationLogTag, "Sync obfuscations triggered.")
+	h.updateObfuscations(h.config, true)
 }
 
 func (h *ObfuscationHandler) CleanUpOnKill() error {
