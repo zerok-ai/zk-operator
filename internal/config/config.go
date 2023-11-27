@@ -64,6 +64,11 @@ type ExecutorAttributesSyncConfig struct {
 	DB              int    `yaml:"db"`
 }
 
+type ClusterHeathSyncConfig struct {
+	Path         string `yaml:"path"`
+	SyncInterval int    `yaml:"syncInterval"`
+}
+
 type ZkOperatorConfig struct {
 	ZkCloud                ZkCloudConfig                `yaml:"zkcloud"`
 	Redis                  config.RedisConfig           `yaml:"redis"`
@@ -77,4 +82,5 @@ type ZkOperatorConfig struct {
 	LogsConfig             logsConfig.LogsConfig        `yaml:"logs"`
 	ClusterContext         ClusterContextConfig         `yaml:"clusterContext"`
 	WspClient              WspClientConfig              `yaml:"wspClient"`
+	ClusterHeathSync       ClusterHeathSyncConfig       `yaml:"clusterHealthSync"`
 }
