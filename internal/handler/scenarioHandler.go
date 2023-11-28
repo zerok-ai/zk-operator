@@ -19,7 +19,9 @@ var scenarioLogTag = "ScenarioHandler"
 
 var RefreshAuthTokenError = fmt.Errorf("refreshing auth token")
 
-var authTokenExpiredCode = 401
+var authTokenUnAuthorizedCode = 401
+
+var authTokenSessionExpiredCode = 419
 
 type ScenarioHandler struct {
 	VersionedStore     *zkredis.VersionedStore[model.Scenario]

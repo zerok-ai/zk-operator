@@ -91,7 +91,7 @@ func (h *ZkCloudSyncHandler[T]) GetDataFromZkCloud(urlPath string, callback auth
 
 	statusCode := resp.StatusCode
 
-	if statusCode == authTokenExpiredCode {
+	if statusCode == authTokenUnAuthorizedCode || statusCode == authTokenSessionExpiredCode {
 		if refreshAuthToken {
 			logger.Error(cloudSyncLogTag, "Operator auth token has expired. Refreshing the auth token for task ", h.TaskName)
 			err := h.refreshAuthToken(callback)

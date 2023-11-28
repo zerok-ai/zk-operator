@@ -94,7 +94,7 @@ func (h *ExecutorAttributesHandler) getExecutorAttributesPayloadFromZkCloud() (*
 
 	statusCode := resp.StatusCode
 
-	if statusCode == authTokenExpiredCode {
+	if statusCode == authTokenSessionExpiredCode || statusCode == authTokenUnAuthorizedCode {
 		logger.Error(LOG_TAG, "Operator auth token has expired. Refreshing the auth token")
 		err := h.refreshAuthToken(h.periodicSync)
 		if err != nil {
