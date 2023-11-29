@@ -57,3 +57,23 @@ func GetSecretValue(namespace, secretName, dataKey string) (string, error) {
 
 	return "", fmt.Errorf("secret Value not found for %v and key %v", secretName, dataKey)
 }
+
+// GetNumberOfNodes returns the number of nodes in the cluster.
+func GetNumberOfNodes() (int, error) {
+
+	logger.Debug(LOG_TAG, "Getting number of nodes in the cluster.")
+	clientSet, err := GetK8sClient()
+	if err != nil {
+		logger.Error(LOG_TAG, " Error while getting k8s client.")
+		return -1, err
+	}
+
+	// Get the list of nodes
+	nodes, err := clientSet.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		return -1, err
+	}
+
+	// Return the count of nodes
+	return len(nodes.Items), nil
+}
