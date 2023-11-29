@@ -23,12 +23,8 @@ var prefix = "zk-"
 
 // ServiceStatus represents the health status of a service
 type ServiceStatus struct {
-	Healthy bool
-}
-
-// Equals compares this ServiceStatus with another instance
-func (sh ServiceStatus) Equals(other ServiceStatus) bool {
-	return sh.Healthy == other.Healthy
+	Healthy   bool           `json:"healthy"`
+	PodStatus map[string]int `json:"pod_status,omitempty"`
 }
 
 type ClusterStatusRequestPayload struct {
@@ -76,6 +72,7 @@ func (ch *ClusterStatusHandler) CheckServicesStatus(clientset *kubernetes.Client
 
 			// Create an HTTP client with a timeout
 			client := http.Client{
+				//TODO: Think and decide on a timeout value
 				Timeout: 5 * time.Second,
 			}
 
@@ -89,24 +86,17 @@ func (ch *ClusterStatusHandler) CheckServicesStatus(clientset *kubernetes.Client
 
 			// Check if the response status code is 200
 			healthy := resp.StatusCode == http.StatusOK
-			serviceStatusMap[fmt.Sprintf("%s/%s", namespace, service.Name)] = ServiceStatus{Healthy: healthy}
+			serviceStatus := ServiceStatus{Healthy: healthy}
+			podStatusMap, err2 := ch.GetPodStatusMap(service.Name, namespace)
+			if err2 == nil {
+				serviceStatus.PodStatus = podStatusMap
+			} else {
+				zklogger.Error(ClusterStatusHandlerTag, "Error getting pod status map:", err2)
+			}
+			serviceStatusMap[fmt.Sprintf("%s/%s", namespace, service.Name)] = serviceStatus
 		}
 	}
 	return serviceStatusMap, nil
-}
-
-// FindServiceStatusDiff finds the difference between two service status maps
-func (ch *ClusterStatusHandler) FindServiceStatusDiff(oldMap, newMap map[string]ServiceStatus) map[string]ServiceStatus {
-	diff := make(map[string]ServiceStatus)
-
-	for key, newValue := range newMap {
-		oldValue, exists := oldMap[key]
-		if !exists || !oldValue.Equals(newValue) {
-			diff[key] = newValue
-		}
-	}
-
-	return diff
 }
 
 func (ch *ClusterStatusHandler) GetServiceStatusPayload() (*ClusterStatusRequestPayload, error) {
@@ -117,9 +107,6 @@ func (ch *ClusterStatusHandler) GetServiceStatusPayload() (*ClusterStatusRequest
 	if err != nil {
 		return nil, err
 	}
-
-	// Find the difference between the latest service status data and the previous one
-	diff := ch.FindServiceStatusDiff(ch.serviceStatusData, serviceStatusData)
 
 	// Update the latest service status data
 	ch.serviceStatusData = serviceStatusData
@@ -133,7 +120,21 @@ func (ch *ClusterStatusHandler) GetServiceStatusPayload() (*ClusterStatusRequest
 		zklogger.Error(ClusterStatusHandlerTag, "Error getting number of nodes:", err)
 	}
 
-	return &ClusterStatusRequestPayload{Services: diff, NumberOfNodes: numberOfNodes}, nil
+	return &ClusterStatusRequestPayload{Services: serviceStatusData, NumberOfNodes: numberOfNodes}, nil
+}
+
+func (ch *ClusterStatusHandler) GetPodStatusMap(service, namespace string) (map[string]int, error) {
+	podList, err := utils.GetPodsForAService(service, namespace)
+	if err != nil {
+		zklogger.Error(ClusterStatusHandlerTag, "Error getting pods for service ", service, " in namespace ", namespace)
+		return map[string]int{}, nil
+	}
+	statusCount := make(map[string]int)
+	// Categorize and count pods based on their status
+	for _, pod := range podList.Items {
+		statusCount[string(pod.Status.Phase)]++
+	}
+	return statusCount, nil
 }
 
 func (ch *ClusterStatusHandler) PeriodicSync() {
