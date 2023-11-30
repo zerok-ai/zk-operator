@@ -215,6 +215,9 @@ func initOperator() ([]internal.ZkOperatorModule, error) {
 	executorAttributesHandler.Init(executorAttributesStore, opLogin, zkConfig)
 	zkModules = append(zkModules, &executorAttributesHandler)
 
+	clusterStatusHandler := handler.ClusterStatusHandler{}
+	zkModules = append(zkModules, &clusterStatusHandler)
+
 	go opLogin.RegisterZkModules(zkModules)
 
 	//Staring syncing scenarios from zk cloud.
@@ -229,8 +232,11 @@ func initOperator() ([]internal.ZkOperatorModule, error) {
 	//Staring syncing configurations from zk cloud.
 	go serviceConfigHandler.StartPeriodicSync()
 
-	//Staring syncing Exxecutor Attributes from zk cloud.
+	//Staring syncing Executor Attributes from zk cloud.
 	go executorAttributesHandler.StartPeriodicSync()
+
+	//Staring syncing cluster status to zk cloud.
+	go clusterStatusHandler.StartPeriodicSync()
 
 	zklogger.Debug(LOG_TAG, "Starting webhook server.")
 

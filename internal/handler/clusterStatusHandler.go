@@ -39,6 +39,15 @@ type ClusterStatusHandler struct {
 	ticker            *zktick.TickerTask
 }
 
+func (ch *ClusterStatusHandler) CleanUpOnKill() error {
+	ch.ticker.Stop()
+	return nil
+}
+
+func (ch *ClusterStatusHandler) IsHealthy() bool {
+	return true
+}
+
 func NewClusterStatusHandler(config config.ZkOperatorConfig) *ClusterStatusHandler {
 	ch := &ClusterStatusHandler{
 		config:            config,
@@ -67,26 +76,11 @@ func (ch *ClusterStatusHandler) CheckServicesStatus(clientset *kubernetes.Client
 	// Iterate over services and check if they match the prefix
 	for _, service := range services.Items {
 		if strings.HasPrefix(service.Name, prefix) {
-			// Construct the URL for the /healthz endpoint of the service
-			url := fmt.Sprintf("http://%s.%s.svc.cluster.local/healthz", service.Name, namespace)
-
-			// Create an HTTP client with a timeout
-			client := http.Client{
-				//TODO: Think and decide on a timeout value
-				Timeout: 5 * time.Second,
-			}
-
-			// Make the HTTP GET request
-			resp, err := client.Get(url)
+			serviceHealth, err := GetServiceHealthStatus(service.Name, namespace)
 			if err != nil {
-				serviceStatusMap[fmt.Sprintf("%s/%s", namespace, service.Name)] = ServiceStatus{Healthy: false}
-				continue
+				zklogger.Error(ClusterStatusHandlerTag, "Error getting service health status:", err)
 			}
-			defer resp.Body.Close()
-
-			// Check if the response status code is 200
-			healthy := resp.StatusCode == http.StatusOK
-			serviceStatus := ServiceStatus{Healthy: healthy}
+			serviceStatus := ServiceStatus{Healthy: serviceHealth}
 			podStatusMap, err2 := ch.GetPodStatusMap(service.Name, namespace)
 			if err2 == nil {
 				serviceStatus.PodStatus = podStatusMap
@@ -178,4 +172,26 @@ func (ch *ClusterStatusHandler) PeriodicSync() {
 
 	// Log the response status code
 	zklogger.Debug(ClusterStatusHandlerTag, "Response Status Code: %d\n", resp.StatusCode)
+}
+
+func GetServiceHealthStatus(serviceName, namespace string) (bool, error) {
+	// Construct the URL for the /healthz endpoint of the service
+	url := fmt.Sprintf("http://%s.%s.svc.cluster.local/healthz", serviceName, namespace)
+
+	// Create an HTTP client with a timeout
+	client := http.Client{
+		//TODO: Think and decide on a timeout value
+		Timeout: 5 * time.Second,
+	}
+
+	// Make the HTTP GET request
+	resp, err := client.Get(url)
+	if err != nil {
+		//Assuming service as unhealthy in case of an error.
+		return false, err
+	}
+	defer resp.Body.Close()
+
+	// Check if the response status code is 200
+	return resp.StatusCode == http.StatusOK, nil
 }
