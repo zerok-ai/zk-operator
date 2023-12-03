@@ -21,7 +21,7 @@ var ClusterStatusHandlerTag = "ClusterStatusHandler"
 var namespace = "zk-client"
 var prefix = "zk-"
 
-// ServiceStatus represents the health status of a service
+// ServiceStatus represents the status of a service
 type ServiceStatus struct {
 	Healthy   bool           `json:"healthy"`
 	PodStatus map[string]int `json:"pod_status,omitempty"`

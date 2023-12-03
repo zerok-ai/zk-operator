@@ -54,6 +54,9 @@ data:
       port: 8987
       path: /request
       destinationHeader: X-PROXY-DESTINATION
+    clusterHealthSync:
+      path: /v1/o/clustermeta/update
+      syncInterval: 10
     logs:
       color: {{ .Values.serviceConfigs.logs.color }}
       level: {{ .Values.serviceConfigs.logs.level }}
