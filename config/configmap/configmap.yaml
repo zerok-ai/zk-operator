@@ -12,12 +12,16 @@ data:
     http:
       port: 8472
       exceptionPath: /exception
+    obfuscationRulesSync:
+      path: /v1/o/org/obfuscation/rule/list
+      pollingInterval: 300
+      db: 10
     clusterContext:
       path: /i/clusterContext
-      cloudAddr: px.devcloud01.getanton.com
+      cloudAddr: px.testacloud01.getanton.com
       port: 443
     zkcloud:
-      host: api.devcloud01.getanton.com
+      host: api.testacloud01.getanton.com
       port: 443
     scenarioSync:
       path: /v1/o/cluster/<clusterid>/scenario
@@ -47,6 +51,9 @@ data:
       port: 8987
       path: /request
       destinationHeader: X-PROXY-DESTINATION
+    clusterHealthSync:
+      path: /v1/o/clustermeta/update
+      syncInterval: 10
     logs:
       color: true
       level: DEBUG

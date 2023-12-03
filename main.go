@@ -215,8 +215,8 @@ func initOperator() ([]internal.ZkOperatorModule, error) {
 	executorAttributesHandler.Init(executorAttributesStore, opLogin, zkConfig)
 	zkModules = append(zkModules, &executorAttributesHandler)
 
-	clusterStatusHandler := handler.ClusterStatusHandler{}
-	zkModules = append(zkModules, &clusterStatusHandler)
+	clusterStatusHandler := handler.NewClusterStatusHandler(zkConfig)
+	zkModules = append(zkModules, clusterStatusHandler)
 
 	go opLogin.RegisterZkModules(zkModules)
 

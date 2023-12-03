@@ -82,6 +82,7 @@ func (h *ServiceConfigHandler) Handler(ctx iris.Context) {
 
 func (h *ServiceConfigHandler) CleanUpOnKill() error {
 	logger.Debug(serviceConfigTag, "Nothing to clean here.")
+	h.zkCloudSyncHandler.StopSync()
 	return nil
 }
 
