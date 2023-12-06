@@ -28,7 +28,7 @@ type ScenarioHandler struct {
 	config             config.ZkOperatorConfig
 	latestUpdateTime   string
 	zkCloudSyncHandler *ZkCloudSyncHandler[ScenariosApiResponse]
-	OpLogin            *auth.OperatorLogin
+	OpLogin            *auth.ClusterTokenHandler
 }
 
 type ScenariosApiResponse struct {
@@ -53,7 +53,7 @@ type ScenarioModelResponse struct {
 	UpdatedAt  int64          `json:"updated_at"`
 }
 
-func (h *ScenarioHandler) Init(OpLogin *auth.OperatorLogin, cfg config.ZkOperatorConfig) error {
+func (h *ScenarioHandler) Init(OpLogin *auth.ClusterTokenHandler, cfg config.ZkOperatorConfig) error {
 	store, err := zkredis.GetVersionedStore[model.Scenario](&cfg.Redis, dbNames.ScenariosDBName, common.RedisSyncInterval)
 	if err != nil {
 		return err

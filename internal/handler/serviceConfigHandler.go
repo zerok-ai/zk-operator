@@ -18,7 +18,7 @@ type ServiceConfigHandler struct {
 	ConfigData         map[string]json.RawMessage
 	config             config.ZkOperatorConfig
 	zkCloudSyncHandler *ZkCloudSyncHandler[ConfigApiResponse]
-	OpLogin            *auth.OperatorLogin
+	OpLogin            *auth.ClusterTokenHandler
 }
 
 type ConfigApiResponse struct {
@@ -30,7 +30,7 @@ func (c ConfigApiResponse) GetError() *zkhttp.ZkHttpError {
 	return c.Error
 }
 
-func (h *ServiceConfigHandler) Init(OpLogin *auth.OperatorLogin, cfg config.ZkOperatorConfig) error {
+func (h *ServiceConfigHandler) Init(OpLogin *auth.ClusterTokenHandler, cfg config.ZkOperatorConfig) error {
 	h.config = cfg
 	syncHandler := ZkCloudSyncHandler[ConfigApiResponse]{}
 	syncHandler.Init(OpLogin, cfg, cfg.ConfigurationSync.PollingInterval, "configuration_sync", h.periodicSync)

@@ -36,10 +36,10 @@ type ObfuscationHandler struct {
 	config             config.ZkOperatorConfig
 	latestUpdateTime   string
 	zkCloudSyncHandler *ZkCloudSyncHandler[ObfuscationApiResponse]
-	OpLogin            *auth.OperatorLogin
+	OpLogin            *auth.ClusterTokenHandler
 }
 
-func (h *ObfuscationHandler) Init(OpLogin *auth.OperatorLogin, cfg config.ZkOperatorConfig) error {
+func (h *ObfuscationHandler) Init(OpLogin *auth.ClusterTokenHandler, cfg config.ZkOperatorConfig) error {
 	store, err := zkredis.GetVersionedStore[model.RuleOperator](&cfg.Redis, dbNames.ObfuscationRulesDBName, common.RedisSyncInterval)
 	if err != nil {
 		return err

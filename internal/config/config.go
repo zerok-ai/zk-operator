@@ -4,12 +4,11 @@ import "github.com/zerok-ai/zk-utils-go/storage/redis/config"
 import logsConfig "github.com/zerok-ai/zk-utils-go/logs/config"
 
 type OperatorLoginConfig struct {
-	Path                string `yaml:"path"`
 	ClusterSecretName   string `yaml:"clusterSecretName"`
 	ClusterKeyData      string `yaml:"clusterKeyData"`
-	ApiKeyData          string `yaml:"apiKeyData"`
+	KilledData          string `yaml:"killedData"`
+	ClusterIdKey        string `yaml:"clusterIdKey"`
 	ClusterKeyNamespace string `yaml:"clusterKeyNamespace"`
-	MaxRetries          int    `yaml:"maxRetries"`
 }
 
 type ConfigSyncConfig struct {

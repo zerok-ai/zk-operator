@@ -23,13 +23,13 @@ type ApiResponse interface {
 }
 
 type ZkCloudSyncHandler[T ApiResponse] struct {
-	OpLogin  *auth.OperatorLogin
+	OpLogin  *auth.ClusterTokenHandler
 	config   config.ZkOperatorConfig
 	ticker   *zktick.TickerTask
 	TaskName string
 }
 
-func (h *ZkCloudSyncHandler[T]) Init(OpLogin *auth.OperatorLogin, cfg config.ZkOperatorConfig, pollingInterval int, taskName string, task func()) {
+func (h *ZkCloudSyncHandler[T]) Init(OpLogin *auth.ClusterTokenHandler, cfg config.ZkOperatorConfig, pollingInterval int, taskName string, task func()) {
 	h.OpLogin = OpLogin
 	h.config = cfg
 	h.TaskName = taskName
@@ -65,7 +65,7 @@ func (h *ZkCloudSyncHandler[T]) GetDataFromZkCloud(urlPath string, callback auth
 		return nil, err
 	}
 
-	if h.OpLogin.GetOperatorToken() == "" {
+	if h.OpLogin.GetClusterToken() == "" {
 		if refreshAuthToken {
 			logger.Debug(cloudSyncLogTag, "Operator auth token is not present. Getting the auth token.", " for task ", h.TaskName)
 			err := h.refreshAuthToken(callback)
@@ -80,7 +80,7 @@ func (h *ZkCloudSyncHandler[T]) GetDataFromZkCloud(urlPath string, callback auth
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set(common.OperatorTokenHeaderKey, h.OpLogin.GetOperatorToken())
+	req.Header.Set(common.OperatorTokenHeaderKey, h.OpLogin.GetClusterToken())
 
 	resp, err := utils.RouteRequestFromWspClient(req, h.config)
 	if err != nil {
@@ -140,7 +140,7 @@ func (h *ZkCloudSyncHandler[T]) GetDataFromZkCloud(urlPath string, callback auth
 }
 
 func (h *ZkCloudSyncHandler[T]) refreshAuthToken(callback auth.RefreshTokenCallback) error {
-	err := h.OpLogin.RefreshOperatorToken(callback)
+	err := h.OpLogin.RefreshClusterToken(callback)
 	if err != nil {
 		logger.Error(cloudSyncLogTag, "Error while refreshing auth token ", err)
 	}

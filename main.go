@@ -158,7 +158,7 @@ func initOperator() ([]internal.ZkOperatorModule, error) {
 	zklogger.Debug(LOG_TAG, "Creating operation login handler.")
 
 	//Creating operator login module
-	opLogin := auth.CreateOperatorLogin(zkConfig)
+	opLogin := auth.CreateClusterTokenHandler(zkConfig)
 
 	zklogger.Debug(LOG_TAG, "Creating scenario handler.")
 

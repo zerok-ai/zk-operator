@@ -34,10 +34,10 @@ type IntegrationsHandler struct {
 	config             config.ZkOperatorConfig
 	latestUpdateTime   string
 	zkCloudSyncHandler *ZkCloudSyncHandler[IntegrationApiResponse]
-	OpLogin            *auth.OperatorLogin
+	OpLogin            *auth.ClusterTokenHandler
 }
 
-func (h *IntegrationsHandler) Init(OpLogin *auth.OperatorLogin, cfg config.ZkOperatorConfig) error {
+func (h *IntegrationsHandler) Init(OpLogin *auth.ClusterTokenHandler, cfg config.ZkOperatorConfig) error {
 	store, err := zkredis.GetVersionedStore[model.IntegrationResponseObj](&cfg.Redis, dbNames.IntegrationDetailsDBName, common.RedisSyncInterval)
 	if err != nil {
 		return err

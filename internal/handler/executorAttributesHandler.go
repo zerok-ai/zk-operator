@@ -21,12 +21,12 @@ var LOG_TAG = "ExecutorAttributesHandler"
 
 type ExecutorAttributesHandler struct {
 	executorAttributesStore *storage.ExecutorAttributesStore
-	OpLogin                 *auth.OperatorLogin
+	OpLogin                 *auth.ClusterTokenHandler
 	ticker                  *zktick.TickerTask
 	config                  config.ZkOperatorConfig
 }
 
-func (h *ExecutorAttributesHandler) Init(executorAttributesStore *storage.ExecutorAttributesStore, OpLogin *auth.OperatorLogin, cfg config.ZkOperatorConfig) {
+func (h *ExecutorAttributesHandler) Init(executorAttributesStore *storage.ExecutorAttributesStore, OpLogin *auth.ClusterTokenHandler, cfg config.ZkOperatorConfig) {
 	h.executorAttributesStore = executorAttributesStore
 	h.OpLogin = OpLogin
 	h.config = cfg
@@ -73,7 +73,7 @@ func (h *ExecutorAttributesHandler) getExecutorAttributesPayloadFromZkCloud() (*
 		return nil, err
 	}
 
-	if h.OpLogin.GetOperatorToken() == "" {
+	if h.OpLogin.GetClusterToken() == "" {
 		logger.Debug(LOG_TAG, "Operator auth token is not present. Getting the auth token.")
 		err := h.refreshAuthToken(h.periodicSync)
 		if err != nil {
@@ -83,7 +83,7 @@ func (h *ExecutorAttributesHandler) getExecutorAttributesPayloadFromZkCloud() (*
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set(common.OperatorTokenHeaderKey, h.OpLogin.GetOperatorToken())
+	req.Header.Set(common.OperatorTokenHeaderKey, h.OpLogin.GetClusterToken())
 
 	resp, err := utils.RouteRequestFromWspClient(req, h.config)
 	if err != nil {
@@ -138,7 +138,7 @@ func (h *ExecutorAttributesHandler) getExecutorAttributesPayloadFromZkCloud() (*
 }
 
 func (h *ExecutorAttributesHandler) refreshAuthToken(callback auth.RefreshTokenCallback) error {
-	err := h.OpLogin.RefreshOperatorToken(callback)
+	err := h.OpLogin.RefreshClusterToken(callback)
 	if err != nil {
 		logger.Error(cloudSyncLogTag, "Error while refreshing auth token ", err)
 	}

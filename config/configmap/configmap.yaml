@@ -40,12 +40,11 @@ data:
       pollingInterval: 300
       db: 4
     operatorLogin:
-      path: /v1/o/auth/login
       clusterSecretName: cluster-info
       clusterKeyData: clusterKey
-      apiKeyData: apiKey
+      killedData: killed
+      clusterIdKey: clusterId
       clusterKeyNamespace: zk-client
-      maxRetries: 3
     wspClient:
       host: zk-wsp-client.zk-client.svc.cluster.local
       port: 8987
