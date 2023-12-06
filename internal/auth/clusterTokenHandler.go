@@ -89,7 +89,7 @@ func (h *ClusterTokenHandler) RefreshClusterToken(callback RefreshTokenCallback)
 
 	h.token = clusterTokenData.TokenString
 
-	killed, err := utils.GetSecretValue(h.zkConfig.OperatorLogin.ClusterKeyNamespace, h.zkConfig.OperatorLogin.ClusterSecretName, h.zkConfig.OperatorLogin.KilledData)
+	killed, err := utils.GetSecretValue(h.zkConfig.OperatorLogin.ClusterKeyNamespace, h.zkConfig.OperatorLogin.ClusterSecretName, h.zkConfig.OperatorLogin.KilledKey)
 	if err != nil {
 		logger.Error(LOG_TAG, "Error while getting killed key from secrets :", err)
 		h.killed = false
@@ -97,7 +97,7 @@ func (h *ClusterTokenHandler) RefreshClusterToken(callback RefreshTokenCallback)
 		h.killed = killed == "true"
 	}
 
-	clusterId, err := utils.GetSecretValue(h.zkConfig.OperatorLogin.ClusterKeyNamespace, h.zkConfig.OperatorLogin.ClusterSecretName, h.zkConfig.OperatorLogin.KilledData)
+	clusterId, err := utils.GetSecretValue(h.zkConfig.OperatorLogin.ClusterKeyNamespace, h.zkConfig.OperatorLogin.ClusterSecretName, h.zkConfig.OperatorLogin.KilledKey)
 	if err != nil {
 		logger.Error(LOG_TAG, "Error while getting cluster Id from secrets :", err)
 	} else {

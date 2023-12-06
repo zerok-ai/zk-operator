@@ -3,10 +3,10 @@ package config
 import "github.com/zerok-ai/zk-utils-go/storage/redis/config"
 import logsConfig "github.com/zerok-ai/zk-utils-go/logs/config"
 
-type OperatorLoginConfig struct {
+type ClusterKeyConfig struct {
 	ClusterSecretName   string `yaml:"clusterSecretName"`
 	ClusterKeyData      string `yaml:"clusterKeyData"`
-	KilledData          string `yaml:"killedData"`
+	KilledKey           string `yaml:"killedKey"`
 	ClusterIdKey        string `yaml:"clusterIdKey"`
 	ClusterKeyNamespace string `yaml:"clusterKeyNamespace"`
 }
@@ -77,7 +77,7 @@ type ZkOperatorConfig struct {
 	ConfigurationSync      ConfigSyncConfig             `yaml:"configurationSync"`
 	ObfuscationSync        ObfuscationSyncConfig        `yaml:"obfuscationRulesSync"`
 	ExecutorAttributesSync ExecutorAttributesSyncConfig `yaml:"executorAttributesSync"`
-	OperatorLogin          OperatorLoginConfig          `yaml:"operatorLogin"`
+	OperatorLogin          ClusterKeyConfig             `yaml:"operatorLogin"`
 	LogsConfig             logsConfig.LogsConfig        `yaml:"logs"`
 	ClusterContext         ClusterContextConfig         `yaml:"clusterContext"`
 	WspClient              WspClientConfig              `yaml:"wspClient"`
