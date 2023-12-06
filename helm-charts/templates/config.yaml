@@ -45,7 +45,7 @@ data:
     operatorLogin:
       clusterSecretName: cluster-info
       clusterKeyData: clusterKey
-      killedData: killed
+      killedKey: killed
       clusterIdKey: clusterId
       clusterKeyNamespace: zk-client
     wspClient:
