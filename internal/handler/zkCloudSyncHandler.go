@@ -3,8 +3,6 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/zerok-ai/zk-operator/internal/auth"
-	"github.com/zerok-ai/zk-operator/internal/common"
 	"github.com/zerok-ai/zk-operator/internal/config"
 	"github.com/zerok-ai/zk-operator/internal/utils"
 	zkhttp "github.com/zerok-ai/zk-utils-go/http"
@@ -23,14 +21,12 @@ type ApiResponse interface {
 }
 
 type ZkCloudSyncHandler[T ApiResponse] struct {
-	OpLogin  *auth.ClusterTokenHandler
 	config   config.ZkOperatorConfig
 	ticker   *zktick.TickerTask
 	TaskName string
 }
 
-func (h *ZkCloudSyncHandler[T]) Init(OpLogin *auth.ClusterTokenHandler, cfg config.ZkOperatorConfig, pollingInterval int, taskName string, task func()) {
-	h.OpLogin = OpLogin
+func (h *ZkCloudSyncHandler[T]) Init(cfg config.ZkOperatorConfig, pollingInterval int, taskName string, task func()) {
 	h.config = cfg
 	h.TaskName = taskName
 	//Creating a timer for periodic sync
@@ -39,7 +35,7 @@ func (h *ZkCloudSyncHandler[T]) Init(OpLogin *auth.ClusterTokenHandler, cfg conf
 }
 
 // TODO: Breakdown this method.
-func (h *ZkCloudSyncHandler[T]) GetDataFromZkCloud(urlPath string, callback auth.RefreshTokenCallback, latestUpdateTime string, refreshAuthToken bool) (*T, error) {
+func (h *ZkCloudSyncHandler[T]) GetDataFromZkCloud(urlPath string, latestUpdateTime string) (*T, error) {
 	port := h.config.ZkCloud.Port
 	protocol := "http"
 	if port == "443" {
@@ -65,22 +61,7 @@ func (h *ZkCloudSyncHandler[T]) GetDataFromZkCloud(urlPath string, callback auth
 		return nil, err
 	}
 
-	if h.OpLogin.GetClusterToken() == "" {
-		if refreshAuthToken {
-			logger.Debug(cloudSyncLogTag, "Operator auth token is not present. Getting the auth token.", " for task ", h.TaskName)
-			err := h.refreshAuthToken(callback)
-			if err != nil {
-				return nil, err
-			}
-			return nil, RefreshAuthTokenError
-		} else {
-			logger.Debug(cloudSyncLogTag, "Operator auth token is empty. Refresh auth token is false.", " for task ", h.TaskName)
-			return nil, fmt.Errorf("operator token is empty")
-		}
-	}
-
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set(common.OperatorTokenHeaderKey, h.OpLogin.GetClusterToken())
 
 	resp, err := utils.RouteRequestFromWspClient(req, h.config)
 	if err != nil {
@@ -90,21 +71,6 @@ func (h *ZkCloudSyncHandler[T]) GetDataFromZkCloud(urlPath string, callback auth
 	defer resp.Body.Close()
 
 	statusCode := resp.StatusCode
-
-	if statusCode == authTokenUnAuthorizedCode || statusCode == authTokenSessionExpiredCode {
-		if refreshAuthToken {
-			logger.Error(cloudSyncLogTag, "Operator auth token has expired. Refreshing the auth token for task ", h.TaskName)
-			err := h.refreshAuthToken(callback)
-			if err != nil {
-				return nil, err
-			}
-			return nil, RefreshAuthTokenError
-		} else {
-			logger.Error(cloudSyncLogTag, "Operator auth token has expired. Refresh auth token is false for task ", h.TaskName)
-			message := "oerator auth token expired for task " + h.TaskName
-			return nil, fmt.Errorf(message)
-		}
-	}
 
 	if !utils.RespCodeIsOk(statusCode) {
 		message := "response code is not ok for get sync api - " + strconv.Itoa(resp.StatusCode) + " for task " + h.TaskName
@@ -137,14 +103,6 @@ func (h *ZkCloudSyncHandler[T]) GetDataFromZkCloud(urlPath string, callback auth
 	logger.Debug(cloudSyncLogTag, "Api response for ", h.TaskName, " is ", apiResponse)
 
 	return &apiResponse, nil
-}
-
-func (h *ZkCloudSyncHandler[T]) refreshAuthToken(callback auth.RefreshTokenCallback) error {
-	err := h.OpLogin.RefreshClusterToken(callback)
-	if err != nil {
-		logger.Error(cloudSyncLogTag, "Error while refreshing auth token ", err)
-	}
-	return err
 }
 
 func (h *ZkCloudSyncHandler[T]) StartSync() {

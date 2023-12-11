@@ -3,7 +3,6 @@ package handler
 import (
 	"errors"
 	"fmt"
-	"github.com/zerok-ai/zk-operator/internal/auth"
 	"github.com/zerok-ai/zk-operator/internal/common"
 	"github.com/zerok-ai/zk-operator/internal/config"
 	common2 "github.com/zerok-ai/zk-utils-go/common"
@@ -36,10 +35,9 @@ type ObfuscationHandler struct {
 	config             config.ZkOperatorConfig
 	latestUpdateTime   string
 	zkCloudSyncHandler *ZkCloudSyncHandler[ObfuscationApiResponse]
-	OpLogin            *auth.ClusterTokenHandler
 }
 
-func (h *ObfuscationHandler) Init(OpLogin *auth.ClusterTokenHandler, cfg config.ZkOperatorConfig) error {
+func (h *ObfuscationHandler) Init(cfg config.ZkOperatorConfig) error {
 	store, err := zkredis.GetVersionedStore[model.RuleOperator](&cfg.Redis, dbNames.ObfuscationRulesDBName, common.RedisSyncInterval)
 	if err != nil {
 		return err
@@ -49,9 +47,8 @@ func (h *ObfuscationHandler) Init(OpLogin *auth.ClusterTokenHandler, cfg config.
 	h.latestUpdateTime = "0"
 
 	syncHandler := ZkCloudSyncHandler[ObfuscationApiResponse]{}
-	syncHandler.Init(OpLogin, cfg, cfg.ObfuscationSync.PollingInterval, "obfuscation_sync", h.periodicSync)
+	syncHandler.Init(cfg, cfg.ObfuscationSync.PollingInterval, "obfuscation_sync", h.periodicSync)
 	h.zkCloudSyncHandler = &syncHandler
-	h.OpLogin = OpLogin
 
 	return nil
 }
@@ -78,11 +75,8 @@ func (h *ObfuscationHandler) StartPeriodicSync() {
 
 func (h *ObfuscationHandler) updateObfuscations(operatorConfig config.ZkOperatorConfig, refreshAuthToken bool) {
 	logger.Debug(obfuscationLogTag, "Update obfuscations method called.", refreshAuthToken)
-	callback := func() {
-		h.updateObfuscations(operatorConfig, false)
-	}
 	path := h.config.ObfuscationSync.Path
-	obfuscationResponse, err := h.zkCloudSyncHandler.GetDataFromZkCloud(path, callback, h.latestUpdateTime, refreshAuthToken)
+	obfuscationResponse, err := h.zkCloudSyncHandler.GetDataFromZkCloud(path, h.latestUpdateTime)
 	if err != nil {
 		if errors.Is(err, RefreshAuthTokenError) {
 			logger.Debug(obfuscationLogTag, "Ignore this, since we are making another call after refreshing auth token.")

@@ -3,8 +3,6 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/zerok-ai/zk-operator/internal/auth"
-	"github.com/zerok-ai/zk-operator/internal/common"
 	"github.com/zerok-ai/zk-operator/internal/config"
 	"github.com/zerok-ai/zk-operator/internal/models"
 	"github.com/zerok-ai/zk-operator/internal/storage"
@@ -21,14 +19,12 @@ var LOG_TAG = "ExecutorAttributesHandler"
 
 type ExecutorAttributesHandler struct {
 	executorAttributesStore *storage.ExecutorAttributesStore
-	OpLogin                 *auth.ClusterTokenHandler
 	ticker                  *zktick.TickerTask
 	config                  config.ZkOperatorConfig
 }
 
-func (h *ExecutorAttributesHandler) Init(executorAttributesStore *storage.ExecutorAttributesStore, OpLogin *auth.ClusterTokenHandler, cfg config.ZkOperatorConfig) {
+func (h *ExecutorAttributesHandler) Init(executorAttributesStore *storage.ExecutorAttributesStore, cfg config.ZkOperatorConfig) {
 	h.executorAttributesStore = executorAttributesStore
-	h.OpLogin = OpLogin
 	h.config = cfg
 
 	//Creating a timer for periodic scenario
@@ -73,17 +69,7 @@ func (h *ExecutorAttributesHandler) getExecutorAttributesPayloadFromZkCloud() (*
 		return nil, err
 	}
 
-	if h.OpLogin.GetClusterToken() == "" {
-		logger.Debug(LOG_TAG, "Operator auth token is not present. Getting the auth token.")
-		err := h.refreshAuthToken(h.periodicSync)
-		if err != nil {
-			return nil, err
-		}
-		return nil, RefreshAuthTokenError
-	}
-
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set(common.OperatorTokenHeaderKey, h.OpLogin.GetClusterToken())
 
 	resp, err := utils.RouteRequestFromWspClient(req, h.config)
 	if err != nil {
@@ -93,15 +79,6 @@ func (h *ExecutorAttributesHandler) getExecutorAttributesPayloadFromZkCloud() (*
 	defer resp.Body.Close()
 
 	statusCode := resp.StatusCode
-
-	if statusCode == authTokenSessionExpiredCode || statusCode == authTokenUnAuthorizedCode {
-		logger.Error(LOG_TAG, "Operator auth token has expired. Refreshing the auth token")
-		err := h.refreshAuthToken(h.periodicSync)
-		if err != nil {
-			return nil, err
-		}
-		return nil, RefreshAuthTokenError
-	}
 
 	if !utils.RespCodeIsOk(statusCode) {
 		message := "response code is not ok for get sync api - " + strconv.Itoa(resp.StatusCode)
@@ -135,14 +112,6 @@ func (h *ExecutorAttributesHandler) getExecutorAttributesPayloadFromZkCloud() (*
 	logger.Debug(LOG_TAG, "Api response is ", string(respStr))
 
 	return &apiResponse.Data, nil
-}
-
-func (h *ExecutorAttributesHandler) refreshAuthToken(callback auth.RefreshTokenCallback) error {
-	err := h.OpLogin.RefreshClusterToken(callback)
-	if err != nil {
-		logger.Error(cloudSyncLogTag, "Error while refreshing auth token ", err)
-	}
-	return err
 }
 
 func (h *ExecutorAttributesHandler) updateExecutorAttributes(cfg config.ZkOperatorConfig, forceUpdate bool) {

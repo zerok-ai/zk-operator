@@ -3,7 +3,6 @@ package handler
 import (
 	"fmt"
 	"github.com/kataras/iris/v12"
-	"github.com/zerok-ai/zk-operator/internal/auth"
 	"github.com/zerok-ai/zk-operator/internal/config"
 	zkhttp "github.com/zerok-ai/zk-utils-go/http"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
@@ -12,7 +11,6 @@ import (
 var LOG_TAG2 = "ClusterContextHandler"
 
 type ClusterContextHandler struct {
-	OpLogin  *auth.ClusterTokenHandler
 	ZkConfig *config.ZkOperatorConfig
 }
 
@@ -28,7 +26,8 @@ type ClusterContextResponse struct {
 func (h *ClusterContextHandler) Handler(ctx iris.Context) {
 
 	response := ClusterContextResponse{}
-	response.ClusterId = h.OpLogin.GetClusterId()
+	//TODO: Think of a way to get cluster id here.
+	response.ClusterId = ""
 	logger.Debug(scenarioLogTag, h.ZkConfig.ZkCloud)
 	addr := fmt.Sprintf("%v:%v", h.ZkConfig.ClusterContext.CloudAddr, h.ZkConfig.ClusterContext.Port)
 	response.CloudAddr = addr

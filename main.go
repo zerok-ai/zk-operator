@@ -24,7 +24,6 @@ import (
 	"flag"
 	"fmt"
 	"github.com/zerok-ai/zk-operator/internal"
-	"github.com/zerok-ai/zk-operator/internal/auth"
 	"time"
 
 	handler "github.com/zerok-ai/zk-operator/internal/handler"
@@ -155,16 +154,11 @@ func initOperator() ([]internal.ZkOperatorModule, error) {
 		LogLevel:              zkConfig.LogsConfig.Level,
 	})
 
-	zklogger.Debug(LOG_TAG, "Creating operation login handler.")
-
-	//Creating operator login module
-	opLogin := auth.CreateClusterTokenHandler(zkConfig)
-
 	zklogger.Debug(LOG_TAG, "Creating scenario handler.")
 
 	//Module for syncing scenarios
 	scenarioHandler := handler.ScenarioHandler{}
-	err := scenarioHandler.Init(opLogin, zkConfig)
+	err := scenarioHandler.Init(zkConfig)
 	if err != nil {
 		zklogger.Error(LOG_TAG, "Error while creating scenarioHandler ", err)
 		return nil, err
@@ -175,7 +169,7 @@ func initOperator() ([]internal.ZkOperatorModule, error) {
 
 	// Module for managing obfuscation rules
 	obfuscationHandler := handler.ObfuscationHandler{}
-	err = obfuscationHandler.Init(opLogin, zkConfig)
+	err = obfuscationHandler.Init(zkConfig)
 	if err != nil {
 		zklogger.Error(LOG_TAG, "Error while creating obfuscationHandler ", err)
 		return nil, err
@@ -187,7 +181,7 @@ func initOperator() ([]internal.ZkOperatorModule, error) {
 
 	//Module for syncing integrations
 	integrationHandler := handler.IntegrationsHandler{}
-	err = integrationHandler.Init(opLogin, zkConfig)
+	err = integrationHandler.Init(zkConfig)
 	if err != nil {
 		zklogger.Error(LOG_TAG, "Error while creating integrationHandler ", err)
 		return nil, err
@@ -198,27 +192,22 @@ func initOperator() ([]internal.ZkOperatorModule, error) {
 
 	//Module for syncing integrations
 	serviceConfigHandler := handler.ServiceConfigHandler{}
-	err = serviceConfigHandler.Init(opLogin, zkConfig)
+	err = serviceConfigHandler.Init(zkConfig)
 	if err != nil {
 		zklogger.Error(LOG_TAG, "Error while creating serviceConfigHandler ", err)
 		return nil, err
 	}
 	zkModules = append(zkModules, &serviceConfigHandler)
 
-	clusterContextHandler := handler.ClusterContextHandler{OpLogin: opLogin, ZkConfig: &zkConfig}
+	clusterContextHandler := handler.ClusterContextHandler{ZkConfig: &zkConfig}
 	zkModules = append(zkModules, &clusterContextHandler)
 
 	// Module for syncing Executor Attributes Map into Redis.
 	executorAttributesHandler := handler.ExecutorAttributesHandler{}
 	executorAttributesStore := storage.GetExecutorAttributesRedisStore(zkConfig)
 
-	executorAttributesHandler.Init(executorAttributesStore, opLogin, zkConfig)
+	executorAttributesHandler.Init(executorAttributesStore, zkConfig)
 	zkModules = append(zkModules, &executorAttributesHandler)
-
-	clusterStatusHandler := handler.NewClusterStatusHandler(zkConfig)
-	zkModules = append(zkModules, clusterStatusHandler)
-
-	go opLogin.RegisterZkModules(zkModules)
 
 	//Staring syncing scenarios from zk cloud.
 	go scenarioHandler.StartPeriodicSync()
@@ -234,9 +223,6 @@ func initOperator() ([]internal.ZkOperatorModule, error) {
 
 	//Staring syncing Executor Attributes from zk cloud.
 	go executorAttributesHandler.StartPeriodicSync()
-
-	//Staring syncing cluster status to zk cloud.
-	go clusterStatusHandler.StartPeriodicSync()
 
 	zklogger.Debug(LOG_TAG, "Starting webhook server.")
 

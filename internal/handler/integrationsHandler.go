@@ -3,7 +3,6 @@ package handler
 import (
 	"errors"
 	"fmt"
-	"github.com/zerok-ai/zk-operator/internal/auth"
 	"github.com/zerok-ai/zk-operator/internal/common"
 	"github.com/zerok-ai/zk-operator/internal/config"
 	zkhttp "github.com/zerok-ai/zk-utils-go/http"
@@ -34,10 +33,9 @@ type IntegrationsHandler struct {
 	config             config.ZkOperatorConfig
 	latestUpdateTime   string
 	zkCloudSyncHandler *ZkCloudSyncHandler[IntegrationApiResponse]
-	OpLogin            *auth.ClusterTokenHandler
 }
 
-func (h *IntegrationsHandler) Init(OpLogin *auth.ClusterTokenHandler, cfg config.ZkOperatorConfig) error {
+func (h *IntegrationsHandler) Init(cfg config.ZkOperatorConfig) error {
 	store, err := zkredis.GetVersionedStore[model.IntegrationResponseObj](&cfg.Redis, dbNames.IntegrationDetailsDBName, common.RedisSyncInterval)
 	if err != nil {
 		return err
@@ -47,30 +45,27 @@ func (h *IntegrationsHandler) Init(OpLogin *auth.ClusterTokenHandler, cfg config
 	h.latestUpdateTime = ""
 
 	syncHandler := ZkCloudSyncHandler[IntegrationApiResponse]{}
-	syncHandler.Init(OpLogin, cfg, cfg.IntegrationSync.PollingInterval, "integration_sync", h.periodicSync)
+	syncHandler.Init(cfg, cfg.IntegrationSync.PollingInterval, "integration_sync", h.periodicSync)
 	h.zkCloudSyncHandler = &syncHandler
-	h.OpLogin = OpLogin
 	return nil
 }
 
 func (h *IntegrationsHandler) StartPeriodicSync() {
-	h.updateIntegrations(h.config, true)
+	h.updateIntegrations(h.config)
 	h.zkCloudSyncHandler.StartSync()
 }
 
 func (h *IntegrationsHandler) periodicSync() {
 	logger.Debug(integrationLogTag, "Sync integrations triggered.")
-	h.updateIntegrations(h.config, true)
+	h.updateIntegrations(h.config)
 }
 
-func (h *IntegrationsHandler) updateIntegrations(cfg config.ZkOperatorConfig, refreshAuthToken bool) {
-	logger.Debug(integrationLogTag, "Update integrations method called.", refreshAuthToken)
-	callback := func() {
-		h.updateIntegrations(cfg, false)
-	}
+func (h *IntegrationsHandler) updateIntegrations(cfg config.ZkOperatorConfig) {
+	logger.Debug(integrationLogTag, "Update integrations method called.")
 	path := h.config.IntegrationSync.Path
-	path = strings.ReplaceAll(path, "<clusterid>", h.OpLogin.GetClusterId())
-	integrationResponse, err := h.zkCloudSyncHandler.GetDataFromZkCloud(path, callback, h.latestUpdateTime, refreshAuthToken)
+	//TODO: Think of a way to get cluster id here.
+	path = strings.ReplaceAll(path, "<clusterid>", "")
+	integrationResponse, err := h.zkCloudSyncHandler.GetDataFromZkCloud(path, h.latestUpdateTime)
 	if err != nil {
 		if errors.Is(err, RefreshAuthTokenError) {
 			logger.Debug(integrationLogTag, "Ignore this, since we are making another call after refreshing auth token.")

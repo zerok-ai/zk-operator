@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/kataras/iris/v12"
-	"github.com/zerok-ai/zk-operator/internal/auth"
 	"github.com/zerok-ai/zk-operator/internal/config"
 	zkhttp "github.com/zerok-ai/zk-utils-go/http"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
@@ -18,7 +17,6 @@ type ServiceConfigHandler struct {
 	ConfigData         map[string]json.RawMessage
 	config             config.ZkOperatorConfig
 	zkCloudSyncHandler *ZkCloudSyncHandler[ConfigApiResponse]
-	OpLogin            *auth.ClusterTokenHandler
 }
 
 type ConfigApiResponse struct {
@@ -30,12 +28,11 @@ func (c ConfigApiResponse) GetError() *zkhttp.ZkHttpError {
 	return c.Error
 }
 
-func (h *ServiceConfigHandler) Init(OpLogin *auth.ClusterTokenHandler, cfg config.ZkOperatorConfig) error {
+func (h *ServiceConfigHandler) Init(cfg config.ZkOperatorConfig) error {
 	h.config = cfg
 	syncHandler := ZkCloudSyncHandler[ConfigApiResponse]{}
-	syncHandler.Init(OpLogin, cfg, cfg.ConfigurationSync.PollingInterval, "configuration_sync", h.periodicSync)
+	syncHandler.Init(cfg, cfg.ConfigurationSync.PollingInterval, "configuration_sync", h.periodicSync)
 	h.zkCloudSyncHandler = &syncHandler
-	h.OpLogin = OpLogin
 	return nil
 }
 
@@ -51,12 +48,10 @@ func (h *ServiceConfigHandler) periodicSync() {
 
 func (h *ServiceConfigHandler) updateServiceConfig(refreshAuthToken bool) {
 	logger.Debug(serviceConfigTag, "Update configurations method called.", refreshAuthToken)
-	callback := func() {
-		h.updateServiceConfig(false)
-	}
 	path := h.config.ConfigurationSync.CloudPath
-	path = strings.ReplaceAll(path, "<clusterid>", h.OpLogin.GetClusterId())
-	serviceConfigResponse, err := h.zkCloudSyncHandler.GetDataFromZkCloud(path, callback, "", refreshAuthToken)
+	//TODO: Think of a way to get cluster id here.
+	path = strings.ReplaceAll(path, "<clusterid>", "")
+	serviceConfigResponse, err := h.zkCloudSyncHandler.GetDataFromZkCloud(path, "")
 	if err != nil {
 		if errors.Is(err, RefreshAuthTokenError) {
 			logger.Debug(serviceConfigTag, "Ignore this, since we are making another call after refreshing auth token.")
