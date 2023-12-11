@@ -33,9 +33,10 @@ type IntegrationsHandler struct {
 	config             config.ZkOperatorConfig
 	latestUpdateTime   string
 	zkCloudSyncHandler *ZkCloudSyncHandler[IntegrationApiResponse]
+	clusterId          string
 }
 
-func (h *IntegrationsHandler) Init(cfg config.ZkOperatorConfig) error {
+func (h *IntegrationsHandler) Init(cfg config.ZkOperatorConfig, clusterId string) error {
 	store, err := zkredis.GetVersionedStore[model.IntegrationResponseObj](&cfg.Redis, dbNames.IntegrationDetailsDBName, common.RedisSyncInterval)
 	if err != nil {
 		return err
@@ -43,6 +44,7 @@ func (h *IntegrationsHandler) Init(cfg config.ZkOperatorConfig) error {
 	h.VersionedStore = store
 	h.config = cfg
 	h.latestUpdateTime = ""
+	h.clusterId = clusterId
 
 	syncHandler := ZkCloudSyncHandler[IntegrationApiResponse]{}
 	syncHandler.Init(cfg, cfg.IntegrationSync.PollingInterval, "integration_sync", h.periodicSync)
@@ -63,8 +65,7 @@ func (h *IntegrationsHandler) periodicSync() {
 func (h *IntegrationsHandler) updateIntegrations(cfg config.ZkOperatorConfig) {
 	logger.Debug(integrationLogTag, "Update integrations method called.")
 	path := h.config.IntegrationSync.Path
-	//TODO: Think of a way to get cluster id here.
-	path = strings.ReplaceAll(path, "<clusterid>", "")
+	path = strings.ReplaceAll(path, "<clusterid>", h.clusterId)
 	integrationResponse, err := h.zkCloudSyncHandler.GetDataFromZkCloud(path, h.latestUpdateTime)
 	if err != nil {
 		if errors.Is(err, RefreshAuthTokenError) {

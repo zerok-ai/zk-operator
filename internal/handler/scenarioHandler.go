@@ -27,6 +27,7 @@ type ScenarioHandler struct {
 	config             config.ZkOperatorConfig
 	latestUpdateTime   string
 	zkCloudSyncHandler *ZkCloudSyncHandler[ScenariosApiResponse]
+	clusterId          string
 }
 
 type ScenariosApiResponse struct {
@@ -51,7 +52,7 @@ type ScenarioModelResponse struct {
 	UpdatedAt  int64          `json:"updated_at"`
 }
 
-func (h *ScenarioHandler) Init(cfg config.ZkOperatorConfig) error {
+func (h *ScenarioHandler) Init(cfg config.ZkOperatorConfig, clusterId string) error {
 	store, err := zkredis.GetVersionedStore[model.Scenario](&cfg.Redis, dbNames.ScenariosDBName, common.RedisSyncInterval)
 	if err != nil {
 		return err
@@ -63,6 +64,7 @@ func (h *ScenarioHandler) Init(cfg config.ZkOperatorConfig) error {
 	syncHandler := ZkCloudSyncHandler[ScenariosApiResponse]{}
 	syncHandler.Init(cfg, cfg.ScenarioSync.PollingInterval, "scenario_sync", h.periodicSync)
 	h.zkCloudSyncHandler = &syncHandler
+	h.clusterId = clusterId
 
 	return nil
 }
@@ -80,8 +82,7 @@ func (h *ScenarioHandler) periodicSync() {
 func (h *ScenarioHandler) updateScenarios(cfg config.ZkOperatorConfig) {
 	logger.Debug(scenarioLogTag, "Update scenarios method called.")
 	path := h.config.ScenarioSync.Path
-	//TODO: Think of a way to get cluster id here.
-	path = strings.ReplaceAll(path, "<clusterid>", "")
+	path = strings.ReplaceAll(path, "<clusterid>", h.clusterId)
 	scenarioResponse, err := h.zkCloudSyncHandler.GetDataFromZkCloud(path, h.latestUpdateTime)
 	if err != nil {
 		if errors.Is(err, RefreshAuthTokenError) {

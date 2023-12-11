@@ -6,7 +6,6 @@ import logsConfig "github.com/zerok-ai/zk-utils-go/logs/config"
 type ClusterKeyConfig struct {
 	ClusterSecretName   string `yaml:"clusterSecretName"`
 	ClusterKeyData      string `yaml:"clusterKeyData"`
-	KilledKey           string `yaml:"killedKey"`
 	ClusterIdKey        string `yaml:"clusterIdKey"`
 	ClusterKeyNamespace string `yaml:"clusterKeyNamespace"`
 }
@@ -77,7 +76,7 @@ type ZkOperatorConfig struct {
 	ConfigurationSync      ConfigSyncConfig             `yaml:"configurationSync"`
 	ObfuscationSync        ObfuscationSyncConfig        `yaml:"obfuscationRulesSync"`
 	ExecutorAttributesSync ExecutorAttributesSyncConfig `yaml:"executorAttributesSync"`
-	OperatorLogin          ClusterKeyConfig             `yaml:"operatorLogin"`
+	ClusterKey             ClusterKeyConfig             `yaml:"operatorLogin"`
 	LogsConfig             logsConfig.LogsConfig        `yaml:"logs"`
 	ClusterContext         ClusterContextConfig         `yaml:"clusterContext"`
 	WspClient              WspClientConfig              `yaml:"wspClient"`

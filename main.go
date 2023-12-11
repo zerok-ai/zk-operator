@@ -24,6 +24,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/zerok-ai/zk-operator/internal"
+	"github.com/zerok-ai/zk-operator/internal/utils"
 	"time"
 
 	handler "github.com/zerok-ai/zk-operator/internal/handler"
@@ -154,11 +155,17 @@ func initOperator() ([]internal.ZkOperatorModule, error) {
 		LogLevel:              zkConfig.LogsConfig.Level,
 	})
 
+	clusterId, err := GetClusterId(zkConfig)
+	if err != nil {
+		zklogger.Error(LOG_TAG, "Error while getting cluster id from secrets :", err)
+		return nil, err
+	}
+
 	zklogger.Debug(LOG_TAG, "Creating scenario handler.")
 
 	//Module for syncing scenarios
 	scenarioHandler := handler.ScenarioHandler{}
-	err := scenarioHandler.Init(zkConfig)
+	err = scenarioHandler.Init(zkConfig, clusterId)
 	if err != nil {
 		zklogger.Error(LOG_TAG, "Error while creating scenarioHandler ", err)
 		return nil, err
@@ -181,7 +188,7 @@ func initOperator() ([]internal.ZkOperatorModule, error) {
 
 	//Module for syncing integrations
 	integrationHandler := handler.IntegrationsHandler{}
-	err = integrationHandler.Init(zkConfig)
+	err = integrationHandler.Init(zkConfig, clusterId)
 	if err != nil {
 		zklogger.Error(LOG_TAG, "Error while creating integrationHandler ", err)
 		return nil, err
@@ -192,14 +199,14 @@ func initOperator() ([]internal.ZkOperatorModule, error) {
 
 	//Module for syncing integrations
 	serviceConfigHandler := handler.ServiceConfigHandler{}
-	err = serviceConfigHandler.Init(zkConfig)
+	err = serviceConfigHandler.Init(zkConfig, clusterId)
 	if err != nil {
 		zklogger.Error(LOG_TAG, "Error while creating serviceConfigHandler ", err)
 		return nil, err
 	}
 	zkModules = append(zkModules, &serviceConfigHandler)
 
-	clusterContextHandler := handler.ClusterContextHandler{ZkConfig: &zkConfig}
+	clusterContextHandler := handler.ClusterContextHandler{ZkConfig: &zkConfig, ClusterId: clusterId}
 	zkModules = append(zkModules, &clusterContextHandler)
 
 	// Module for syncing Executor Attributes Map into Redis.
@@ -232,6 +239,19 @@ func initOperator() ([]internal.ZkOperatorModule, error) {
 	go server.StartHttpServer(app, irisConfig, zkConfig, &clusterContextHandler, &serviceConfigHandler, zkModules)
 
 	return zkModules, nil
+}
+
+func GetClusterId(zkConfig config.ZkOperatorConfig) (string, error) {
+	var err error
+	namespace := zkConfig.ClusterKey.ClusterKeyNamespace
+	secretName := zkConfig.ClusterKey.ClusterSecretName
+	clusterIdKey := zkConfig.ClusterKey.ClusterIdKey
+	clusterId, err := utils.GetSecretValue(namespace, secretName, clusterIdKey)
+	if err != nil {
+		zklogger.Error(LOG_TAG, "Error while getting cluster id from secrets :", err)
+		return "", err
+	}
+	return clusterId, err
 }
 
 func newApp() *iris.Application {

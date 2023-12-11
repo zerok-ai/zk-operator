@@ -17,6 +17,7 @@ type ServiceConfigHandler struct {
 	ConfigData         map[string]json.RawMessage
 	config             config.ZkOperatorConfig
 	zkCloudSyncHandler *ZkCloudSyncHandler[ConfigApiResponse]
+	clusterId          string
 }
 
 type ConfigApiResponse struct {
@@ -28,11 +29,12 @@ func (c ConfigApiResponse) GetError() *zkhttp.ZkHttpError {
 	return c.Error
 }
 
-func (h *ServiceConfigHandler) Init(cfg config.ZkOperatorConfig) error {
+func (h *ServiceConfigHandler) Init(cfg config.ZkOperatorConfig, clusterId string) error {
 	h.config = cfg
 	syncHandler := ZkCloudSyncHandler[ConfigApiResponse]{}
 	syncHandler.Init(cfg, cfg.ConfigurationSync.PollingInterval, "configuration_sync", h.periodicSync)
 	h.zkCloudSyncHandler = &syncHandler
+	h.clusterId = clusterId
 	return nil
 }
 
@@ -49,8 +51,7 @@ func (h *ServiceConfigHandler) periodicSync() {
 func (h *ServiceConfigHandler) updateServiceConfig(refreshAuthToken bool) {
 	logger.Debug(serviceConfigTag, "Update configurations method called.", refreshAuthToken)
 	path := h.config.ConfigurationSync.CloudPath
-	//TODO: Think of a way to get cluster id here.
-	path = strings.ReplaceAll(path, "<clusterid>", "")
+	path = strings.ReplaceAll(path, "<clusterid>", h.clusterId)
 	serviceConfigResponse, err := h.zkCloudSyncHandler.GetDataFromZkCloud(path, "")
 	if err != nil {
 		if errors.Is(err, RefreshAuthTokenError) {

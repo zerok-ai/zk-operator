@@ -11,7 +11,8 @@ import (
 var LOG_TAG2 = "ClusterContextHandler"
 
 type ClusterContextHandler struct {
-	ZkConfig *config.ZkOperatorConfig
+	ZkConfig  *config.ZkOperatorConfig
+	ClusterId string
 }
 
 func (h *ClusterContextHandler) IsHealthy() bool {
@@ -26,8 +27,7 @@ type ClusterContextResponse struct {
 func (h *ClusterContextHandler) Handler(ctx iris.Context) {
 
 	response := ClusterContextResponse{}
-	//TODO: Think of a way to get cluster id here.
-	response.ClusterId = ""
+	response.ClusterId = h.ClusterId
 	logger.Debug(scenarioLogTag, h.ZkConfig.ZkCloud)
 	addr := fmt.Sprintf("%v:%v", h.ZkConfig.ClusterContext.CloudAddr, h.ZkConfig.ClusterContext.Port)
 	response.CloudAddr = addr
