@@ -1,8 +1,7 @@
 package v1alpha1
 
 import (
-	"github.com/zerok-ai/zk-utils-go/scenario/model"
-
+	"github.com/zerok-ai/zk-operator/api/model"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

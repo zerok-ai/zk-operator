@@ -35,7 +35,6 @@ spec:
           metadata:
             type: object
           spec:
-            description: ZKWorkloadFilterSpec defines the desired state of ZKWorkloadFilter
             properties:
               enabled:
                 type: boolean
@@ -130,7 +129,6 @@ spec:
                   required:
                   - executor
                   type: object
-                description: Workloads represents the workloads section of ZKWorkloadFilterSpec
                 type: object
             required:
             - enabled
@@ -140,9 +138,6 @@ spec:
           status:
             properties:
               is_created:
-                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
-                  of cluster Important: Run "make" to regenerate code after modifying
-                  this file'
                 type: boolean
             type: object
         type: object
