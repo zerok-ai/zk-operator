@@ -35,7 +35,6 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/utils/env"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	handler "github.com/zerok-ai/zk-operator/internal/handler"
@@ -84,12 +83,12 @@ func main() {
 
 	var d time.Duration = 15 * time.Minute
 	setupLog.Info("Starting Operator.")
-	_, err := initOperator()
-	if err != nil {
-		message := "Failed to initialize operator with error " + err.Error()
-		setupLog.Info(message)
-		return
-	}
+	//_, err := initOperator()
+	//if err != nil {
+	//	message := "Failed to initialize operator with error " + err.Error()
+	//	setupLog.Info(message)
+	//	return
+	//}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
@@ -106,13 +105,13 @@ func main() {
 		panic("unable to start manager")
 	}
 
-	if err = (&controllers.ZerokopReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Zerokop")
-		panic("unable to create controller")
-	}
+	//if err = (&controllers.ZerokopReconciler{
+	//	Client: mgr.GetClient(),
+	//	Scheme: mgr.GetScheme(),
+	//}).SetupWithManager(mgr); err != nil {
+	//	setupLog.Error(err, "unable to create controller", "controller", "Zerokop")
+	//	panic("unable to create controller")
+	//}
 
 	//initializing zkCRDProbeHandler
 	zkCRDProbeHandler, err := getCRDProbeHandler()
@@ -126,20 +125,20 @@ func main() {
 	}
 	//+kubebuilder:scaffold:builder
 
-	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up health check")
-		panic("unable to set up health check")
-	}
-	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up ready check")
-		panic("unable to set up ready check")
-	}
-
-	setupLog.Info("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		setupLog.Error(err, "problem running manager")
-		panic("problem running manager")
-	}
+	//if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
+	//	setupLog.Error(err, "unable to set up health check")
+	//	panic("unable to set up health check")
+	//}
+	//if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
+	//	setupLog.Error(err, "unable to set up ready check")
+	//	panic("unable to set up ready check")
+	//}
+	//
+	//setupLog.Info("starting manager")
+	//if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+	//	setupLog.Error(err, "problem running manager")
+	//	panic("problem running manager")
+	//}
 }
 
 // TODO: Unit testing.
