@@ -23,7 +23,7 @@ import (
 
 	"flag"
 	"fmt"
-	"os"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"time"
 
 	"github.com/zerok-ai/zk-operator/internal"
@@ -121,24 +121,24 @@ func main() {
 		ZkCRDProbeHandler: zkCRDProbeHandler,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ZerokProbe")
-		os.Exit(1)
+		panic("unable to create controller")
 	}
 	//+kubebuilder:scaffold:builder
 
-	//if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
-	//	setupLog.Error(err, "unable to set up health check")
-	//	panic("unable to set up health check")
-	//}
-	//if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
-	//	setupLog.Error(err, "unable to set up ready check")
-	//	panic("unable to set up ready check")
-	//}
-	//
-	//setupLog.Info("starting manager")
-	//if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-	//	setupLog.Error(err, "problem running manager")
-	//	panic("problem running manager")
-	//}
+	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
+		setupLog.Error(err, "unable to set up health check")
+		panic("unable to set up health check")
+	}
+	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
+		setupLog.Error(err, "unable to set up ready check")
+		panic("unable to set up ready check")
+	}
+
+	setupLog.Info("starting manager")
+	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+		setupLog.Error(err, "problem running manager")
+		panic("problem running manager")
+	}
 }
 
 // TODO: Unit testing.
