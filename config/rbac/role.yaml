@@ -1,26 +1,33 @@
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: zk-operator-role
+  creationTimestamp: null
+  name: manager-role
 rules:
-- apiGroups: ["operator.zerok.ai"]
-  resources: ["zerokinstrumentations"]
-  verbs: ["create", "get", "delete", "list", "patch", "update", "watch"]
-- apiGroups: ["operator.zerok.ai"]
-  resources: ["zerokops/finalizers"]
-  verbs: ["update"]
-- apiGroups: ["operator.zerok.ai"]
-  resources: ["zerokops/status"]
-  verbs: ["get", "patch", "update"]
-- apiGroups: ["v1",""]
-  resources: ["namespaces"]
-  verbs: ["list","delete", "watch","get"]
-- apiGroups: ["apps"]
-  resources: ["deployments"]
-  verbs: ["patch", "list", "watch", "get"]
-- apiGroups: ["v1",""]
-  resources: ["secrets"]
-  verbs: ["get"]
-- apiGroups: ["v1",""]
-  resources: ["pods"]
-  verbs: ["list"]
+- apiGroups:
+  - operator.zerok.ai.zerok.ai
+  resources:
+  - zerokprobes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.zerok.ai.zerok.ai
+  resources:
+  - zerokprobes/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - operator.zerok.ai.zerok.ai
+  resources:
+  - zerokprobes/status
+  verbs:
+  - get
+  - patch
+  - update

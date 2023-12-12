@@ -23,13 +23,12 @@ import (
 
 	"flag"
 	"fmt"
-	"github.com/zerok-ai/zk-operator/internal"
-	"github.com/zerok-ai/zk-operator/internal/auth"
+	"os"
 	"time"
 
-	handler "github.com/zerok-ai/zk-operator/internal/handler"
-	server "github.com/zerok-ai/zk-operator/internal/server"
-	"github.com/zerok-ai/zk-operator/internal/storage"
+	"github.com/zerok-ai/zk-operator/internal"
+	"github.com/zerok-ai/zk-operator/internal/auth"
+
 	zklogger "github.com/zerok-ai/zk-utils-go/logs"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -39,12 +38,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	handler "github.com/zerok-ai/zk-operator/internal/handler"
+	server "github.com/zerok-ai/zk-operator/internal/server"
+	"github.com/zerok-ai/zk-operator/internal/storage"
+
 	operatorv1alpha1 "github.com/zerok-ai/zk-operator/api/v1alpha1"
 	"github.com/zerok-ai/zk-operator/controllers"
 
 	"github.com/ilyakaznacheev/cleanenv"
 
 	"github.com/kataras/iris/v12"
+
 	"github.com/zerok-ai/zk-operator/internal/config"
 )
 
@@ -108,6 +112,17 @@ func main() {
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Zerokop")
 		panic("unable to create controller")
+	}
+
+	//initializing zkCRDProbeHandler
+	zkCRDProbeHandler, err := getCRDProbeHandler()
+	if err = (&controllers.ZerokProbeReconciler{
+		Client:            mgr.GetClient(),
+		Scheme:            mgr.GetScheme(),
+		ZkCRDProbeHandler: zkCRDProbeHandler,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ZerokProbe")
+		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
 
@@ -267,4 +282,27 @@ func newApp() *iris.Application {
 	app.AllowMethods(iris.MethodOptions)
 
 	return app
+}
+
+func getCRDProbeHandler() (*handler.ZkCRDProbeHandler, error) {
+	configPath := env.GetString("CONFIG_FILE", "")
+	if configPath == "" {
+		zklogger.Error(LOG_TAG, "Config yaml path not found.")
+		return nil, fmt.Errorf("config yaml path not found")
+	}
+
+	var zkConfig config.ZkOperatorConfig
+
+	if err := cleanenv.ReadConfig(configPath, &zkConfig); err != nil {
+		zklogger.Error(LOG_TAG, "Error while reading config ", err)
+		return nil, err
+	}
+
+	crdProbeHandler := handler.ZkCRDProbeHandler{}
+	err := crdProbeHandler.Init(zkConfig)
+	if err != nil {
+		zklogger.Error(LOG_TAG, "Error while creating scenarioHandler ", err)
+		return nil, err
+	}
+	return &crdProbeHandler, nil
 }

@@ -1,6 +1,8 @@
 module github.com/zerok-ai/zk-operator
 
-go 1.19
+go 1.21
+
+toolchain go1.21.1
 
 require (
 	github.com/ilyakaznacheev/cleanenv v1.4.2
