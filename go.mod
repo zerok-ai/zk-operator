@@ -2,8 +2,6 @@ module github.com/zerok-ai/zk-operator
 
 go 1.21
 
-toolchain go1.21.1
-
 require (
 	github.com/ilyakaznacheev/cleanenv v1.4.2
 	github.com/kataras/iris/v12 v12.2.0
