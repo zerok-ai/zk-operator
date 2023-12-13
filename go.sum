@@ -418,6 +418,10 @@ github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9dec
 github.com/yuin/goldmark v1.4.1/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 github.com/zerok-ai/zk-utils-go v0.5.18 h1:kuRYXRYlHfalCA56NUKEdtPHjDXCiSB6CMV8MEU3jIU=
 github.com/zerok-ai/zk-utils-go v0.5.18/go.mod h1:rvHpUbscGLcD5VcY+31a0wNXuT7Ucj+7lxXT8sqvkDA=
+github.com/zerok-ai/zk-utils-go v0.5.20-crd h1:KvqvjAf8/uZVjX9pq7zvevh+iZ06I+c2diWG04thFxg=
+github.com/zerok-ai/zk-utils-go v0.5.20-crd/go.mod h1:rvHpUbscGLcD5VcY+31a0wNXuT7Ucj+7lxXT8sqvkDA=
+github.com/zerok-ai/zk-utils-go v0.5.20-crd1 h1:hclR05GpOSercc+oGlmUzk6VIGnDec9Qa+RZqbYJqj0=
+github.com/zerok-ai/zk-utils-go v0.5.20-crd1/go.mod h1:xScrYaVTJ66ww68lMM54ykX4j1fAhj/A/aTpiTzwQ7Y=
 go.opencensus.io v0.21.0/go.mod h1:mSImk1erAIZhrmZN+AvHh14ztQfjbGwt4TtuofqLduU=
 go.opencensus.io v0.22.0/go.mod h1:+kGneAE2xo2IficOXnaByMWTGM9T73dGwxeWcUqIpI8=
 go.opencensus.io v0.22.2/go.mod h1:yxeiOL68Rb0Xd1ddK5vPZ/oVn4vY4Ynel7k9FzqtOIw=
