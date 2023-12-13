@@ -81,7 +81,7 @@ func (h *ZkCRDProbeHandler) IsHealthy() bool {
 
 func constructRedisProbeStructureFromCRD(zerokProbe *operatorv1alpha1.ZerokProbe) model.Scenario {
 	var zerokProbeWorkloadsMap map[string]model.Workload
-	var zerokServiceWorkloadMap map[string]string
+	//var zerokServiceWorkloadMap map[string]string
 
 	zkProbeScenario := model.Scenario{}
 
@@ -90,10 +90,10 @@ func constructRedisProbeStructureFromCRD(zerokProbe *operatorv1alpha1.ZerokProbe
 	zkProbeScenario.Id = string(zerokProbe.GetUID())
 	zkProbeScenario.Title = zerokProbe.Spec.Title
 	zkProbeScenario.Type = "SYSTEM"
-	zerokProbeWorkloadsMap, zerokServiceWorkloadMap = getZerokProbeWorkloadsFromCrd(zerokProbe.Spec.Workloads)
+	//zerokProbeWorkloadsMap, zerokServiceWorkloadMap = getZerokProbeWorkloadsFromCrd(zerokProbe.Spec.Workloads)
 	zkProbeScenario.Workloads = &zerokProbeWorkloadsMap
-	zkProbeScenario.RateLimit = getZerokProbeRateLimitFromCrd(zerokProbe.Spec.RateLimit)
-	zkProbeScenario.Filter = getZerokProbeFiltersFromCrdFilters(zerokProbe.Spec.Filter, zerokServiceWorkloadMap)
+	//zkProbeScenario.RateLimit = getZerokProbeRateLimitFromCrd(zerokProbe.Spec.RateLimit)
+	//zkProbeScenario.Filter = getZerokProbeFiltersFromCrdFilters(zerokProbe.Spec.Filter, zerokServiceWorkloadMap)
 	return zkProbeScenario
 }
 
