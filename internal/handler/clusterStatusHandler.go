@@ -148,7 +148,6 @@ func (ch *ClusterStatusHandler) PeriodicSync() {
 		return
 	}
 
-	client := &http.Client{}
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		zklogger.Error(ClusterStatusHandlerTag, "Error getting marshalling payload:", err)
@@ -163,7 +162,7 @@ func (ch *ClusterStatusHandler) PeriodicSync() {
 
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := client.Do(req)
+	resp, err := utils.RouteRequestFromWspClient(req, ch.config)
 	if err != nil {
 		zklogger.Error(ClusterStatusHandlerTag, "Error sending request:", err)
 		return
@@ -171,7 +170,7 @@ func (ch *ClusterStatusHandler) PeriodicSync() {
 	defer resp.Body.Close()
 
 	// Log the response status code
-	zklogger.Debug(ClusterStatusHandlerTag, "Response Status Code: %d\n", resp.StatusCode)
+	zklogger.Debug(ClusterStatusHandlerTag, "Response Status Code: ", resp.StatusCode)
 }
 
 func GetServiceHealthStatus(serviceName, namespace string) (bool, error) {
