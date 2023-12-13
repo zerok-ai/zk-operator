@@ -216,6 +216,12 @@ func initOperator() ([]internal.ZkOperatorModule, error) {
 	executorAttributesHandler.Init(executorAttributesStore, zkConfig)
 	zkModules = append(zkModules, &executorAttributesHandler)
 
+	clusterStatusHandler := handler.NewClusterStatusHandler(zkConfig)
+	zkModules = append(zkModules, clusterStatusHandler)
+
+	//Staring syncing cluster status from zk cloud.
+	go clusterStatusHandler.StartPeriodicSync()
+
 	//Staring syncing scenarios from zk cloud.
 	go scenarioHandler.StartPeriodicSync()
 
