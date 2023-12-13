@@ -1,22 +1,27 @@
 package v1alpha1
 
 import (
-	"github.com/zerok-ai/zk-operator/api/model"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // +k8s:deepcopy-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-type Workloads map[string]model.Workload
+type Workloads map[string]Workload
+
+func (in Workloads) GetObjectKind() schema.ObjectKind {
+	//TODO implement me
+	panic("implement me")
+}
 
 type ZerokProbeSpec struct {
-	Title     string            `json:"title"`
-	Enabled   bool              `json:"enabled"`
-	Workloads Workloads         `json:"workloads"`
-	Filter    model.Filter      `json:"filter,omitempty"`
-	GroupBy   []model.GroupBy   `json:"group_by,omitempty"`
-	RateLimit []model.RateLimit `json:"rate_limit,omitempty"`
+	Title     string      `json:"title"`
+	Enabled   bool        `json:"enabled"`
+	Workloads Workloads   `json:"workloads"`
+	Filter    Filter      `json:"filter,omitempty"`
+	GroupBy   []GroupBy   `json:"group_by,omitempty"`
+	RateLimit []RateLimit `json:"rate_limit,omitempty"`
 }
 
 type ZerokProbeStatus struct {
@@ -34,16 +39,4 @@ type ZerokProbe struct {
 
 	Spec   ZerokProbeSpec   `json:"spec,omitempty"`
 	Status ZerokProbeStatus `json:"status,omitempty"`
-}
-
-//+kubebuilder:object:root=true
-
-type ZerokProbeList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []ZerokProbe `json:"items"`
-}
-
-func init() {
-	SchemeBuilder.Register(&ZerokProbe{}, &ZerokProbeList{})
 }

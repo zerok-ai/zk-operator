@@ -8,7 +8,17 @@ metadata:
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
-  customresourcedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: Zerokinstrumentation is the Schema for the Zerokinstrumentations
+        API
+      displayName: Zerokinstrumentation
+      kind: Zerokinstrumentation
+      name: zerokinstrumentations.operator.zerok.ai
+      statusDescriptors:
+      - displayName: Conditions
+        path: conditions
+      version: v1alpha1
   description: zerok operator for auto instrumentation.
   displayName: zk-operator
   icon:
