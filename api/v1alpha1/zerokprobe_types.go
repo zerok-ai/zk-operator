@@ -1,21 +1,20 @@
 package v1alpha1
 
 import (
-	"github.com/zerok-ai/zk-utils-go/scenario/model"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 //+k8s:deepcopy-gen=true
 
-type Workloads map[string]model.Workload
+type Workloads map[string]Workload
 
 type ZerokProbeSpec struct {
-	Title     string            `json:"title"`
-	Enabled   bool              `json:"enabled"`
-	Workloads Workloads         `json:"workloads"`
-	Filter    model.Filter      `json:"filter,omitempty"`
-	GroupBy   []model.GroupBy   `json:"group_by,omitempty"`
-	RateLimit []model.RateLimit `json:"rate_limit,omitempty"`
+	Title     string      `json:"title"`
+	Enabled   bool        `json:"enabled"`
+	Workloads Workloads   `json:"workloads"`
+	Filter    Filter      `json:"filter,omitempty"`
+	GroupBy   []GroupBy   `json:"group_by,omitempty"`
+	RateLimit []RateLimit `json:"rate_limit,omitempty"`
 }
 
 type ZerokProbeStatus struct {
