@@ -89,49 +89,9 @@ spec:
                 title:
                   type: string
                 workloads:
-                  additionalProperties:
-                    properties:
-                      executor:
-                        type: string
-                      protocol:
-                        type: string
-                      rule:
-                        properties:
-                          condition:
-                            type: string
-                          datatype:
-                            type: string
-                          field:
-                            type: string
-                          id:
-                            type: string
-                          input:
-                            type: string
-                          json_path:
-                            items:
-                              type: string
-                            type: array
-                          operator:
-                            type: string
-                          rules:
-                            items:
-                              type: object
-                            type: array
-                          type:
-                            type: string
-                          value:
-                            type: string
-                        required:
-                          - type
-                        type: object
-                      service:
-                        type: string
-                      trace_role:
-                        type: string
-                    required:
-                      - executor
-                    type: object
                   type: object
+                  additionalProperties:
+                    $ref: "#/definitions/Workload"
               required:
                 - enabled
                 - title
@@ -143,6 +103,47 @@ spec:
                   type: boolean
               type: object
           type: object
+          definitions:
+            Workload:
+              type: object
+              properties:
+                executor:
+                  type: string
+                service:
+                  type: string
+                trace_role:
+                  type: string
+                protocol:
+                  type: string
+                rule:
+                  $ref: "#/definitions/Rule"
+            Rule:
+              type: object
+              properties:
+                condition:
+                  type: string
+                datatype:
+                  type: string
+                field:
+                  type: string
+                id:
+                  type: string
+                input:
+                  type: string
+                json_path:
+                  items:
+                    type: string
+                  type: array
+                operator:
+                  type: string
+                rules:
+                  items:
+                    type: object
+                  type: array
+                type:
+                  type: string
+                value:
+                  type: string
       served: true
       storage: true
       subresources:
