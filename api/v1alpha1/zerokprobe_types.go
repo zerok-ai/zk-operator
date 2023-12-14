@@ -35,6 +35,6 @@ type ZerokProbe struct {
 	Status ZerokProbeStatus `json:"status,omitempty"`
 }
 
-//func init() {
-//	SchemeBuilder.Register(&ZerokProbe{})
-//}
+func init() {
+	SchemeBuilder.Register(&ZerokProbe{})
+}

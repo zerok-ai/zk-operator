@@ -35,6 +35,6 @@ type ZerokinstrumentationList struct {
 	Items           []Zerokinstrumentation `json:"items"`
 }
 
-//func init() {
-//	SchemeBuilder.Register(&Zerokinstrumentation{}, &ZerokinstrumentationList{})
-//}
+func init() {
+	SchemeBuilder.Register(&Zerokinstrumentation{}, &ZerokinstrumentationList{})
+}
