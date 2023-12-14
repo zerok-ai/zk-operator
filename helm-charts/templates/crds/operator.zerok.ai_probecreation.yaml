@@ -15,7 +15,7 @@ spec:
     singular: zerokprobe
   scope: Namespaced
   versions:
-    - name: v1alpha1
+    - name: v1
       schema:
         openAPIV3Schema:
           description: above line acts a code marker recognized by Kube builder and
