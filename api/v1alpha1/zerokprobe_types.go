@@ -29,6 +29,16 @@ type ZerokProbe struct {
 	Spec              ZerokProbeSpec `json:"spec,omitempty"`
 }
 
+//+kubebuilder:object:root=true
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// ZerokProbeList contains a list of ZerokProbe
+type ZerokProbeList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []ZerokProbe `json:"items"`
+}
+
 func init() {
-	SchemeBuilder.Register(&ZerokProbe{})
+	SchemeBuilder.Register(&ZerokProbe{}, &ZerokProbeList{})
 }
