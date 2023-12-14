@@ -115,29 +115,9 @@ spec:
                             type: string
                           rules:
                             items:
-                              properties:
-                                condition:
-                                  type: string
-                                datatype:
-                                  type: string
-                                field:
-                                  type: string
-                                id:
-                                  type: string
-                                input:
-                                  type: string
-                                json_path:
-                                  items:
-                                    type: string
-                                  type: array
-                                operator:
-                                  type: string
-                                type:
-                                  type: string
-                                value:
-                                  type: string
                               type: object
                             type: array
+                            x-kubernetes-preserve-unknown-fields: true examples for array type
                           type:
                             type: string
                           value:
