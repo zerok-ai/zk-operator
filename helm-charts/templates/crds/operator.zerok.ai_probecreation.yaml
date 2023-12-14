@@ -114,9 +114,6 @@ spec:
                           operator:
                             type: string
                           rules:
-                            items:
-                              type: object
-                            type: array
                             x-kubernetes-preserve-unknown-fields: true examples for array type
                           type:
                             type: string
