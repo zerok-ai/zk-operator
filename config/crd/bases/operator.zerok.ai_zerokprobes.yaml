@@ -89,39 +89,14 @@ spec:
                 type: string
               workloads:
                 additionalProperties:
+                  description: 'ref : https://github.com/kubernetes-sigs/controller-tools/issues/585'
                   properties:
                     executor:
                       type: string
                     protocol:
                       type: string
                     rule:
-                      properties:
-                        condition:
-                          type: string
-                        datatype:
-                          type: string
-                        field:
-                          type: string
-                        id:
-                          type: string
-                        input:
-                          type: string
-                        json_path:
-                          items:
-                            type: string
-                          type: array
-                        operator:
-                          type: string
-                        rules:
-                          items: {}
-                          type: array
-                        type:
-                          type: string
-                        value:
-                          type: string
-                      required:
-                      - type
-                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
                     service:
                       type: string
                     trace_role:

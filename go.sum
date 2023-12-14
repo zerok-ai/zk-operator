@@ -428,6 +428,8 @@ github.com/zerok-ai/zk-utils-go v0.5.20-crd3 h1:h+9V+m+UQTpCExYuUQot9lB/goPchUP+
 github.com/zerok-ai/zk-utils-go v0.5.20-crd3/go.mod h1:xScrYaVTJ66ww68lMM54ykX4j1fAhj/A/aTpiTzwQ7Y=
 github.com/zerok-ai/zk-utils-go v0.5.20-crd4 h1:X/ICd28YuNbuX77zkPixNF/XLELBajj/yeUEW/tINy4=
 github.com/zerok-ai/zk-utils-go v0.5.20-crd4/go.mod h1:xScrYaVTJ66ww68lMM54ykX4j1fAhj/A/aTpiTzwQ7Y=
+github.com/zerok-ai/zk-utils-go v0.5.20-crd5 h1:r4ZJqSKVuiX81R1gIOviHVsrpPYeAMwtNHXwyytTDF8=
+github.com/zerok-ai/zk-utils-go v0.5.20-crd5/go.mod h1:xScrYaVTJ66ww68lMM54ykX4j1fAhj/A/aTpiTzwQ7Y=
 go.opencensus.io v0.21.0/go.mod h1:mSImk1erAIZhrmZN+AvHh14ztQfjbGwt4TtuofqLduU=
 go.opencensus.io v0.22.0/go.mod h1:+kGneAE2xo2IficOXnaByMWTGM9T73dGwxeWcUqIpI8=
 go.opencensus.io v0.22.2/go.mod h1:yxeiOL68Rb0Xd1ddK5vPZ/oVn4vY4Ynel7k9FzqtOIw=
