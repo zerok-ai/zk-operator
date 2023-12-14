@@ -133,15 +133,7 @@ spec:
             required:
             - enabled
             - title
-            - workloads
-            type: object
-          status:
-            properties:
-              is_created:
-                type: boolean
             type: object
         type: object
     served: true
     storage: true
-    subresources:
-      status: {}
