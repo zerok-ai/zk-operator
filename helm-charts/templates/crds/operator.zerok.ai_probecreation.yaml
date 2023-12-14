@@ -43,7 +43,8 @@ spec:
                     condition:
                       type: string
                     filters:
-                      items: {}
+                      items:
+                        type: object
                       type: array
                     type:
                       type: string
@@ -113,7 +114,8 @@ spec:
                           operator:
                             type: string
                           rules:
-                            items: {}
+                            items:
+                              type: object
                             type: array
                           type:
                             type: string
