@@ -80,7 +80,7 @@ rules:
   - operator.zerok.ai
   resources:
   - zerokinstrumentations
-  - zerokprobes
+  - zerokcrds
   verbs:
   - create
   - get

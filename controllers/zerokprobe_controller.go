@@ -12,8 +12,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-// ZerokProbeReconciler reconciles a ZerokProbe object
-type ZerokProbeReconciler struct {
+// ZerokCrdReconciler reconciles a ZerokCrd object
+type ZerokCrdReconciler struct {
 	client.Client
 	Scheme            *runtime.Scheme
 	ZkCRDProbeHandler *handler.ZkCRDProbeHandler
@@ -23,9 +23,9 @@ var (
 	finalizers []string = []string{"finalizers.operator.zerok.ai"}
 )
 
-//+kubebuilder:rbac:groups=operator.zerok.ai.zerok.ai,resources=zerokprobes,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=operator.zerok.ai.zerok.ai,resources=zerokprobes/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=operator.zerok.ai.zerok.ai,resources=zerokprobes/finalizers,verbs=update
+//+kubebuilder:rbac:groups=operator.zerok.ai.zerok.ai,resources=zerokcrds,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=operator.zerok.ai.zerok.ai,resources=zerokcrds/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=operator.zerok.ai.zerok.ai,resources=zerokcrds/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -36,12 +36,12 @@ var (
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
-func (r *ZerokProbeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *ZerokCrdReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 	logger.Info("Reconciling CRD Probe : ")
 
-	zerokProbe := &operatorv1alpha1.ZerokProbe{}
-	err := r.Get(ctx, req.NamespacedName, zerokProbe)
+	zerokCrd := &operatorv1alpha1.ZerokCrd{}
+	err := r.Get(ctx, req.NamespacedName, zerokCrd)
 
 	//TODO :: move below logic to respective handlers for creation, deletion, update bypassing is NOT FOUND error for deletion events
 	if err != nil && !errors.IsNotFound(err) {
@@ -51,7 +51,7 @@ func (r *ZerokProbeReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	// Reconcile logic for each CRD event
-	err = r.reconcileZerokProbeResource(ctx, zerokProbe, req)
+	err = r.reconcileZerokProbeResource(ctx, zerokCrd, req)
 	if err != nil {
 		logger.Error(err, "Failed to reconcile CustomResource")
 		return ctrl.Result{}, err
@@ -61,9 +61,9 @@ func (r *ZerokProbeReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	//	IsCreated: true,
 	//}
 
-	//if !reflect.DeepEqual(zerokProbe.Status, status) {
-	//	zerokProbe.Status = status
-	//	err := r.Client.Status().Update(ctx, zerokProbe)
+	//if !reflect.DeepEqual(zerokCrd.Status, status) {
+	//	zerokCrd.Status = status
+	//	err := r.Client.Status().Update(ctx, zerokCrd)
 	//	if err != nil {
 	//		logger.Error(err, "Error occurred while updating the probe resource")
 	//		return reconcile.Result{}, err
@@ -73,34 +73,34 @@ func (r *ZerokProbeReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *ZerokProbeReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *ZerokCrdReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&operatorv1alpha1.ZerokProbe{}).
+		For(&operatorv1alpha1.ZerokCrd{}).
 		Complete(r)
 }
 
-func (r *ZerokProbeReconciler) reconcileZerokProbeResource(ctx context.Context, zerokProbe *operatorv1alpha1.ZerokProbe, req ctrl.Request) error {
+func (r *ZerokCrdReconciler) reconcileZerokProbeResource(ctx context.Context, zerokCrd *operatorv1alpha1.ZerokCrd, req ctrl.Request) error {
 
 	// check if it is deletion
-	if !zerokProbe.ObjectMeta.GetDeletionTimestamp().IsZero() {
-		err := r.handleProbeDeletion(ctx, zerokProbe)
+	if !zerokCrd.ObjectMeta.GetDeletionTimestamp().IsZero() {
+		err := r.handleProbeDeletion(ctx, zerokCrd)
 		if err != nil {
 			return err
 		}
 	} else {
-		if zerokProbe.ObjectMeta.UID == "" {
+		if zerokCrd.ObjectMeta.UID == "" {
 			// probe is being created
-			return r.handleProbeCreation(ctx, zerokProbe)
+			return r.handleProbeCreation(ctx, zerokCrd)
 		}
 		// probe is being updated
-		return r.handleProbeUpdate(ctx, zerokProbe)
+		return r.handleProbeUpdate(ctx, zerokCrd)
 	}
 
 	return nil
 }
 
 // handleCreation handles the creation of the ZerokProbe
-func (r *ZerokProbeReconciler) handleProbeCreation(ctx context.Context, zerokProbe *operatorv1alpha1.ZerokProbe) error {
+func (r *ZerokCrdReconciler) handleProbeCreation(ctx context.Context, zerokProbe *operatorv1alpha1.ZerokCrd) error {
 
 	_, err := r.ZkCRDProbeHandler.CreateCRDProbe(zerokProbe)
 	if err != nil {
@@ -111,7 +111,7 @@ func (r *ZerokProbeReconciler) handleProbeCreation(ctx context.Context, zerokPro
 }
 
 // handleUpdate handles the update of the ZerokProbe
-func (r *ZerokProbeReconciler) handleProbeUpdate(ctx context.Context, zerokProbe *operatorv1alpha1.ZerokProbe) error {
+func (r *ZerokCrdReconciler) handleProbeUpdate(ctx context.Context, zerokProbe *operatorv1alpha1.ZerokCrd) error {
 	_, err := r.ZkCRDProbeHandler.UpdateCRDProbe(zerokProbe)
 	if err != nil {
 		return err
@@ -120,8 +120,8 @@ func (r *ZerokProbeReconciler) handleProbeUpdate(ctx context.Context, zerokProbe
 }
 
 // handleDeletion handles the deletion of the ZerokProbe
-func (r *ZerokProbeReconciler) handleProbeDeletion(ctx context.Context, zerokProbe *operatorv1alpha1.ZerokProbe) error {
-	zerokProbeVersion := zerokProbe.GetUID()
+func (r *ZerokCrdReconciler) handleProbeDeletion(ctx context.Context, zerokCrd *operatorv1alpha1.ZerokCrd) error {
+	zerokProbeVersion := zerokCrd.GetUID()
 	fmt.Print(zerokProbeVersion)
 	_, err := r.ZkCRDProbeHandler.DeleteCRDProbe(string(zerokProbeVersion))
 	if err != nil {

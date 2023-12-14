@@ -31,7 +31,7 @@ func (h *ZkCRDProbeHandler) Init(cfg config.ZkOperatorConfig) error {
 	return nil
 }
 
-func (h *ZkCRDProbeHandler) CreateCRDProbe(zerokProbe *operatorv1alpha1.ZerokProbe) (string, error) {
+func (h *ZkCRDProbeHandler) CreateCRDProbe(zerokProbe *operatorv1alpha1.ZerokCrd) (string, error) {
 	logger.Debug(zkCRDProbeLog, "New CRD created")
 	zkProbe := constructRedisProbeStructureFromCRD(zerokProbe)
 	err := h.VersionedStore.SetValue(zkProbe.Id, zkProbe)
@@ -55,7 +55,7 @@ func (h *ZkCRDProbeHandler) DeleteCRDProbe(zkCRDProbeId string) (string, error) 
 	return "", nil
 }
 
-func (h *ZkCRDProbeHandler) UpdateCRDProbe(zerokProbe *operatorv1alpha1.ZerokProbe) (string, error) {
+func (h *ZkCRDProbeHandler) UpdateCRDProbe(zerokProbe *operatorv1alpha1.ZerokCrd) (string, error) {
 	logger.Debug(zkCRDProbeLog, "CRD updated")
 	zkProbe := constructRedisProbeStructureFromCRD(zerokProbe)
 	err := h.VersionedStore.SetValue(zkProbe.Id, zkProbe)
@@ -79,7 +79,7 @@ func (h *ZkCRDProbeHandler) IsHealthy() bool {
 	return true
 }
 
-func constructRedisProbeStructureFromCRD(zerokProbe *operatorv1alpha1.ZerokProbe) model.Scenario {
+func constructRedisProbeStructureFromCRD(zerokProbe *operatorv1alpha1.ZerokCrd) model.Scenario {
 	var zerokProbeWorkloadsMap map[string]model.Workload
 	var zerokServiceWorkloadMap map[string]string
 

@@ -9,7 +9,7 @@ import (
 type Workloads map[string]model.Workload
 
 // +k8s:deepcopy-gen=true
-type ZerokProbeSpec struct {
+type ZerokCrdSpec struct {
 	Title     string            `json:"title"`
 	Enabled   bool              `json:"enabled"`
 	Workloads Workloads         `json:"workloads,omitempty"`
@@ -22,23 +22,23 @@ type ZerokProbeSpec struct {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // above line acts a code marker recognized by Kube builder and root=true mean this is the root object
-// ZerokProbe is the CRD schema for crating probe
-type ZerokProbe struct {
+// ZerokCrd is the CRD schema for crating probe
+type ZerokCrd struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              ZerokProbeSpec `json:"spec,omitempty"`
+	Spec              ZerokCrdSpec `json:"spec,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// ZerokProbeList contains a list of ZerokProbe
-type ZerokProbeList struct {
+// ZerokCrdList contains a list of ZerokCrd
+type ZerokCrdList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []ZerokProbe `json:"items"`
+	Items           []ZerokCrd `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&ZerokProbe{}, &ZerokProbeList{})
+	SchemeBuilder.Register(&ZerokCrd{}, &ZerokCrdList{})
 }

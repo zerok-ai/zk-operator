@@ -23,6 +23,6 @@ resources:
 - controller: true
   domain: zerok.ai
   group: operator.zerok.ai
-  kind: ZerokProbe
+  kind: ZerokCrd
   version: v1alpha1
 version: "3"

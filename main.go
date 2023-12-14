@@ -115,7 +115,7 @@ func main() {
 
 	//initializing zkCRDProbeHandler
 	zkCRDProbeHandler, err := getCRDProbeHandler()
-	if err = (&controllers.ZerokProbeReconciler{
+	if err = (&controllers.ZerokCrdReconciler{
 		Client:            mgr.GetClient(),
 		Scheme:            mgr.GetScheme(),
 		ZkCRDProbeHandler: zkCRDProbeHandler,
