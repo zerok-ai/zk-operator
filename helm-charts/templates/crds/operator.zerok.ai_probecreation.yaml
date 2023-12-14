@@ -121,8 +121,6 @@ spec:
                             type: string
                           value:
                             type: string
-                        required:
-                          - type
                         type: object
                       service:
                         type: string
