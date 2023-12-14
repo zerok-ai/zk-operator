@@ -83,12 +83,12 @@ func main() {
 
 	var d time.Duration = 15 * time.Minute
 	setupLog.Info("Starting Operator.")
-	//_, err := initOperator()
-	//if err != nil {
-	//	message := "Failed to initialize operator with error " + err.Error()
-	//	setupLog.Info(message)
-	//	return
-	//}
+	_, err := initOperator()
+	if err != nil {
+		message := "Failed to initialize operator with error " + err.Error()
+		setupLog.Info(message)
+		return
+	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
@@ -105,13 +105,13 @@ func main() {
 		panic("unable to start manager")
 	}
 
-	//if err = (&controllers.ZerokopReconciler{
-	//	Client: mgr.GetClient(),
-	//	Scheme: mgr.GetScheme(),
-	//}).SetupWithManager(mgr); err != nil {
-	//	setupLog.Error(err, "unable to create controller", "controller", "Zerokop")
-	//	panic("unable to create controller")
-	//}
+	if err = (&controllers.ZerokopReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Zerokop")
+		panic("unable to create controller")
+	}
 
 	//initializing zkCRDProbeHandler
 	zkCRDProbeHandler, err := getCRDProbeHandler()
