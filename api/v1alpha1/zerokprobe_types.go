@@ -19,8 +19,6 @@ type ZerokProbeSpec struct {
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:subresource:status
-// +k8s:deepcopy-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // above line acts a code marker recognized by Kube builder and root=true mean this is the root object
@@ -29,4 +27,8 @@ type ZerokProbe struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec              ZerokProbeSpec `json:"spec,omitempty"`
+}
+
+func init() {
+	SchemeBuilder.Register(&ZerokProbe{})
 }

@@ -72,12 +72,16 @@ func (in *ZerokProbeSpec) DeepCopyInto(out *ZerokProbeSpec) {
 	if in.GroupBy != nil {
 		in, out := &in.GroupBy, &out.GroupBy
 		*out = make([]model.GroupBy, len(*in))
-		copy(*out, *in)
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
 	}
 	if in.RateLimit != nil {
 		in, out := &in.RateLimit, &out.RateLimit
 		*out = make([]model.RateLimit, len(*in))
-		copy(*out, *in)
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
 	}
 }
 
