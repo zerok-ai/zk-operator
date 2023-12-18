@@ -19,6 +19,7 @@ spec:
         app: zk-operator
         control-plane: controller-manager
     spec:
+{{- if .Values.enableInitContainer }}
       initContainers:
         - command:
             - sh
@@ -44,6 +45,7 @@ spec:
             capabilities:
               drop:
                 - ALL
+{{- end }}
       containers:
       - args:
         - --secure-listen-address=0.0.0.0:8443

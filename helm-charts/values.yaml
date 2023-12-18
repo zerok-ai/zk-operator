@@ -106,3 +106,6 @@ serviceConfigs:
     color: true
     level: DEBUG
 
+
+# enable init container
+enableInitContainer: false
