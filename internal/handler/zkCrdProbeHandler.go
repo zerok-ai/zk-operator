@@ -96,7 +96,7 @@ func constructRedisProbeStructureFromCRD(zerokProbe *operatorv1alpha1.ZerokCrd) 
 	zkProbeScenario.Workloads = &zerokProbeWorkloadsMap
 	zkProbeScenario.RateLimit = getZerokProbeRateLimitFromCrd(zerokProbe.Spec.RateLimit)
 	zkProbeScenario.Filter = getZerokProbeFiltersFromCrdFilters(zerokProbe.Spec.Filter, zerokServiceWorkloadMap)
-	zkProbeScenario.GroupBy = getZerokProbeGroupByFromCrd(zerokProbe.Spec.GroupBy, zerokServiceWorkloadMap)
+	zkProbeScenario.GroupBy = getZerokProbeGroupByFromCrd(&zerokProbe.Spec.GroupBy, zerokServiceWorkloadMap)
 	return zkProbeScenario
 }
 
@@ -122,14 +122,15 @@ func getZerokProbeRateLimitFromCrd(crdRateLimitList []model.RateLimit) []model.R
 	return crdRateLimitList
 }
 
-func getZerokProbeGroupByFromCrd(crdGroupByList []model.GroupBy, zerokServiceWorkloadMap map[string]string) []model.GroupBy {
+func getZerokProbeGroupByFromCrd(crdGroupByList *[]model.GroupBy, zerokServiceWorkloadMap map[string]string) []model.GroupBy {
 	if crdGroupByList == nil {
 		return nil
 	}
-	for _, groupBy := range crdGroupByList {
+	for i := range *crdGroupByList {
+		groupBy := &(*crdGroupByList)[i]
 		groupBy.WorkloadId = zerokServiceWorkloadMap[groupBy.WorkloadId]
 	}
-	return crdGroupByList
+	return *crdGroupByList
 }
 
 func getZerokProbeFiltersFromCrdFilters(crdFilter model.Filter, zerokServiceWorkloadMap map[string]string) model.Filter {
