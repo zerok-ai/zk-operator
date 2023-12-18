@@ -43,8 +43,7 @@ spec:
                   condition:
                     type: string
                   filters:
-                    items: {}
-                    type: array
+                    x-kubernetes-preserve-unknown-fields: true
                   type:
                     type: string
                   workload_ids:
@@ -89,6 +88,7 @@ spec:
                 type: string
               workloads:
                 additionalProperties:
+                  description: 'ref : https://github.com/kubernetes-sigs/controller-tools/issues/585'
                   properties:
                     executor:
                       type: string

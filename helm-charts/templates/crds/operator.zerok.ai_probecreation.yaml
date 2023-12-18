@@ -43,9 +43,7 @@ spec:
                     condition:
                       type: string
                     filters:
-                      items:
-                        type: object
-                      type: array
+                      x-kubernetes-preserve-unknown-fields: true
                     type:
                       type: string
                     workload_ids:

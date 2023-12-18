@@ -43,15 +43,17 @@ func (h *ZkCRDProbeHandler) CreateCRDProbe(zerokProbe *operatorv1alpha1.ZerokCrd
 			return "", err
 		}
 	}
+	logger.Info(zkCRDProbeLog, "Successfully created new Probe with title ", zkProbe.Title, " from redis.")
 	return "", nil
 }
 
 func (h *ZkCRDProbeHandler) DeleteCRDProbe(zkCRDProbeId string) (string, error) {
 	err := h.VersionedStore.Delete(zkCRDProbeId)
 	if err != nil {
-		logger.Error(scenarioLogTag, "Error while deleting crd probe id ", zkCRDProbeId, " from redis ", err)
+		logger.Error(zkCRDProbeLog, "Error while deleting crd probe id ", zkCRDProbeId, " from redis ", err)
 		return "", err
 	}
+	logger.Info(zkCRDProbeLog, "Successfully Deleted Probe with id ", zkCRDProbeId, " from redis.")
 	return "", nil
 }
 
@@ -67,6 +69,7 @@ func (h *ZkCRDProbeHandler) UpdateCRDProbe(zerokProbe *operatorv1alpha1.ZerokCrd
 			return "", err
 		}
 	}
+	logger.Info(zkCRDProbeLog, "Successfully updated Probe with title ", zkProbe.Title, " from redis.")
 	return "", nil
 }
 
@@ -94,6 +97,7 @@ func constructRedisProbeStructureFromCRD(zerokProbe *operatorv1alpha1.ZerokCrd) 
 	zkProbeScenario.Workloads = &zerokProbeWorkloadsMap
 	zkProbeScenario.RateLimit = getZerokProbeRateLimitFromCrd(zerokProbe.Spec.RateLimit)
 	zkProbeScenario.Filter = getZerokProbeFiltersFromCrdFilters(zerokProbe.Spec.Filter, zerokServiceWorkloadMap)
+	zkProbeScenario.GroupBy = zerokProbe.Spec.GroupBy
 	return zkProbeScenario
 }
 
