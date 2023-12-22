@@ -6,3 +6,4 @@ type: Opaque
 stringData:
   clusterKey: {{ index .Values.global.zkcloud.keys.cluster_key }}
   apiKey: {{ index .Values.global.zkcloud.keys.PX_API_KEY }}
+  clusterId: {{ .Values.global.zkcloud.keys.clusterId }}
