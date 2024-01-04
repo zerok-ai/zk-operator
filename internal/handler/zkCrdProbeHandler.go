@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"fmt"
 	operatorv1alpha1 "github.com/zerok-ai/zk-operator/api/v1alpha1"
 	"github.com/zerok-ai/zk-operator/internal/common"
 	"github.com/zerok-ai/zk-operator/internal/config"
@@ -10,6 +11,7 @@ import (
 	zkredis "github.com/zerok-ai/zk-utils-go/storage/redis"
 	dbNames "github.com/zerok-ai/zk-utils-go/storage/redis/clientDBNames"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -31,10 +33,15 @@ func (h *ZkCRDProbeHandler) Init(cfg config.ZkOperatorConfig) error {
 	return nil
 }
 
-func (h *ZkCRDProbeHandler) CreateCRDProbe(zerokProbe *operatorv1alpha1.ZerokCrd) (string, error) {
+func (h *ZkCRDProbeHandler) CreateCRDProbe(zerokProbe *operatorv1alpha1.ZerokProbe) (string, error) {
 	logger.Debug(zkCRDProbeLog, "New CRD created")
 	zkProbe := constructRedisProbeStructureFromCRD(zerokProbe)
-	err := h.VersionedStore.SetValue(zkProbe.Id, zkProbe)
+	err := validateProbe(zerokProbe)
+	if err != nil {
+		logger.Error(zkCRDProbeLog, "Error while validating probe ", err)
+		return "", err
+	}
+	err = h.VersionedStore.SetValue(zkProbe.Id, zkProbe)
 	if err != nil {
 		if errors.Is(err, zkredis.LATEST) {
 			logger.Info(zkCRDProbeLog, "Latest value is already present in redis for crd probe Id ", zkProbe.Id)
@@ -47,6 +54,11 @@ func (h *ZkCRDProbeHandler) CreateCRDProbe(zerokProbe *operatorv1alpha1.ZerokCrd
 	return "", nil
 }
 
+func validateProbe(probe *operatorv1alpha1.ZerokProbe) error {
+	//TODO: write validations
+	return nil
+}
+
 func (h *ZkCRDProbeHandler) DeleteCRDProbe(zkCRDProbeId string) (string, error) {
 	err := h.VersionedStore.Delete(zkCRDProbeId)
 	if err != nil {
@@ -57,9 +69,20 @@ func (h *ZkCRDProbeHandler) DeleteCRDProbe(zkCRDProbeId string) (string, error) 
 	return "", nil
 }
 
-func (h *ZkCRDProbeHandler) UpdateCRDProbe(zerokProbe *operatorv1alpha1.ZerokCrd) (string, error) {
+func (h *ZkCRDProbeHandler) UpdateCRDProbe(zerokProbe *operatorv1alpha1.ZerokProbe) (string, error) {
 	logger.Debug(zkCRDProbeLog, "CRD updated")
 	zkProbe := constructRedisProbeStructureFromCRD(zerokProbe)
+	//check if zkProbe is enabled to false delete from redis
+	if !zkProbe.Enabled {
+		logger.Debug(zkCRDProbeLog, "Probe is disabled, deleting from redis")
+		_, err := h.DeleteCRDProbe(zkProbe.Id)
+		if err != nil {
+			logger.Error(zkCRDProbeLog, "Error while deleting crd probe id ", zkProbe.Id, " from redis ", err)
+			return "", err
+		}
+		logger.Info(zkCRDProbeLog, "Successfully Deleted Probe with id ", zkProbe.Id, " from redis.")
+		return "", nil
+	}
 	err := h.VersionedStore.SetValue(zkProbe.Id, zkProbe)
 	if err != nil {
 		if errors.Is(err, zkredis.LATEST) {
@@ -82,7 +105,7 @@ func (h *ZkCRDProbeHandler) IsHealthy() bool {
 	return true
 }
 
-func constructRedisProbeStructureFromCRD(zerokProbe *operatorv1alpha1.ZerokCrd) model.Scenario {
+func constructRedisProbeStructureFromCRD(zerokProbe *operatorv1alpha1.ZerokProbe) model.Scenario {
 	var zerokProbeWorkloadsMap map[string]model.Workload
 	var zerokServiceWorkloadMap map[string]string
 
@@ -100,41 +123,75 @@ func constructRedisProbeStructureFromCRD(zerokProbe *operatorv1alpha1.ZerokCrd) 
 	return zkProbeScenario
 }
 
-func getZerokProbeWorkloadsFromCrd(crdWorkloadsMap map[string]model.Workload) (map[string]model.Workload, map[string]string) {
+func getZerokProbeWorkloadsFromCrd(crdWorkloadsMap map[string]operatorv1alpha1.Workload) (map[string]model.Workload, map[string]string) {
 	zerokProbeWorkloadsMap := make(map[string]model.Workload)
 	zerokServiceWorkloadMap := make(map[string]string)
 	for key, value := range crdWorkloadsMap {
-		workloadId := model.WorkLoadUUID(value).String()
-		value.Service = key
-		value.TraceRole = "server"
-		zerokProbeWorkloadsMap[workloadId] = value
-		zerokServiceWorkloadMap[value.Service] = workloadId
+		probeZerokWorkload := model.Workload{}
+		executor, serviceName, err := getExecutorAndServiceNameFromKey(key)
+		if err != nil {
+			return nil, nil
+		}
+		probeZerokWorkload.Service = serviceName
+		probeZerokWorkload.Rule = value.Rule
+		probeZerokWorkload.TraceRole = "server"
+		probeZerokWorkload.Protocol = "HTTP"
+		probeZerokWorkload.Executor = model.ExecutorName(executor)
+		workloadId := model.WorkLoadUUID(probeZerokWorkload).String()
+		zerokProbeWorkloadsMap[workloadId] = probeZerokWorkload
+		zerokServiceWorkloadMap[serviceName] = workloadId
 	}
 	return zerokProbeWorkloadsMap, zerokServiceWorkloadMap
 }
 
-func getZerokProbeRateLimitFromCrd(crdRateLimitList []model.RateLimit) []model.RateLimit {
+func getExecutorAndServiceNameFromKey(workloadKey string) (string, string, error) {
+	parts := strings.Split(workloadKey, "/")
+
+	if len(parts) != 2 {
+		return "", "", errors.New("invalid input format")
+	}
+
+	executor := operatorv1alpha1.ExecutorType(parts[0])
+	switch executor {
+	case operatorv1alpha1.OTEL, operatorv1alpha1.EBPF:
+		// Valid executor
+	default:
+		return "", "", errors.New(fmt.Sprintf("invalid executor:%s provided in workload key", executor))
+	}
+
+	serviceName := parts[1]
+	return string(executor), serviceName, nil
+}
+
+func getZerokProbeRateLimitFromCrd(crdRateLimitList []operatorv1alpha1.RateLimit) []model.RateLimit {
 	if crdRateLimitList == nil {
 		return []model.RateLimit{
 			{BucketMaxSize: 5, BucketRefillSize: 5, TickDuration: "1m"},
 		}
 	}
-	return crdRateLimitList
+	probeZerokRateLimitList := make([]model.RateLimit, 0)
+	for _, crdRateLimit := range crdRateLimitList {
+		probeZerokRateLimitList = append(probeZerokRateLimitList, model.RateLimit{TickDuration: crdRateLimit.TickDuration, BucketMaxSize: crdRateLimit.BucketMaxSize, BucketRefillSize: crdRateLimit.BucketRefillSize})
+	}
+	return probeZerokRateLimitList
 }
 
-func getZerokProbeGroupByFromCrd(crdGroupByList *[]model.GroupBy, zerokServiceWorkloadMap map[string]string) []model.GroupBy {
+func getZerokProbeGroupByFromCrd(crdGroupByList *[]operatorv1alpha1.GroupBy, zerokServiceWorkloadMap map[string]string) []model.GroupBy {
 	if crdGroupByList == nil {
 		return nil
 	}
+	var probeZerokGroupByList []model.GroupBy
 	for i := range *crdGroupByList {
 		groupBy := &(*crdGroupByList)[i]
-		groupBy.WorkloadId = zerokServiceWorkloadMap[groupBy.WorkloadId]
+		workloadKey := zerokServiceWorkloadMap[groupBy.WorkloadKey]
+		probeZerokGroupByList = append(probeZerokGroupByList, model.GroupBy{WorkloadId: workloadKey, Title: groupBy.Title, Hash: groupBy.Hash})
 	}
-	return *crdGroupByList
+	return probeZerokGroupByList
 }
 
-func getZerokProbeFiltersFromCrdFilters(crdFilter model.Filter, zerokServiceWorkloadMap map[string]string) model.Filter {
+func getZerokProbeFiltersFromCrdFilters(crdFilter operatorv1alpha1.Filter, zerokServiceWorkloadMap map[string]string) model.Filter {
 	var workloadIdList model.WorkloadIds
+	var probeZerokFilter model.Filter
 	if &crdFilter == nil || crdFilter.Type == "" {
 		for _, value := range zerokServiceWorkloadMap {
 			workloadIdList = append(workloadIdList, value)
@@ -148,19 +205,19 @@ func getZerokProbeFiltersFromCrdFilters(crdFilter model.Filter, zerokServiceWork
 	}
 	//iterate over the services in filter and update them with workload id
 	// Check if WorkloadIds is not nil before iterating
-	if crdFilter.WorkloadIds != nil {
+	if crdFilter.WorkloadKeys != nil {
 		// Iterate over WorkloadIds
-		for _, serviceId := range *crdFilter.WorkloadIds {
+		for _, serviceId := range *crdFilter.WorkloadKeys {
 			workloadIdList = append(workloadIdList, zerokServiceWorkloadMap[serviceId])
 		}
-		crdFilter.WorkloadIds = &workloadIdList
+		probeZerokFilter.WorkloadIds = &workloadIdList
 	}
 	if crdFilter.Filters != nil {
 		var newFilters model.Filters
 		for _, filter := range *crdFilter.Filters {
 			newFilters = append(newFilters, getZerokProbeFiltersFromCrdFilters(filter, zerokServiceWorkloadMap))
 		}
-		crdFilter.Filters = &newFilters
+		probeZerokFilter.Filters = &newFilters
 	}
-	return crdFilter
+	return probeZerokFilter
 }

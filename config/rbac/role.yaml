@@ -6,9 +6,16 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
   - operator.zerok.ai.zerok.ai
   resources:
-  - zerokcrds
+  - zerokprobes
   verbs:
   - create
   - delete
@@ -20,13 +27,13 @@ rules:
 - apiGroups:
   - operator.zerok.ai.zerok.ai
   resources:
-  - zerokcrds/finalizers
+  - zerokprobes/finalizers
   verbs:
   - update
 - apiGroups:
   - operator.zerok.ai.zerok.ai
   resources:
-  - zerokcrds/status
+  - zerokprobes/status
   verbs:
   - get
   - patch
