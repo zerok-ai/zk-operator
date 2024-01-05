@@ -197,7 +197,7 @@ func getZerokProbeFiltersFromCrdFilters(crdFilter operatorv1alpha1.Filter, zerok
 			workloadIdList = append(workloadIdList, value)
 		}
 		return model.Filter{
-			Type:        "defaultType",
+			Type:        "workload",
 			Condition:   "AND",
 			Filters:     nil,
 			WorkloadIds: &workloadIdList,
@@ -218,6 +218,17 @@ func getZerokProbeFiltersFromCrdFilters(crdFilter operatorv1alpha1.Filter, zerok
 			newFilters = append(newFilters, getZerokProbeFiltersFromCrdFilters(filter, zerokServiceWorkloadMap))
 		}
 		probeZerokFilter.Filters = &newFilters
+	}
+	if crdFilter.Type != "" {
+		probeZerokFilter.Type = crdFilter.Type
+	} else {
+		probeZerokFilter.Type = "workload"
+	}
+
+	if probeZerokFilter.Condition != "" {
+		probeZerokFilter.Condition = model.Condition(crdFilter.Condition)
+	} else {
+		probeZerokFilter.Condition = "AND"
 	}
 	return probeZerokFilter
 }
