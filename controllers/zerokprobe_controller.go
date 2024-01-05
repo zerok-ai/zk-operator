@@ -66,7 +66,7 @@ func (r *ZerokProbeReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	// Let's just set the status as Unknown when no status are available
 	if zerokProbe.Status.Conditions == nil || len(zerokProbe.Status.Conditions) == 0 {
-		meta.SetStatusCondition(&zerokProbe.Status.Conditions, metav1.Condition{Type: "", Status: metav1.ConditionUnknown, Reason: "Reconciling", Message: "Starting reconciliation"})
+		meta.SetStatusCondition(&zerokProbe.Status.Conditions, metav1.Condition{Type: "ProbeUnknown", Status: metav1.ConditionUnknown, Reason: "Reconciling", Message: "Starting reconciliation"})
 		zerokProbe.Status.Phase = operatorv1alpha1.ProbeUnknown
 		if err = r.Status().Update(ctx, zerokProbe); err != nil {
 
@@ -106,7 +106,7 @@ func (r *ZerokProbeReconciler) reconcileZerokProbeResource(ctx context.Context, 
 		// then lets add the finalizer and update the object. This is equivalent
 		// registering our finalizer.
 		// Let's add here status "Downgrade" to define that this resource begin its process to be terminated.
-		meta.SetStatusCondition(&zerokProbe.Status.Conditions, metav1.Condition{Type: "",
+		meta.SetStatusCondition(&zerokProbe.Status.Conditions, metav1.Condition{Type: "ProbeCreating",
 			Status: metav1.ConditionUnknown, Reason: "Finalizing",
 			Message: fmt.Sprintf("Performing finalizer operations for the custom resource: %s ", zerokProbe.Name)})
 		zerokProbe.Status.Phase = operatorv1alpha1.ProbeRunning
@@ -137,7 +137,7 @@ func (r *ZerokProbeReconciler) reconcileZerokProbeResource(ctx context.Context, 
 		// The object is being deleted
 
 		// Let's add here status "Downgrade" to define that this resource begin its process to be terminated.
-		meta.SetStatusCondition(&zerokProbe.Status.Conditions, metav1.Condition{Type: "",
+		meta.SetStatusCondition(&zerokProbe.Status.Conditions, metav1.Condition{Type: "ProbeDeleting",
 			Status: metav1.ConditionUnknown, Reason: "Finalizing",
 			Message: fmt.Sprintf("Performing finalizer operations for the custom resource: %s ", zerokProbe.Name)})
 		zerokProbe.Status.Phase = operatorv1alpha1.ProbeDeleting
@@ -176,7 +176,7 @@ func (r *ZerokProbeReconciler) handleProbeCreation(ctx context.Context, zerokPro
 	r.Recorder.Event(zerokProbe, "Normal", "CreatedCRD", fmt.Sprintf("Successfully Created CRD: %s", zerokProbe.Spec.Title))
 
 	// Let's add here status "Downgrade" to define that this resource begin its process to be terminated.
-	meta.SetStatusCondition(&zerokProbe.Status.Conditions, metav1.Condition{Type: "",
+	meta.SetStatusCondition(&zerokProbe.Status.Conditions, metav1.Condition{Type: "ProbeCreated",
 		Status: metav1.ConditionUnknown, Reason: "Finalizing",
 		Message: fmt.Sprintf("Performing finalizer operations for the custom resource: %s ", zerokProbe.Name)})
 	zerokProbe.Status.Phase = operatorv1alpha1.ProbeSucceeded
