@@ -105,7 +105,7 @@ func (r *ZerokProbeReconciler) reconcileZerokProbeResource(ctx context.Context, 
 		// registering our finalizer.
 		err := r.UpdateProbeResourceStatus(ctx, zerokProbe, operatorv1alpha1.ProbePending,
 			"ProbeCreateOrUpdateEvent",
-			"Probe Creating Or Updating in process",
+			"Probe_Creating_Or_Updating_in_process",
 			fmt.Sprintf("Performing finalizer operations for the custom resource: %s ", zerokProbe.Name))
 		if err != nil {
 			zkLogger.Error(badgerHandlerLogTag, "Error occurred while updating the status of the zerok probe resource")
@@ -128,7 +128,7 @@ func (r *ZerokProbeReconciler) reconcileZerokProbeResource(ctx context.Context, 
 		}
 		if zerokProbe.ObjectMeta.UID == "" {
 			// probe is being created
-			err = r.UpdateProbeResourceStatus(ctx, zerokProbe, operatorv1alpha1.ProbePending, "ProbeCreating", "Probe Creating", fmt.Sprintf("Started Probe Creation Process : %s", zerokProbe.Spec.Title))
+			err = r.UpdateProbeResourceStatus(ctx, zerokProbe, operatorv1alpha1.ProbePending, "ProbeCreating", "Probe_Creating", fmt.Sprintf("Started Probe Creation Process : %s", zerokProbe.Spec.Title))
 			if err != nil {
 				zkLogger.Error(badgerHandlerLogTag, "Error occurred while updating the status of the zerok probe resource in creating process")
 				return ctrl.Result{}, err
@@ -136,7 +136,7 @@ func (r *ZerokProbeReconciler) reconcileZerokProbeResource(ctx context.Context, 
 			return r.handleProbeCreation(ctx, zerokProbe)
 		}
 
-		err = r.UpdateProbeResourceStatus(ctx, zerokProbe, operatorv1alpha1.ProbePending, "ProbeUpdating", "Probe Updating", fmt.Sprintf("Started Probe Updating Process : %s", zerokProbe.Spec.Title))
+		err = r.UpdateProbeResourceStatus(ctx, zerokProbe, operatorv1alpha1.ProbePending, "ProbeUpdating", "Probe_Updating", fmt.Sprintf("Started Probe Updating Process : %s", zerokProbe.Spec.Title))
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -147,7 +147,7 @@ func (r *ZerokProbeReconciler) reconcileZerokProbeResource(ctx context.Context, 
 		// The object is being deleted
 
 		// Let's add here status "Downgrade" to define that this resource begin its process to be terminated.
-		err := r.UpdateProbeResourceStatus(ctx, zerokProbe, operatorv1alpha1.ProbeDeleting, "ProbeDeleting", "Probe Deleting", fmt.Sprintf("Started Probe Deleting Process : %s", zerokProbe.Spec.Title))
+		err := r.UpdateProbeResourceStatus(ctx, zerokProbe, operatorv1alpha1.ProbeDeleting, "ProbeDeleting", "Probe_Deleting", fmt.Sprintf("Started Probe Deleting Process : %s", zerokProbe.Spec.Title))
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -178,7 +178,7 @@ func (r *ZerokProbeReconciler) handleProbeCreation(ctx context.Context, zerokPro
 	if err != nil {
 		zkLogger.Error(badgerHandlerLogTag, fmt.Sprintf("Error While Creating Probe: %s with error: %s", zerokProbe.Spec.Title, err.Error()))
 		r.Recorder.Event(zerokProbe, "Warning", "ErrorWhileCreating", fmt.Sprintf("Error While Creating Probe: %s with error: %s", zerokProbe.Spec.Title, err.Error()))
-		errStatus := r.UpdateProbeResourceStatus(ctx, zerokProbe, operatorv1alpha1.ProbeFailed, "ProbeCreationFailed", "Probe Creation Failed", fmt.Sprintf("Error While Creating Probe: %s with error: %s", zerokProbe.Spec.Title, err.Error()))
+		errStatus := r.UpdateProbeResourceStatus(ctx, zerokProbe, operatorv1alpha1.ProbeFailed, "ProbeCreationFailed", "Probe_Creation_Failed", fmt.Sprintf("Error While Creating Probe: %s with error: %s", zerokProbe.Spec.Title, err.Error()))
 		if errStatus != nil {
 			return ctrl.Result{}, errStatus
 		}
@@ -187,7 +187,7 @@ func (r *ZerokProbeReconciler) handleProbeCreation(ctx context.Context, zerokPro
 
 	zkLogger.Info(badgerHandlerLogTag, fmt.Sprintf("Successfully Created Probe: %s", zerokProbe.Spec.Title))
 	r.Recorder.Event(zerokProbe, "Normal", "CreatedProbe", fmt.Sprintf("Successfully Created Probe: %s", zerokProbe.Spec.Title))
-	err = r.UpdateProbeResourceStatus(ctx, zerokProbe, operatorv1alpha1.ProbeSucceeded, "ProbeCreated", "Probe Created", fmt.Sprintf("Successfully Created Probe: %s", zerokProbe.Spec.Title))
+	err = r.UpdateProbeResourceStatus(ctx, zerokProbe, operatorv1alpha1.ProbeSucceeded, "ProbeCreated", "Probe_Created", fmt.Sprintf("Successfully Created Probe: %s", zerokProbe.Spec.Title))
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -200,7 +200,7 @@ func (r *ZerokProbeReconciler) handleProbeUpdate(ctx context.Context, zerokProbe
 	_, err := r.ZkCRDProbeHandler.UpdateCRDProbe(zerokProbe)
 	if err != nil {
 		zkLogger.Error(badgerHandlerLogTag, fmt.Sprintf("Error While Updating Probe: %s with error: %s", zerokProbe.Spec.Title, err.Error()))
-		errStatus := r.UpdateProbeResourceStatus(ctx, zerokProbe, operatorv1alpha1.ProbeFailed, "ProbeUpdateFailed", "Probe Update Failed", fmt.Sprintf("Error While Updating Probe: %s with error: %s", zerokProbe.Spec.Title, err.Error()))
+		errStatus := r.UpdateProbeResourceStatus(ctx, zerokProbe, operatorv1alpha1.ProbeFailed, "ProbeUpdateFailed", "Probe_Update_Failed", fmt.Sprintf("Error While Updating Probe: %s with error: %s", zerokProbe.Spec.Title, err.Error()))
 		if errStatus != nil {
 			return ctrl.Result{}, errStatus
 		}
@@ -210,7 +210,7 @@ func (r *ZerokProbeReconciler) handleProbeUpdate(ctx context.Context, zerokProbe
 
 	zkLogger.Info(badgerHandlerLogTag, fmt.Sprintf("Successfully Updated Probe: %s", zerokProbe.Spec.Title))
 	r.Recorder.Event(zerokProbe, "Normal", "UpdatedCRD", fmt.Sprintf("Successfully Updated CRD: %s", zerokProbe.Spec.Title))
-	err = r.UpdateProbeResourceStatus(ctx, zerokProbe, operatorv1alpha1.ProbeSucceeded, "ProbeUpdated", "Probe Updated", fmt.Sprintf("Successfully Updated Probe: %s", zerokProbe.Spec.Title))
+	err = r.UpdateProbeResourceStatus(ctx, zerokProbe, operatorv1alpha1.ProbeSucceeded, "ProbeUpdated", "Probe_Updated", fmt.Sprintf("Successfully Updated Probe: %s", zerokProbe.Spec.Title))
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -223,7 +223,7 @@ func (r *ZerokProbeReconciler) handleProbeDeletion(ctx context.Context, zerokPro
 	_, err := r.ZkCRDProbeHandler.DeleteCRDProbe(string(zerokProbeVersion))
 	if err != nil {
 		zkLogger.Error(badgerHandlerLogTag, fmt.Sprintf("Error While Deleting Probe: %s with error: %s", zerokProbe.Spec.Title, err.Error()))
-		errStatus := r.UpdateProbeResourceStatus(ctx, zerokProbe, operatorv1alpha1.ProbeFailed, "ProbeDeletionFailed", "Probe Deletion Failed", fmt.Sprintf("Error While Deleting Probe: %s with error: %s", zerokProbe.Spec.Title, err.Error()))
+		errStatus := r.UpdateProbeResourceStatus(ctx, zerokProbe, operatorv1alpha1.ProbeFailed, "ProbeDeletionFailed", "Probe_Deletion_Failed", fmt.Sprintf("Error While Deleting Probe: %s with error: %s", zerokProbe.Spec.Title, err.Error()))
 		if errStatus != nil {
 			return err
 		}
@@ -233,7 +233,7 @@ func (r *ZerokProbeReconciler) handleProbeDeletion(ctx context.Context, zerokPro
 
 	zkLogger.Info(badgerHandlerLogTag, fmt.Sprintf("Successfully Deleted Probe: %s", zerokProbe.Spec.Title))
 	r.Recorder.Event(zerokProbe, "Normal", "DeletedCRD", fmt.Sprintf("Successfully Deleted CRD: %s", zerokProbe.Spec.Title))
-	err = r.UpdateProbeResourceStatus(ctx, zerokProbe, operatorv1alpha1.ProbeSucceeded, "ProbeDeleted", "Probe Deleted", fmt.Sprintf("Successfully Deleted Probe: %s", zerokProbe.Spec.Title))
+	err = r.UpdateProbeResourceStatus(ctx, zerokProbe, operatorv1alpha1.ProbeSucceeded, "ProbeDeleted", "Probe_Deleted", fmt.Sprintf("Successfully Deleted Probe: %s", zerokProbe.Spec.Title))
 	if err != nil {
 		return err
 	}
