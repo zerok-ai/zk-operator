@@ -23,6 +23,7 @@ import (
 
 	"flag"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"time"
 
@@ -193,6 +194,9 @@ func newApp() *iris.Application {
 	}
 	app.UseRouter(crs)
 	app.AllowMethods(iris.MethodOptions)
+
+	//scraping metrics for prometheus
+	app.Get("/metrics", iris.FromStd(promhttp.Handler()))
 
 	return app
 }
