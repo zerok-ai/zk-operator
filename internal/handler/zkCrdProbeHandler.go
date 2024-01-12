@@ -6,6 +6,7 @@ import (
 	operatorv1alpha1 "github.com/zerok-ai/zk-operator/api/v1alpha1"
 	"github.com/zerok-ai/zk-operator/internal/common"
 	"github.com/zerok-ai/zk-operator/internal/config"
+	promMetrics "github.com/zerok-ai/zk-operator/internal/metrics"
 	logger "github.com/zerok-ai/zk-utils-go/logs"
 	"github.com/zerok-ai/zk-utils-go/scenario/model"
 	zkredis "github.com/zerok-ai/zk-utils-go/storage/redis"
@@ -50,6 +51,7 @@ func (h *ZkCRDProbeHandler) CreateCRDProbe(zerokProbe *operatorv1alpha1.ZerokPro
 			return "", err
 		}
 	}
+	promMetrics.TotalProbesCreated.Inc()
 	logger.Info(zkCRDProbeLog, "Successfully created new Probe with title ", zkProbe.Title, " from redis.")
 	return "", nil
 }
@@ -65,6 +67,7 @@ func (h *ZkCRDProbeHandler) DeleteCRDProbe(zkCRDProbeId string) (string, error) 
 		logger.Error(zkCRDProbeLog, "Error while deleting crd probe id ", zkCRDProbeId, " from redis ", err)
 		return "", err
 	}
+	promMetrics.TotalProbesDeleted.Inc()
 	logger.Info(zkCRDProbeLog, "Successfully Deleted Probe with id ", zkCRDProbeId, " from redis.")
 	return "", nil
 }
@@ -92,6 +95,7 @@ func (h *ZkCRDProbeHandler) UpdateCRDProbe(zerokProbe *operatorv1alpha1.ZerokPro
 			return "", err
 		}
 	}
+	promMetrics.TotalProbesUpdated.Inc()
 	logger.Info(zkCRDProbeLog, "Successfully updated Probe with title ", zkProbe.Title, " from redis.")
 	return "", nil
 }
