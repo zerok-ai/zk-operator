@@ -15,45 +15,6 @@ data:
     http:
       port: 8472
       exceptionPath: /exception
-    clusterContext:
-      path: /i/clusterContext
-      cloudAddr: "px.{{ .Values.global.zkcloud.host }}"
-      port: 443
-    zkcloud:
-      host: "api.{{ .Values.global.zkcloud.host }}"
-      port: {{ .Values.global.zkcloud.port }}
-    configurationSync:
-      path: /v1/o/cluster/<clusterid>/configuration
-      pollingInterval: 1800
-      apiPath: /i/configuration
-    scenarioSync:
-      path: /v1/o/cluster/<clusterid>/scenario
-      pollingInterval: 300
-      db: 6
-    obfuscationRulesSync:
-      path: /v1/o/org/obfuscation/rule/list
-      pollingInterval: 300
-      db: 10
-    integrationSync:
-      path: /v1/o/cluster/<clusterid>/integration
-      pollingInterval: 300
-      db: 9
-    executorAttributesSync:
-      path: /v1/o/cluster/<clusterid>/executorAttributes
-      pollingInterval: 300
-      db: 4
-    operatorLogin:
-      path: /v1/o/auth/login
-      clusterSecretName: cluster-info
-      clusterKeyData: clusterKey
-      apiKeyData: apiKey
-      clusterKeyNamespace: zk-client
-      maxRetries: 3
-    wspClient:
-      host: zk-wsp-client.zk-client.svc.cluster.local
-      port: 8987
-      path: /request
-      destinationHeader: X-PROXY-DESTINATION
     logs:
       color: {{ .Values.serviceConfigs.logs.color }}
       level: {{ .Values.serviceConfigs.logs.level }}

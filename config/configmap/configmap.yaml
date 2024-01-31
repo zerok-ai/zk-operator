@@ -12,41 +12,6 @@ data:
     http:
       port: 8472
       exceptionPath: /exception
-    clusterContext:
-      path: /i/clusterContext
-      cloudAddr: px.devcloud01.getanton.com
-      port: 443
-    zkcloud:
-      host: api.devcloud01.getanton.com
-      port: 443
-    scenarioSync:
-      path: /v1/o/cluster/<clusterid>/scenario
-      pollingInterval: 30
-      db: 6
-    integrationSync:
-      path: /v1/o/cluster/<clusterid>/integration
-      pollingInterval: 30
-      db: 9
-    configurationSync:
-      path: /v1/o/cluster/<clusterid>/configuration
-      pollingInterval: 30
-      apiPath: /i/configuration
-    executorAttributesSync:
-      path: /v1/o/cluster/<clusterid>/executorAttributes
-      pollingInterval: 300
-      db: 4
-    operatorLogin:
-      path: /v1/o/auth/login
-      clusterSecretName: cluster-info
-      clusterKeyData: clusterKey
-      apiKeyData: apiKey
-      clusterKeyNamespace: zk-client
-      maxRetries: 3
-    wspClient:
-      host: zk-wsp-client.zk-client.svc.cluster.local
-      port: 8987
-      path: /request
-      destinationHeader: X-PROXY-DESTINATION
     logs:
       color: true
       level: DEBUG

@@ -4,26 +4,12 @@
 global:
   image:
     pullPolicy: Always
-  zkcloud:
-    host: ""
-    port: 443
-    keys:
-      PX_API_KEY: ""
-      cluster_key: ""
   dockerBase: "us-west1-docker.pkg.dev/zerok-dev/zk-client"
-  zkInitContainerRepo: "zk-init-container"
-  zkInitContainerTag: "zk-init-container"
 
 image:
   repo: "zk-operator"
   tag: "latest"
-  appInitContainerRepo: "app-init-container"
-  appInitContainerTag: 0.0.1
   imagePullPolicy: Always
-
-zk-wsp:
-  routes:
-    zkCloudAddr: "loadcloud01.getanton.com"
 
 replicaCount: 1
 

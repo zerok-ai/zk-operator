@@ -42,17 +42,21 @@ func (h *ZkCRDProbeHandler) CreateCRDProbe(zerokProbe *operatorv1alpha1.ZerokPro
 		logger.Error(zkCRDProbeLog, "Error while validating probe ", err)
 		return "", err
 	}
-	err = h.VersionedStore.SetValue(zkProbe.Id, zkProbe)
-	if err != nil {
-		if errors.Is(err, zkredis.LATEST) {
-			logger.Info(zkCRDProbeLog, "Latest value is already present in redis for crd probe Id ", zkProbe.Id)
-		} else {
-			logger.Error(zkCRDProbeLog, "Error while storing crd probe in redis ", err)
-			return "", err
+	if !zkProbe.Enabled {
+		logger.Debug(zkCRDProbeLog, "Probe is Created with enable false, not processing and storing in redis")
+	} else {
+		err = h.VersionedStore.SetValue(zkProbe.Id, zkProbe)
+		if err != nil {
+			if errors.Is(err, zkredis.LATEST) {
+				logger.Info(zkCRDProbeLog, "Latest value is already present in redis for crd probe Id ", zkProbe.Id)
+			} else {
+				logger.Error(zkCRDProbeLog, "Error while storing crd probe in redis ", err)
+				return "", err
+			}
 		}
 	}
 	promMetrics.TotalProbesCreated.Inc()
-	logger.Info(zkCRDProbeLog, "Successfully created new Probe with title ", zkProbe.Title, " from redis.")
+	logger.Info(zkCRDProbeLog, "Successfully created new Probe with title ", zkProbe.Title)
 	return "", nil
 }
 
@@ -185,8 +189,8 @@ func getZerokProbeGroupByFromCrd(crdGroupByList *[]operatorv1alpha1.GroupBy, zer
 		return nil
 	}
 	var probeZerokGroupByList []model.GroupBy
-	for i := range *crdGroupByList {
-		groupBy := &(*crdGroupByList)[i]
+	for _, crdGroupBy := range *crdGroupByList {
+		groupBy := &crdGroupBy
 		workloadKey := zerokServiceWorkloadMap[groupBy.WorkloadKey]
 		probeZerokGroupByList = append(probeZerokGroupByList, model.GroupBy{WorkloadId: workloadKey, Title: groupBy.Title, Hash: groupBy.Hash})
 	}
@@ -196,7 +200,7 @@ func getZerokProbeGroupByFromCrd(crdGroupByList *[]operatorv1alpha1.GroupBy, zer
 func getZerokProbeFiltersFromCrdFilters(crdFilter operatorv1alpha1.Filter, zerokServiceWorkloadMap map[string]string) model.Filter {
 	var workloadIdList model.WorkloadIds
 	var probeZerokFilter model.Filter
-	if &crdFilter == nil || crdFilter.Type == "" {
+	if crdFilter.WorkloadKeys == nil || crdFilter.Filters == nil {
 		for _, value := range zerokServiceWorkloadMap {
 			workloadIdList = append(workloadIdList, value)
 		}
