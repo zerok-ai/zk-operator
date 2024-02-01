@@ -79,8 +79,9 @@ func main() {
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	var d time.Duration = 15 * time.Minute
+
 	setupLog.Info("Starting Operator.")
-	_, err := initOperator()
+	zkCRDProbeHandler, err := initOperator()
 	if err != nil {
 		message := "Failed to initialize operator with error " + err.Error()
 		setupLog.Info(message)
@@ -100,8 +101,6 @@ func main() {
 		panic("unable to start manager")
 	}
 
-	//initializing zkCRDProbeHandler
-	zkCRDProbeHandler, err := getCRDProbeHandler()
 	if err = (&controllers.ZerokProbeReconciler{
 		Client:            mgr.GetClient(),
 		Scheme:            mgr.GetScheme(),
@@ -129,7 +128,7 @@ func main() {
 	}
 }
 
-func initOperator() ([]internal.ZkOperatorModule, error) {
+func initOperator() (*handler.ZkCRDProbeHandler, error) {
 
 	configPath := env.GetString("CONFIG_FILE", "")
 	if configPath == "" {
@@ -150,6 +149,16 @@ func initOperator() ([]internal.ZkOperatorModule, error) {
 
 	zkModules := make([]internal.ZkOperatorModule, 0)
 
+	crdProbeHandler := handler.ZkCRDProbeHandler{}
+	err := crdProbeHandler.Init(zkConfig)
+	if err != nil {
+		zklogger.Error(LOG_TAG, "Error while creating scenarioHandler ", err)
+		return nil, err
+	}
+
+	//Adding crdProbeHandler to zkModules
+	zkModules = append(zkModules, &crdProbeHandler)
+
 	irisConfig := iris.WithConfiguration(iris.Configuration{
 		DisablePathCorrection: true,
 		LogLevel:              zkConfig.LogsConfig.Level,
@@ -160,7 +169,7 @@ func initOperator() ([]internal.ZkOperatorModule, error) {
 	// start http server
 	go server.StartHttpServer(app, irisConfig, zkConfig, zkModules)
 
-	return zkModules, nil
+	return &crdProbeHandler, nil
 }
 
 func newApp() *iris.Application {
@@ -191,27 +200,4 @@ func newApp() *iris.Application {
 	app.Get("/metrics", iris.FromStd(promhttp.Handler()))
 
 	return app
-}
-
-func getCRDProbeHandler() (*handler.ZkCRDProbeHandler, error) {
-	configPath := env.GetString("CONFIG_FILE", "")
-	if configPath == "" {
-		zklogger.Error(LOG_TAG, "Config yaml path not found.")
-		return nil, fmt.Errorf("config yaml path not found")
-	}
-
-	var zkConfig config.ZkOperatorConfig
-
-	if err := cleanenv.ReadConfig(configPath, &zkConfig); err != nil {
-		zklogger.Error(LOG_TAG, "Error while reading config ", err)
-		return nil, err
-	}
-
-	crdProbeHandler := handler.ZkCRDProbeHandler{}
-	err := crdProbeHandler.Init(zkConfig)
-	if err != nil {
-		zklogger.Error(LOG_TAG, "Error while creating scenarioHandler ", err)
-		return nil, err
-	}
-	return &crdProbeHandler, nil
 }
