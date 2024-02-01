@@ -1,5 +1,0 @@
-## Append samples you want in your CSV to this file as resources ##
-resources:
-- operator_v1alpha1_zerokInstrumentation.yaml
-- operator.zerok.ai_v1alpha1_zerokprobe.yaml
-#+kubebuilder:scaffold:manifestskustomizesamples
