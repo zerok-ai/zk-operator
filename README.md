@@ -1,9 +1,8 @@
 # Zerok-operator
-Zerok operator in responsible for instrumenting the pods coming up in the cluster. It achieves this by adding a mutatingadmissionwebhook in the cluster.
+Using the Zerok Operator, traces can be filtered using probes to enhance observability within Kubernetes clusters. A probe is a set of rules defined by the user for capturing traces of interest. The probes are created using the `ZerokInstrumentation` custom resource definition (CRD). You can refer to the `doc` for details about creating the `ZerokInstrumentation` CRD. 
 
 # Pre-requisites
-It needs Redis to be up and running as it uses Redis to read language data for images. This data will be populated by the zerok-deamonset pod. The operator pod will sync the data from Redis based on the time interval specified in the config file.
-
+An operational Redis instance is required within the cluster or accessible externally, used by the operator to store probe information.
 
 ### Running on the cluster
 1. Install the operator on a running cluster without rebuild.
@@ -23,3 +22,9 @@ make buildAndPush
 ```
 make uninstall
 ```
+
+### Contributing
+Contributions to the Zerok Operator are welcome! Submit bug reports, feature requests, or code contributions.
+
+### Reporting Issues
+Encounter an issue? Please file a report on our GitHub issues page with detailed information to aid in quick resolution.

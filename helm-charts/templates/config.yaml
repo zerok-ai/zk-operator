@@ -4,17 +4,10 @@ data:
     redis:
       port: 6379
       readTimeout: 20
-      dbs:    
-        filtered_traces: 1
+      dbs:
         scenarios: 2
-        traces: 3
-        executor_attr: 4
-        error_details: 8
-        integration_details: 9
-        obfuscation_rules: 10
     http:
       port: 8472
-      exceptionPath: /exception
     logs:
       color: {{ .Values.serviceConfigs.logs.color }}
       level: {{ .Values.serviceConfigs.logs.level }}

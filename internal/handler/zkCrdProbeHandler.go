@@ -105,7 +105,7 @@ func (h *ZkCRDProbeHandler) UpdateCRDProbe(zerokProbe *operatorv1alpha1.ZerokPro
 }
 
 func (h *ZkCRDProbeHandler) CleanUpOnKill() error {
-	logger.Debug(scenarioLogTag, "Kill method in scenario rules.")
+	logger.Debug(zkCRDProbeLog, "Kill method in scenario rules.")
 	return nil
 }
 

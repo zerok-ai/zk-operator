@@ -157,14 +157,6 @@ func initOperator() ([]internal.ZkOperatorModule, error) {
 
 	app := newApp()
 
-	scenarioHandler := handler.ScenarioHandler{}
-	err := scenarioHandler.Init(zkConfig)
-	if err != nil {
-		zklogger.Error(LOG_TAG, "Error while creating scenarioHandler ", err)
-		return nil, err
-	}
-	zkModules = append(zkModules, &scenarioHandler)
-
 	// start http server
 	go server.StartHttpServer(app, irisConfig, zkConfig, zkModules)
 
