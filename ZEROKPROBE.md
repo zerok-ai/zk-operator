@@ -1,6 +1,6 @@
 # ZerokProbe CRD Documentation
 
-The `ZerokProbe` CRD allows users to define probes for filtering traces based on specific criteria. These probes can be used to filter traces collected in the Kubernetes cluster. These services need to be instrumented using the OpenTelemetry operator. You can refer to this doc <placeholder> for steps for instrumenting your services.
+The `ZerokProbe` CRD allows users to define probes for filtering traces based on specific criteria. These probes can be used to filter traces collected in the Kubernetes cluster. These target services need to be instrumented using the OpenTelemetry operator. You can refer to this doc <placeholder> for steps on how to instrument your services.
 
 ## CRD Structure
 
@@ -20,7 +20,7 @@ Below is the structure of the `ZerokProbe` CRD with an explanation for each fiel
 
 Set of rules applying to a specific span from a specific service. Please note that this service name is the name captured by OpenTelemetry and is different from the kubernetes service name.
 
-In the example, the rules are applied to spans from the `orders` service. The prefix `OTEL` refers to the type of rule supported and is currently the only type supported. We plan to add more types in the future.
+In the example, the rules are applied to spans from the `orders` service. The prefix `OTEL` means that the probe should only be applied to data collected by OpenTelemetry agents. Currently, this is the only type supported.  We plan to add more types in the future.
 
 ```yaml
 workloads:
