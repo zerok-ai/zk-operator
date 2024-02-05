@@ -3,11 +3,10 @@
 VERSION ?= testing23
 
 #Docker image location
-LOCATION ?= us-west1
-PROJECT_ID ?= zerok-dev
-REPOSITORY ?= stage
-IMAGE_NAME ?= zerok-operator
-ART_Repo_URI ?= $(LOCATION)-docker.pkg.dev/$(PROJECT_ID)/$(REPOSITORY)/$(IMAGE_NAME)
+#change this to your docker hub username
+DOCKER_HUB ?= muditkmathur
+IMAGE_NAME ?= zk-operator
+ART_Repo_URI ?= $(DOCKER_HUB)/$(IMAGE_NAME)
 IMG ?= $(ART_Repo_URI):$(VERSION)
 
 BUILDER_NAME = multi-platform-builder
