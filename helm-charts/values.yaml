@@ -3,7 +3,7 @@
 global:
   image:
     pullPolicy: Always
-  dockerBase: "us-west1-docker.pkg.dev/zerok-dev/zk-client"
+  dockerBase: "zerokai"
 
 image:
   repo: "zk-operator"
