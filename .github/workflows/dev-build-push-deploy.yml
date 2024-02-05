@@ -6,17 +6,6 @@ on:
     tags: #dev/<CLUSTER>/<DOCKER-TAG-OR-VERSION>
       - 'dev/**'
 
-  #  # Uncomment the following code for testing
-#  workflow_dispatch:
-#    inputs:
-#      DOCKER_TAG:
-#        description: 'Docker Image Tag'
-#        required: true
-#        default: '0.0.9-helmtest'
-#      GKE_CLUSTER:
-#        description: 'Cluster Name'
-#        required: true
-#        default: 'devclient03'
 env:
   DOCKER_REG: ${{ vars.DOCKER_REG }}
   DOCKER_REPO: ${{ vars.DOCKER_REPO }}
