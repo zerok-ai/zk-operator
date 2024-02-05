@@ -1,3 +1,5 @@
+NAME = zk-operator
+
 # VERSION defines the project version for the project.
 # Update this value when you upgrade the version of your project.
 VERSION ?= testing23
@@ -98,5 +100,5 @@ $(CONTROLLER_GEN): $(LOCALBIN)
 # ------- CI-CD ------------
 .PHONY: ci-cd-build
 ci-cd-build: sync generate manifests
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/zk-operator-amd64 main.go
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o bin/zk-operator-arm64 main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/$(NAME)-amd64 main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o bin/$(NAME)-arm64 main.go
