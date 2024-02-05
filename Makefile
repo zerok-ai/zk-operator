@@ -6,7 +6,7 @@ VERSION ?= testing23
 
 #Docker image location
 #change this to your docker hub username
-DOCKER_HUB ?= muditkmathur
+DOCKER_HUB ?= zerokai
 IMAGE_NAME ?= zk-operator
 ART_Repo_URI ?= $(DOCKER_HUB)/$(IMAGE_NAME)
 IMG ?= $(ART_Repo_URI):$(VERSION)
