@@ -1,13 +1,14 @@
+NAME = zk-operator
+
 # VERSION defines the project version for the project.
 # Update this value when you upgrade the version of your project.
 VERSION ?= testing23
 
 #Docker image location
-LOCATION ?= us-west1
-PROJECT_ID ?= zerok-dev
-REPOSITORY ?= stage
-IMAGE_NAME ?= zerok-operator
-ART_Repo_URI ?= $(LOCATION)-docker.pkg.dev/$(PROJECT_ID)/$(REPOSITORY)/$(IMAGE_NAME)
+#change this to your docker hub username
+DOCKER_HUB ?= muditkmathur
+IMAGE_NAME ?= zk-operator
+ART_Repo_URI ?= $(DOCKER_HUB)/$(IMAGE_NAME)
 IMG ?= $(ART_Repo_URI):$(VERSION)
 
 BUILDER_NAME = multi-platform-builder
@@ -35,7 +36,7 @@ manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and Cust
 
 .PHONY: generate
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
+	$(CONTROLLER_GEN) paths="./..."
 
 .PHONY: fmt
 fmt: ## Run go fmt against code.
@@ -99,5 +100,5 @@ $(CONTROLLER_GEN): $(LOCALBIN)
 # ------- CI-CD ------------
 .PHONY: ci-cd-build
 ci-cd-build: sync generate manifests
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/zk-operator-amd64 main.go
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o bin/zk-operator-arm64 main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/$(NAME)-amd64 main.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o bin/$(NAME)-arm64 main.go

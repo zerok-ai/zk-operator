@@ -35,6 +35,7 @@ kind: Service
 metadata:
   labels:
     name: zk-operator
+    app.kubernetes.io/name: zk-operator
   name: zk-operator
   namespace: zk-client
 spec:

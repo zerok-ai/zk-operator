@@ -3,7 +3,9 @@ kind: Deployment
 metadata:
   labels:
     control-plane: controller-manager
-  name: zk-operator
+    app: zk-operator
+    {{- include "zk-operator.labels" . | nindent 4 }}
+  name: {{ include "zk-operator.fullname" . }}
   namespace: zk-client
 spec:
   replicas: 1
@@ -11,6 +13,7 @@ spec:
     matchLabels:
       app: zk-operator
       control-plane: controller-manager
+    {{- include "zk-operator.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       annotations:
@@ -18,6 +21,7 @@ spec:
       labels:
         app: zk-operator
         control-plane: controller-manager
+      {{- include "zk-operator.selectorLabels" . | nindent 8 }}
     spec:
       containers:
       - args:
@@ -60,10 +64,8 @@ spec:
             configMapKeyRef:
               name: zk-redis-config
               key: redisHost
-
         image: "{{ index .Values.global.dockerBase }}/{{ index .Values.image.repo }}:{{ index .Values.image.tag  }}"
         imagePullPolicy: {{ .Values.global.image.pullPolicy }}
-
         livenessProbe:
           httpGet:
             path: /healthz
@@ -98,5 +100,5 @@ spec:
       terminationGracePeriodSeconds: 10
       volumes:
       - configMap:
-          name: zk-operator
+          name: {{ include "zk-operator.fullname" . }}
         name: zk-operator-config

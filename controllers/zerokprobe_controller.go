@@ -24,8 +24,7 @@ type ZerokProbeReconciler struct {
 }
 
 var (
-	finalizers              []string = []string{"finalizers.operator.zerok.ai"}
-	zerokProbeFinalizerName          = "operator.zerok.ai/finalizer"
+	zerokProbeFinalizerName = "operator.zerok.ai/finalizer"
 )
 
 const zerokProbeHandlerLogTag = "ZerokProbeHandler"
