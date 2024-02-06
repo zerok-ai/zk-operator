@@ -63,21 +63,6 @@ Defines the filtering criteria for a particular trace. If any of the spans in th
 - **Using `in` and `not_in` Operators**: Provide a comma-separated list within a single string (e.g., "2,3,4,5").
 - **Using `between` and `not_between` Operators**: Specify two values separated by a comma (e.g., "5,7") within a single string. The evaluation considers both the start and end values as part of the range.
 
-
-### Group By
-
-- `group_by`: Specifies how to group the filtered traces.
-    - `hash`: A unique identifier for the group.
-    - `title`: A descriptive title for the group.
-    - `workload_key`: The key used to identify the workload.
-
-### Rate Limit
-
-- `rate_limit`: Defines the rate limiting criteria.
-    - `bucket_max_size`: The maximum size of the bucket for rate limiting.
-    - `bucket_refill_size`: The number of tokens added to the bucket on each tick.
-    - `tick_duration`: The duration between each tick when tokens are added.
-
 ## Example
 
 Below is an example of a `ZerokProbe` CRD that filters for 4xx HTTP status codes:
@@ -95,17 +80,6 @@ spec:
     condition: "AND"
     workload_keys:
       - "service_name"
-  group_by:
-    - hash: "attributes.\"service.name\""
-      title: "attributes.\"service.name\""
-      workload_key: "service_name"
-    - hash: "attributes.\"http.status_code\""
-      title: "attributes.\"http.status_code\""
-      workload_key: "service_name"
-  rate_limit:
-    - bucket_max_size: 100
-      bucket_refill_size: 10
-      tick_duration: "1s"
   workloads:
     "OTEL/service_name":
       rule:
