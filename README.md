@@ -28,8 +28,6 @@ Install the Zerok Operator.
 helm install [RELEASE_NAME] zerok-ai/zk-operator
 ```
 
-_See [configuration](#configuration) below._
-
 _See [helm install](https://helm.sh/docs/helm/helm_install/) for command documentation._
 
 ## Uninstall Helm Chart
