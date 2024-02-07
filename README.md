@@ -1,5 +1,5 @@
-# Zerok-operator
-The Zerok Operator is part of the [Zerok system ](https://zerok-ai.github.io/helm-charts/), which is a set of tools for observability in Kubernetes clusters. The Zerok system works along with the Opentelemetry Operator. Check out these docs [add link here] to learn more about how Zerok can benefit you. 
+# Zerok-Operator
+The Zerok Operator is part of the [Zerok System](https://zerok-ai.github.io/helm-charts/), which is a set of tools for observability in Kubernetes clusters. The Zerok System works along with the OpenTelemetry Operator. Check out these docs [add link here] to learn more about how Zerok can benefit you. 
 
 The Zerok Operator is a Kubernetes operator that provides a custom resource definition (CRD) for creating probes to capture traces of interest within Kubernetes clusters. A probe is a set of rules defined by the user for capturing traces of interest. The probes are created using the `ZerokProbe` custom resource definition (CRD). You can refer to the [ZEROKPROBE.md](ZEROKPROBE.md) for details about creating the `ZerokProbe` CRD. 
 
