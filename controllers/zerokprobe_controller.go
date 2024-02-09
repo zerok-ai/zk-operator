@@ -47,7 +47,7 @@ func (r *ZerokProbeReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	if err != nil {
 		// if the resource is not found, then just return (might look useless as this usually happens in case of Delete events)
-		zkLogger.Error(zerokProbeHandlerLogTag, "Error occurred while fetching the zerok probe resource")
+		zkLogger.Error(zerokProbeHandlerLogTag, "Error occurred while fetching the zerok probe resource might be deleted")
 		// we'll ignore not-found errors, since they can't be fixed by an immediate
 		// requeue (we'll need to wait for a new notification), and we can get them
 		// on deleted requests.
@@ -91,7 +91,7 @@ func (r *ZerokProbeReconciler) reconcileZerokProbeResource(ctx context.Context, 
 		// Let's re-fetch the Probe Custom Resource after update the status
 		// so that we have the latest state of the resource on the cluster
 		if err := r.Get(ctx, req.NamespacedName, zerokProbe); err != nil {
-			zkLogger.Error(zerokProbeHandlerLogTag, "Error occurred while fetching the zerok probe resource")
+			zkLogger.Error(zerokProbeHandlerLogTag, "Error occurred while fetching the zerok probe resource after updating the status in creating or updating process")
 			return ctrl.Result{}, err
 		}
 
