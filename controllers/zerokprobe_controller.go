@@ -227,6 +227,8 @@ func (r *ZerokProbeReconciler) handleProbeDeletion(ctx context.Context, req ctrl
 }
 
 func (r *ZerokProbeReconciler) UpdateProbeResourceStatus(ctx context.Context, req ctrl.Request, zerokProbe *operatorv1alpha1.ZerokProbe, probeStatus operatorv1alpha1.ZerokProbePhase, probeStatusType string, probeStatusReason string, probeStatusMessage string) error {
+
+	zkLogger.Debug(zerokProbeHandlerLogTag, fmt.Sprintf("Debug message for status update: %s, %s , %s", probeStatusReason, probeStatusType, probeStatusMessage))
 	// Let's re-fetch the Probe Custom Resource after update the status
 	// so that we have the latest state of the resource on the cluster
 	if err := r.Get(ctx, req.NamespacedName, zerokProbe); err != nil {
@@ -239,10 +241,8 @@ func (r *ZerokProbeReconciler) UpdateProbeResourceStatus(ctx context.Context, re
 		Message: probeStatusMessage})
 	zerokProbe.Status.Phase = probeStatus
 
-	zkLogger.Debug(zerokProbeHandlerLogTag, fmt.Sprintf("Updating Probe Status: %s, %s , %s", probeStatusReason, probeStatusType, probeStatusMessage))
-
 	if err := r.Status().Update(ctx, zerokProbe); err != nil {
-		zkLogger.Error(zerokProbeHandlerLogTag, fmt.Sprintf("Error While Updating Probe Status: %s with error: %s", zerokProbe.Spec.Title, err.Error()))
+		zkLogger.Error(zerokProbeHandlerLogTag, fmt.Sprintf("Error While Updating Probe Status: %s with error: %s with message: %s, probeStatusType: %s ", zerokProbe.Spec.Title, err.Error(), probeStatusMessage, probeStatusType))
 		return err
 	}
 
