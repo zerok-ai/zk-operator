@@ -36,7 +36,7 @@ const zerokProbeHandlerLogTag = "ZerokProbeHandler"
 
 func (r *ZerokProbeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 
-	zkLogger.Error(zerokProbeHandlerLogTag, "Reconciling CRD Probe : ")
+	zkLogger.Info(zerokProbeHandlerLogTag, "Reconciling CRD Probe : ")
 
 	zerokProbe := &operatorv1alpha1.ZerokProbe{}
 	err := r.Get(ctx, req.NamespacedName, zerokProbe)
@@ -63,7 +63,6 @@ func (r *ZerokProbeReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		// Let's re-fetch the Probe Custom Resource after update the status
 		// so that we have the latest state of the resource on the cluster
 		if err := r.Get(ctx, req.NamespacedName, zerokProbe); err != nil {
-			//log.Error(err, "Failed to re-fetch memcached")
 			return ctrl.Result{}, err
 		}
 	}
@@ -232,11 +231,11 @@ func (r *ZerokProbeReconciler) handleProbeDeletion(ctx context.Context, zerokPro
 
 func (r *ZerokProbeReconciler) UpdateProbeResourceStatus(ctx context.Context, zerokProbe *operatorv1alpha1.ZerokProbe, probeStatus operatorv1alpha1.ZerokProbePhase, probeStatusType string, probeStatusReason string, probeStatusMessage string) error {
 	meta.SetStatusCondition(&zerokProbe.Status.Conditions, metav1.Condition{Type: probeStatusType,
-		Status: metav1.ConditionUnknown, Reason: probeStatusReason,
+		Status: metav1.ConditionTrue, Reason: probeStatusReason,
 		Message: probeStatusMessage})
 	zerokProbe.Status.Phase = probeStatus
 	if err := r.Status().Update(ctx, zerokProbe); err != nil {
-		zkLogger.Error(zerokProbeHandlerLogTag, fmt.Sprintf("Error While Updating Probe: %s with error: %s", zerokProbe.Spec.Title, err.Error()))
+		zkLogger.Error(zerokProbeHandlerLogTag, fmt.Sprintf("Error While Updating Probe Status: %s with error: %s", zerokProbe.Spec.Title, err.Error()))
 		return err
 	}
 	return nil
