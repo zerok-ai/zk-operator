@@ -3,7 +3,9 @@ kind: Deployment
 metadata:
   labels:
     control-plane: controller-manager
-  name: zk-operator
+    app: zk-operator
+    {{- include "zk-operator.labels" . | nindent 4 }}
+  name: {{ include "zk-operator.fullname" . }}
   namespace: zk-client
 spec:
   replicas: 1
@@ -11,6 +13,7 @@ spec:
     matchLabels:
       app: zk-operator
       control-plane: controller-manager
+    {{- include "zk-operator.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       annotations:
@@ -18,32 +21,8 @@ spec:
       labels:
         app: zk-operator
         control-plane: controller-manager
+      {{- include "zk-operator.selectorLabels" . | nindent 8 }}
     spec:
-      initContainers:
-        - command:
-            - sh
-            - -c
-            - 'set -xe; URL="${PROTOCOL}://${SERVICE_NAME}:${SERVICE_PORT}${HEALTH_PATH}";
-              until [ $(curl -m 0.5 -s -o /dev/null -w "%{http_code}" -k ${URL}) -eq 200 ];
-              do echo "waiting for ${URL}"; sleep 2; done;'
-          name: wsp-wait
-          env:
-            - name: PROTOCOL
-              value: http
-            - name: SERVICE_NAME
-              value: zk-wsp-client.zk-client.svc.cluster.local
-            - name: SERVICE_PORT
-              value: "80"
-            - name: HEALTH_PATH
-              value: "/healthz"
-          image: us-west1-docker.pkg.dev/black-scope-358204/zk-client/prod/curl:latest
-          imagePullPolicy: IfNotPresent
-          resources: { }
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
       containers:
       - args:
         - --secure-listen-address=0.0.0.0:8443
@@ -85,10 +64,8 @@ spec:
             configMapKeyRef:
               name: zk-redis-config
               key: redisHost
-
         image: "{{ index .Values.global.dockerBase }}/{{ index .Values.image.repo }}:{{ index .Values.image.tag  }}"
         imagePullPolicy: {{ .Values.global.image.pullPolicy }}
-
         livenessProbe:
           httpGet:
             path: /healthz
@@ -123,5 +100,5 @@ spec:
       terminationGracePeriodSeconds: 10
       volumes:
       - configMap:
-          name: zk-operator
+          name: {{ include "zk-operator.fullname" . }}
         name: zk-operator-config
