@@ -89,6 +89,13 @@ func (r *ZerokProbeReconciler) reconcileZerokProbeResource(ctx context.Context, 
 		}
 
 		if !controllerutil.ContainsFinalizer(zerokProbe, zerokProbeFinalizerName) {
+			// Let's re-fetch the Probe Custom Resource after update the status
+			// so that we have the latest state of the resource on the cluster
+			if err := r.Get(ctx, req.NamespacedName, zerokProbe); err != nil {
+				zkLogger.Error(zerokProbeHandlerLogTag, "Error occurred while fetching the zerok probe resource after updating the status in creating or updating process")
+				return ctrl.Result{}, err
+			}
+
 			controllerutil.AddFinalizer(zerokProbe, zerokProbeFinalizerName)
 			if err := r.Update(ctx, zerokProbe); err != nil {
 				zkLogger.Error(zerokProbeHandlerLogTag, "Error occurred while updating the zerok probe resource after adding finalizer")
