@@ -88,13 +88,6 @@ func (r *ZerokProbeReconciler) reconcileZerokProbeResource(ctx context.Context, 
 			return ctrl.Result{}, err
 		}
 
-		// Let's re-fetch the Probe Custom Resource after update the status
-		// so that we have the latest state of the resource on the cluster
-		if err := r.Get(ctx, req.NamespacedName, zerokProbe); err != nil {
-			zkLogger.Error(zerokProbeHandlerLogTag, "Error occurred while fetching the zerok probe resource after updating the status in creating or updating process")
-			return ctrl.Result{}, err
-		}
-
 		if !controllerutil.ContainsFinalizer(zerokProbe, zerokProbeFinalizerName) {
 			controllerutil.AddFinalizer(zerokProbe, zerokProbeFinalizerName)
 			if err := r.Update(ctx, zerokProbe); err != nil {
@@ -231,14 +224,18 @@ func (r *ZerokProbeReconciler) UpdateProbeResourceStatus(ctx context.Context, re
 		Status: metav1.ConditionTrue, Reason: probeStatusReason,
 		Message: probeStatusMessage})
 	zerokProbe.Status.Phase = probeStatus
-	// Let's re-fetch the Probe Custom Resource after update the status
-	// so that we have the latest state of the resource on the cluster
-	if err := r.Get(ctx, req.NamespacedName, zerokProbe); err != nil {
-		return err
-	}
+
 	if err := r.Status().Update(ctx, zerokProbe); err != nil {
 		zkLogger.Error(zerokProbeHandlerLogTag, fmt.Sprintf("Error While Updating Probe Status: %s with error: %s", zerokProbe.Spec.Title, err.Error()))
 		return err
 	}
+
+	// Let's re-fetch the Probe Custom Resource after update the status
+	// so that we have the latest state of the resource on the cluster
+	if err := r.Get(ctx, req.NamespacedName, zerokProbe); err != nil {
+		zkLogger.Error(zerokProbeHandlerLogTag, "Error occurred while fetching the zerok probe resource after updating the status in creating or updating process")
+		return err
+	}
+
 	return nil
 }
