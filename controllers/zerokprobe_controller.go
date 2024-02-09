@@ -225,6 +225,13 @@ func (r *ZerokProbeReconciler) UpdateProbeResourceStatus(ctx context.Context, re
 		Message: probeStatusMessage})
 	zerokProbe.Status.Phase = probeStatus
 
+	// Let's re-fetch the Probe Custom Resource after update the status
+	// so that we have the latest state of the resource on the cluster
+	if err := r.Get(ctx, req.NamespacedName, zerokProbe); err != nil {
+		zkLogger.Error(zerokProbeHandlerLogTag, "Error occurred while fetching the zerok probe resource after updating the status in creating or updating process")
+		return err
+	}
+
 	if err := r.Status().Update(ctx, zerokProbe); err != nil {
 		zkLogger.Error(zerokProbeHandlerLogTag, fmt.Sprintf("Error While Updating Probe Status: %s with error: %s", zerokProbe.Spec.Title, err.Error()))
 		return err
