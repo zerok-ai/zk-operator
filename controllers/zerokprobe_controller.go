@@ -6,8 +6,6 @@ import (
 	operatorv1alpha1 "github.com/zerok-ai/zk-operator/api/v1alpha1"
 	"github.com/zerok-ai/zk-operator/internal/handler"
 	zkLogger "github.com/zerok-ai/zk-utils-go/logs"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -217,14 +215,15 @@ func (r *ZerokProbeReconciler) handleProbeDeletion(ctx context.Context, zerokPro
 }
 
 func (r *ZerokProbeReconciler) UpdateProbeResourceStatus(ctx context.Context, zerokProbe *operatorv1alpha1.ZerokProbe, probeStatusType string, probeStatusReason string, probeStatusMessage string) error {
-	meta.SetStatusCondition(&zerokProbe.Status.Conditions, metav1.Condition{Type: probeStatusType,
-		Status: metav1.ConditionTrue, Reason: probeStatusReason,
-		Message: probeStatusMessage})
-	if err := r.Status().Update(ctx, zerokProbe); err != nil {
-		zkLogger.Error(zerokProbeHandlerLogTag, fmt.Sprintf("Error While Updating Probe Status: %s with error: %s", zerokProbe.Spec.Title, err.Error()))
-		return err
-	}
-	return r.UpdateProbeObject(ctx, zerokProbe.Namespace, zerokProbe.Name, zerokProbe)
+	//meta.SetStatusCondition(&zerokProbe.Status.Conditions, metav1.Condition{Type: probeStatusType,
+	//	Status: metav1.ConditionTrue, Reason: probeStatusReason,
+	//	Message: probeStatusMessage})
+	//if err := r.Status().Update(ctx, zerokProbe); err != nil {
+	//	zkLogger.Error(zerokProbeHandlerLogTag, fmt.Sprintf("Error While Updating Probe Status: %s with error: %s", zerokProbe.Spec.Title, err.Error()))
+	//	return err
+	//}
+	//return r.UpdateProbeObject(ctx, zerokProbe.Namespace, zerokProbe.Name, zerokProbe)
+	return nil
 }
 
 // Let's re-fetch the Probe Custom Resource after update the status
