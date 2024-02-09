@@ -87,10 +87,10 @@ func (r *ZerokProbeReconciler) reconcileZerokProbeResource(ctx context.Context, 
 				zkLogger.Error(zerokProbeHandlerLogTag, "Error occurred while updating the status of the zerok probe resource in creating process")
 				return ctrl.Result{}, err
 			}
-			result, err2 := r.addFinalizerIfNotPresent(ctx, zerokProbe)
-			if err2 != nil {
-				return result, err2
-			}
+			//result, err2 := r.addFinalizerIfNotPresent(ctx, zerokProbe)
+			//if err2 != nil {
+			//	return result, err2
+			//}
 			return r.handleProbeCreation(ctx, zerokProbe)
 		}
 
@@ -120,15 +120,15 @@ func (r *ZerokProbeReconciler) reconcileZerokProbeResource(ctx context.Context, 
 				return ctrl.Result{RequeueAfter: time.Second * 5}, err
 			}
 
-			// remove our finalizer from the list and update it.
-			controllerutil.RemoveFinalizer(zerokProbe, zerokProbeFinalizerName)
-			if err := r.Update(ctx, zerokProbe); err != nil {
-				return ctrl.Result{RequeueAfter: time.Second * 5}, err
-			}
-			err := r.FetchUpdatedProbeObject(ctx, zerokProbe.Namespace, zerokProbe.Name, zerokProbe)
-			if err != nil {
-				return ctrl.Result{}, err
-			}
+			//// remove our finalizer from the list and update it.
+			//controllerutil.RemoveFinalizer(zerokProbe, zerokProbeFinalizerName)
+			//if err := r.Update(ctx, zerokProbe); err != nil {
+			//	return ctrl.Result{RequeueAfter: time.Second * 5}, err
+			//}
+			//err := r.FetchUpdatedProbeObject(ctx, zerokProbe.Namespace, zerokProbe.Name, zerokProbe)
+			//if err != nil {
+			//	return ctrl.Result{}, err
+			//}
 		}
 		// Stop reconciliation as the item is being deleted
 		return ctrl.Result{}, nil
