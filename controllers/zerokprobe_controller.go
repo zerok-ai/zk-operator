@@ -225,7 +225,11 @@ func (r *ZerokProbeReconciler) handleProbeDeletion(ctx context.Context, zerokPro
 
 func (r *ZerokProbeReconciler) UpdateProbeResourceStatus(ctx context.Context, zerokProbe *operatorv1alpha1.ZerokProbe, probeStatusType string, probeStatusReason string, probeStatusMessage string) error {
 	zerokProbe.Status.Phase = operatorv1alpha1.ZerokProbePhase(probeStatusReason)
-	if err := r.Status().Update(ctx, zerokProbe); err != nil {
+	err := r.FetchUpdatedProbeObject(ctx, zerokProbe.Namespace, zerokProbe.Name, zerokProbe)
+	if err != nil {
+		return err
+	}
+	if err = r.Status().Update(ctx, zerokProbe); err != nil {
 		zkLogger.Error(zerokProbeHandlerLogTag, fmt.Sprintf("Error While Updating Probe Status: %s with error: %s", zerokProbe.Spec.Title, err.Error()))
 		return err
 	}
