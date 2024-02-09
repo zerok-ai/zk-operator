@@ -75,25 +75,27 @@ func (r *ZerokProbeReconciler) reconcileZerokProbeResource(ctx context.Context, 
 	// check if it is deletion
 	// examine DeletionTimestamp to determine if object is under deletion
 	if zerokProbe.ObjectMeta.GetDeletionTimestamp().IsZero() {
-		// The object is not being deleted, so if it does not have our finalizer,
-		// then lets add the finalizer and update the object. This is equivalent
-		// registering our finalizer.
+		// The object is not being deleted
 
-		if zerokProbe.ObjectMeta.UID == "" {
+		if zerokProbe.ObjectMeta.UID == "" || zerokProbe.ObjectMeta.Finalizers == nil || len(zerokProbe.ObjectMeta.Finalizers) == 0 {
 			// probe create scenario
 			err := r.UpdateProbeResourceStatus(ctx, zerokProbe, probeStatusType, "Probe_Creating", fmt.Sprintf("Started Probe Creation Process : %s", zerokProbe.Spec.Title))
 			if err != nil {
 				zkLogger.Error(zerokProbeHandlerLogTag, "Error occurred while updating the status of the zerok probe resource in creating process")
 				return ctrl.Result{}, err
 			}
-			result, err2 := r.addFinalizerIfNotPresent(ctx, zerokProbe)
-			if err2 != nil {
-				return result, err2
+
+			//so if it does not have our finalizer,
+			// then lets add the finalizer and update the object. This is equivalent
+			// registering our finalizer.
+			err = r.addFinalizerIfNotPresent(ctx, zerokProbe)
+			if err != nil {
+				return ctrl.Result{}, err
 			}
 			return r.handleProbeCreation(ctx, zerokProbe)
 		}
 
-		//Probe update scenario
+		////Probe update scenario
 		err := r.UpdateProbeResourceStatus(ctx, zerokProbe, probeStatusType, "Probe_Updating", fmt.Sprintf("Started Probe Updating Process : %s", zerokProbe.Spec.Title))
 		if err != nil {
 			zkLogger.Error(zerokProbeHandlerLogTag, "Error occurred while updating the status of the zerok probe resource in updating process")
@@ -114,14 +116,17 @@ func (r *ZerokProbeReconciler) reconcileZerokProbeResource(ctx context.Context, 
 			if err := r.handleProbeDeletion(ctx, zerokProbe); err != nil {
 				// if fail to delete the external dependency here, return with error
 				// so that it can be retried
-				return ctrl.Result{RequeueAfter: time.Second * 5}, err
+				//reconciliation after 5 seconds to retry
+				return ctrl.Result{RequeueAfter: time.Second * 5}, nil
 			}
 
 			// remove our finalizer from the list and update it.
 			controllerutil.RemoveFinalizer(zerokProbe, zerokProbeFinalizerName)
 			if err := r.Update(ctx, zerokProbe); err != nil {
-				return ctrl.Result{RequeueAfter: time.Second * 5}, err
+				//reconciliation after 5 seconds to retry
+				return ctrl.Result{RequeueAfter: time.Second * 5}, nil
 			}
+			//TODO:: can be removed
 			err := r.FetchUpdatedProbeObject(ctx, zerokProbe.Namespace, zerokProbe.Name, zerokProbe)
 			if err != nil {
 				return ctrl.Result{}, err
@@ -132,20 +137,20 @@ func (r *ZerokProbeReconciler) reconcileZerokProbeResource(ctx context.Context, 
 	}
 }
 
-func (r *ZerokProbeReconciler) addFinalizerIfNotPresent(ctx context.Context, zerokProbe *operatorv1alpha1.ZerokProbe) (ctrl.Result, error) {
+func (r *ZerokProbeReconciler) addFinalizerIfNotPresent(ctx context.Context, zerokProbe *operatorv1alpha1.ZerokProbe) error {
 	if !controllerutil.ContainsFinalizer(zerokProbe, zerokProbeFinalizerName) {
 		controllerutil.AddFinalizer(zerokProbe, zerokProbeFinalizerName)
 		if err := r.Update(ctx, zerokProbe); err != nil {
 			zkLogger.Error(zerokProbeHandlerLogTag, "Error occurred while updating the zerok probe resource after adding finalizer")
-			return ctrl.Result{}, err
+			return err
 		}
 
 		err := r.FetchUpdatedProbeObject(ctx, zerokProbe.Namespace, zerokProbe.Name, zerokProbe)
 		if err != nil {
-			return ctrl.Result{}, err
+			return err
 		}
 	}
-	return ctrl.Result{}, nil
+	return nil
 }
 
 // handleCreation handles the creation of the ZerokProbe
