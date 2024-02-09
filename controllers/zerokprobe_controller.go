@@ -43,11 +43,11 @@ func (r *ZerokProbeReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	err := r.Get(ctx, req.NamespacedName, zerokProbe)
 	// Write an event to the ContainerSet instance with the namespace and name of the
 	// created deployment
-	r.Recorder.Event(zerokProbe, "Normal", "ZerokProbeReconciling", fmt.Sprintf("Zerok Probe Reconcile Event."))
+	//r.Recorder.Event(zerokProbe, "Normal", "ZerokProbeReconciling", fmt.Sprintf("Zerok Probe Reconcile Event."))
 
 	if err != nil {
 		// if the resource is not found, then just return (might look useless as this usually happens in case of Delete events)
-		zkLogger.Error(zerokProbeHandlerLogTag, "Error occurred while fetching the zerok probe resource")
+		zkLogger.Info(zerokProbeHandlerLogTag, "Error occurred while fetching the zerok probe resource might be deleted.")
 		// we'll ignore not-found errors, since they can't be fixed by an immediate
 		// requeue (we'll need to wait for a new notification), and we can get them
 		// on deleted requests.
@@ -112,24 +112,24 @@ func (r *ZerokProbeReconciler) reconcileZerokProbeResource(ctx context.Context, 
 			return ctrl.Result{}, err
 		}
 
-		if controllerutil.ContainsFinalizer(zerokProbe, zerokProbeFinalizerName) {
-			// our finalizer is present, so lets handle any external dependency
-			if err := r.handleProbeDeletion(ctx, zerokProbe); err != nil {
-				// if fail to delete the external dependency here, return with error
-				// so that it can be retried
-				return ctrl.Result{RequeueAfter: time.Second * 5}, err
-			}
-
-			//// remove our finalizer from the list and update it.
-			//controllerutil.RemoveFinalizer(zerokProbe, zerokProbeFinalizerName)
-			//if err := r.Update(ctx, zerokProbe); err != nil {
-			//	return ctrl.Result{RequeueAfter: time.Second * 5}, err
-			//}
-			//err := r.FetchUpdatedProbeObject(ctx, zerokProbe.Namespace, zerokProbe.Name, zerokProbe)
-			//if err != nil {
-			//	return ctrl.Result{}, err
-			//}
+		//if controllerutil.ContainsFinalizer(zerokProbe, zerokProbeFinalizerName) {
+		// our finalizer is present, so lets handle any external dependency
+		if err := r.handleProbeDeletion(ctx, zerokProbe); err != nil {
+			// if fail to delete the external dependency here, return with error
+			// so that it can be retried
+			return ctrl.Result{RequeueAfter: time.Second * 5}, err
 		}
+
+		//// remove our finalizer from the list and update it.
+		//controllerutil.RemoveFinalizer(zerokProbe, zerokProbeFinalizerName)
+		//if err := r.Update(ctx, zerokProbe); err != nil {
+		//	return ctrl.Result{RequeueAfter: time.Second * 5}, err
+		//}
+		//err := r.FetchUpdatedProbeObject(ctx, zerokProbe.Namespace, zerokProbe.Name, zerokProbe)
+		//if err != nil {
+		//	return ctrl.Result{}, err
+		//}
+		//}
 		// Stop reconciliation as the item is being deleted
 		return ctrl.Result{}, nil
 	}
@@ -208,12 +208,12 @@ func (r *ZerokProbeReconciler) handleProbeDeletion(ctx context.Context, zerokPro
 		if errStatus != nil {
 			zkLogger.Error(zerokProbeHandlerLogTag, fmt.Sprintf("Error While Updating Probe Status: %s with error: %s", zerokProbe.Spec.Title, errStatus.Error()))
 		}
-		r.Recorder.Event(zerokProbe, "Warning", "ErrorWhileDeleting", fmt.Sprintf("Error While Deleting CRD: %s with error: %s", zerokProbe.Spec.Title, err.Error()))
+		//r.Recorder.Event(zerokProbe, "Warning", "ErrorWhileDeleting", fmt.Sprintf("Error While Deleting CRD: %s with error: %s", zerokProbe.Spec.Title, err.Error()))
 		return err
 	}
 
 	zkLogger.Info(zerokProbeHandlerLogTag, fmt.Sprintf("Successfully Deleted Probe: %s", zerokProbe.Spec.Title))
-	r.Recorder.Event(zerokProbe, "Normal", "DeletedCRD", fmt.Sprintf("Successfully Deleted CRD: %s", zerokProbe.Spec.Title))
+	//r.Recorder.Event(zerokProbe, "Normal", "DeletedCRD", fmt.Sprintf("Successfully Deleted CRD: %s", zerokProbe.Spec.Title))
 	err = r.UpdateProbeResourceStatus(ctx, zerokProbe, probeStatusType, "Probe_Deleted", fmt.Sprintf("Successfully Deleted Probe: %s", zerokProbe.Spec.Title))
 	if err != nil {
 		return err
