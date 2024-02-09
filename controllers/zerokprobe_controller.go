@@ -79,19 +79,6 @@ func (r *ZerokProbeReconciler) reconcileZerokProbeResource(ctx context.Context, 
 		// The object is not being deleted, so if it does not have our finalizer,
 		// then lets add the finalizer and update the object. This is equivalent
 		// registering our finalizer.
-		if !controllerutil.ContainsFinalizer(zerokProbe, zerokProbeFinalizerName) {
-
-			controllerutil.AddFinalizer(zerokProbe, zerokProbeFinalizerName)
-			if err := r.Update(ctx, zerokProbe); err != nil {
-				zkLogger.Error(zerokProbeHandlerLogTag, "Error occurred while updating the zerok probe resource after adding finalizer")
-				return ctrl.Result{}, err
-			}
-
-			err := r.UpdateProbeObject(ctx, zerokProbe.Namespace, zerokProbe.Name, zerokProbe)
-			if err != nil {
-				return ctrl.Result{}, err
-			}
-		}
 
 		if zerokProbe.ObjectMeta.UID == "" {
 			// probe create scenario
@@ -99,6 +86,10 @@ func (r *ZerokProbeReconciler) reconcileZerokProbeResource(ctx context.Context, 
 			if err != nil {
 				zkLogger.Error(zerokProbeHandlerLogTag, "Error occurred while updating the status of the zerok probe resource in creating process")
 				return ctrl.Result{}, err
+			}
+			result, err2 := r.addFinalizerIfNotPresent(ctx, zerokProbe)
+			if err2 != nil {
+				return result, err2
 			}
 			return r.handleProbeCreation(ctx, zerokProbe)
 		}
@@ -142,6 +133,22 @@ func (r *ZerokProbeReconciler) reconcileZerokProbeResource(ctx context.Context, 
 		// Stop reconciliation as the item is being deleted
 		return ctrl.Result{}, nil
 	}
+}
+
+func (r *ZerokProbeReconciler) addFinalizerIfNotPresent(ctx context.Context, zerokProbe *operatorv1alpha1.ZerokProbe) (ctrl.Result, error) {
+	if !controllerutil.ContainsFinalizer(zerokProbe, zerokProbeFinalizerName) {
+		controllerutil.AddFinalizer(zerokProbe, zerokProbeFinalizerName)
+		if err := r.Update(ctx, zerokProbe); err != nil {
+			zkLogger.Error(zerokProbeHandlerLogTag, "Error occurred while updating the zerok probe resource after adding finalizer")
+			return ctrl.Result{}, err
+		}
+
+		err := r.UpdateProbeObject(ctx, zerokProbe.Namespace, zerokProbe.Name, zerokProbe)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+	}
+	return ctrl.Result{}, nil
 }
 
 // handleCreation handles the creation of the ZerokProbe
