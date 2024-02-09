@@ -125,7 +125,7 @@ func (r *ZerokProbeReconciler) reconcileZerokProbeResource(ctx context.Context, 
 			if err := r.Update(ctx, zerokProbe); err != nil {
 				return ctrl.Result{RequeueAfter: time.Second * 5}, err
 			}
-			err := r.UpdateProbeObject(ctx, zerokProbe.Namespace, zerokProbe.Name, zerokProbe)
+			err := r.FetchUpdatedProbeObject(ctx, zerokProbe.Namespace, zerokProbe.Name, zerokProbe)
 			if err != nil {
 				return ctrl.Result{}, err
 			}
@@ -143,7 +143,7 @@ func (r *ZerokProbeReconciler) addFinalizerIfNotPresent(ctx context.Context, zer
 			return ctrl.Result{}, err
 		}
 
-		err := r.UpdateProbeObject(ctx, zerokProbe.Namespace, zerokProbe.Name, zerokProbe)
+		err := r.FetchUpdatedProbeObject(ctx, zerokProbe.Namespace, zerokProbe.Name, zerokProbe)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -229,13 +229,13 @@ func (r *ZerokProbeReconciler) UpdateProbeResourceStatus(ctx context.Context, ze
 	//	zkLogger.Error(zerokProbeHandlerLogTag, fmt.Sprintf("Error While Updating Probe Status: %s with error: %s", zerokProbe.Spec.Title, err.Error()))
 	//	return err
 	//}
-	//return r.UpdateProbeObject(ctx, zerokProbe.Namespace, zerokProbe.Name, zerokProbe)
+	//return r.FetchUpdatedProbeObject(ctx, zerokProbe.Namespace, zerokProbe.Name, zerokProbe)
 	return nil
 }
 
 // Let's re-fetch the Probe Custom Resource after update the status
 // so that we have the latest state of the resource on the cluster
-func (r *ZerokProbeReconciler) UpdateProbeObject(ctx context.Context, namespace, name string, zerokProbe *operatorv1alpha1.ZerokProbe) error {
+func (r *ZerokProbeReconciler) FetchUpdatedProbeObject(ctx context.Context, namespace, name string, zerokProbe *operatorv1alpha1.ZerokProbe) error {
 	if err := r.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, zerokProbe); err != nil {
 		zkLogger.Error(zerokProbeHandlerLogTag, "Error occurred while fetching the zerok probe resource")
 		return err
