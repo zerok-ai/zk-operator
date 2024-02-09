@@ -239,6 +239,8 @@ func (r *ZerokProbeReconciler) UpdateProbeResourceStatus(ctx context.Context, re
 		Message: probeStatusMessage})
 	zerokProbe.Status.Phase = probeStatus
 
+	zkLogger.Debug(zerokProbeHandlerLogTag, fmt.Sprintf("Updating Probe Status: %s, %s , %s", probeStatusReason, probeStatusType, probeStatusMessage))
+
 	if err := r.Status().Update(ctx, zerokProbe); err != nil {
 		zkLogger.Error(zerokProbeHandlerLogTag, fmt.Sprintf("Error While Updating Probe Status: %s with error: %s", zerokProbe.Spec.Title, err.Error()))
 		return err
