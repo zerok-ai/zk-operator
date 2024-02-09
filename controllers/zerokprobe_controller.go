@@ -146,11 +146,12 @@ func (r *ZerokProbeReconciler) reconcileZerokProbeResource(ctx context.Context, 
 func (r *ZerokProbeReconciler) addFinalizerIfNotPresent(ctx context.Context, zerokProbe *operatorv1alpha1.ZerokProbe) error {
 	if !controllerutil.ContainsFinalizer(zerokProbe, zerokProbeFinalizerName) {
 
-		zkLogger.Info(zerokProbeHandlerLogTag, fmt.Sprintf("Adding Finalizer to the ZerokProbe: %s", zerokProbe.Spec.Title))
 		err := r.FetchUpdatedProbeObject(ctx, zerokProbe.Namespace, zerokProbe.Name, zerokProbe)
 		if err != nil {
 			return err
 		}
+
+		zkLogger.Info(zerokProbeHandlerLogTag, fmt.Sprintf("Adding Finalizer to the ZerokProbe: %s", zerokProbe.Spec.Title))
 		controllerutil.AddFinalizer(zerokProbe, zerokProbeFinalizerName)
 
 		if err = r.Update(ctx, zerokProbe); err != nil {
