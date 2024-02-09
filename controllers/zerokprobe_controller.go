@@ -13,6 +13,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"time"
 )
 
 // ZerokProbeReconciler reconciles a ZerokProbe object
@@ -53,20 +54,6 @@ func (r *ZerokProbeReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	// Let's just set the status as Unknown when no status are available
-	if zerokProbe.Status.Conditions == nil || len(zerokProbe.Status.Conditions) == 0 {
-		meta.SetStatusCondition(&zerokProbe.Status.Conditions, metav1.Condition{Type: "ProbeUnknown", Status: metav1.ConditionUnknown, Reason: "ProbeUnknown", Message: "Probe Resource not found"})
-		zerokProbe.Status.Phase = operatorv1alpha1.ProbeUnknown
-		if err = r.Status().Update(ctx, zerokProbe); err != nil {
-			return ctrl.Result{}, err
-		}
-		// Let's re-fetch the Probe Custom Resource after update the status
-		// so that we have the latest state of the resource on the cluster
-		if err := r.Get(ctx, req.NamespacedName, zerokProbe); err != nil {
-			return ctrl.Result{}, err
-		}
-	}
-
 	// Reconcile logic for each CRD event
 	_, err = r.reconcileZerokProbeResource(ctx, zerokProbe, req)
 	if err != nil {
@@ -74,7 +61,7 @@ func (r *ZerokProbeReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return ctrl.Result{}, err
 	}
 
-	return ctrl.Result{Requeue: true}, nil
+	return ctrl.Result{}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -146,13 +133,13 @@ func (r *ZerokProbeReconciler) reconcileZerokProbeResource(ctx context.Context, 
 			if err := r.handleProbeDeletion(ctx, zerokProbe); err != nil {
 				// if fail to delete the external dependency here, return with error
 				// so that it can be retried
-				return ctrl.Result{Requeue: true}, err
+				return ctrl.Result{RequeueAfter: time.Second * 5}, err
 			}
 
 			// remove our finalizer from the list and update it.
 			controllerutil.RemoveFinalizer(zerokProbe, zerokProbeFinalizerName)
 			if err := r.Update(ctx, zerokProbe); err != nil {
-				return ctrl.Result{Requeue: true}, err
+				return ctrl.Result{RequeueAfter: time.Second * 5}, err
 			}
 		}
 		// Stop reconciliation as the item is being deleted
@@ -171,7 +158,7 @@ func (r *ZerokProbeReconciler) handleProbeCreation(ctx context.Context, zerokPro
 		if errStatus != nil {
 			return ctrl.Result{}, errStatus
 		}
-		return ctrl.Result{Requeue: true}, err
+		return ctrl.Result{}, err
 	}
 
 	zkLogger.Info(zerokProbeHandlerLogTag, fmt.Sprintf("Successfully Created Probe: %s", zerokProbe.Spec.Title))
@@ -194,7 +181,7 @@ func (r *ZerokProbeReconciler) handleProbeUpdate(ctx context.Context, zerokProbe
 			return ctrl.Result{}, errStatus
 		}
 		r.Recorder.Event(zerokProbe, "Warning", "ErrorWhileUpdating", fmt.Sprintf("Error While Updating CRD: %s with error: %s", zerokProbe.Spec.Title, err.Error()))
-		return ctrl.Result{Requeue: true}, err
+		return ctrl.Result{}, err
 	}
 
 	zkLogger.Info(zerokProbeHandlerLogTag, fmt.Sprintf("Successfully Updated Probe: %s", zerokProbe.Spec.Title))
@@ -203,7 +190,7 @@ func (r *ZerokProbeReconciler) handleProbeUpdate(ctx context.Context, zerokProbe
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	return ctrl.Result{Requeue: true}, nil
+	return ctrl.Result{}, nil
 }
 
 // handleDeletion handles the deletion of the ZerokProbe
