@@ -1,19 +1,3 @@
-/*
-Copyright 2022.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package main
 
 import (
@@ -23,28 +7,28 @@ import (
 
 	"flag"
 	"fmt"
-	"github.com/zerok-ai/zk-operator/internal"
-	"github.com/zerok-ai/zk-operator/internal/utils"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"time"
 
-	handler "github.com/zerok-ai/zk-operator/internal/handler"
-	server "github.com/zerok-ai/zk-operator/internal/server"
-	"github.com/zerok-ai/zk-operator/internal/storage"
+	"github.com/zerok-ai/zk-operator/internal"
 	zklogger "github.com/zerok-ai/zk-utils-go/logs"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/utils/env"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	operatorv1alpha1 "github.com/zerok-ai/zk-operator/api/v1alpha1"
 	"github.com/zerok-ai/zk-operator/controllers"
+	handler "github.com/zerok-ai/zk-operator/internal/handler"
+	server "github.com/zerok-ai/zk-operator/internal/server"
 
 	"github.com/ilyakaznacheev/cleanenv"
 
 	"github.com/kataras/iris/v12"
+
 	"github.com/zerok-ai/zk-operator/internal/config"
 )
 
@@ -63,13 +47,9 @@ func init() {
 
 func main() {
 	var metricsAddr string
-	var enableLeaderElection bool
 	var probeAddr string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
-	flag.BoolVar(&enableLeaderElection, "leader-elect", true,
-		"Enable leader election for controller manager. "+
-			"Enabling this will ensure there is only one active controller manager.")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -79,8 +59,9 @@ func main() {
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	var d time.Duration = 15 * time.Minute
+
 	setupLog.Info("Starting Operator.")
-	_, err := initOperator()
+	zkCRDProbeHandler, err := initOperator()
 	if err != nil {
 		message := "Failed to initialize operator with error " + err.Error()
 		setupLog.Info(message)
@@ -92,8 +73,6 @@ func main() {
 		MetricsBindAddress:     metricsAddr,
 		Port:                   9443,
 		HealthProbeBindAddress: probeAddr,
-		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "96feec81.zerok.ai",
 		Namespace:              "",
 		SyncPeriod:             &d,
 	})
@@ -102,11 +81,13 @@ func main() {
 		panic("unable to start manager")
 	}
 
-	if err = (&controllers.ZerokopReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+	if err = (&controllers.ZerokProbeReconciler{
+		Client:            mgr.GetClient(),
+		Scheme:            mgr.GetScheme(),
+		ZkCRDProbeHandler: zkCRDProbeHandler,
+		Recorder:          mgr.GetEventRecorderFor("zerok-probe-controller"),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Zerokop")
+		setupLog.Error(err, "unable to create controller", "controller", "ZerokProbe")
 		panic("unable to create controller")
 	}
 	//+kubebuilder:scaffold:builder
@@ -127,9 +108,7 @@ func main() {
 	}
 }
 
-// TODO: Unit testing.
-// TODO: Split the initOperator method to smaller sub-methods per handler. (e.g. initWebhook, initScenarioHandler, etc.)
-func initOperator() ([]internal.ZkOperatorModule, error) {
+func initOperator() (*handler.ZkCRDProbeHandler, error) {
 
 	configPath := env.GetString("CONFIG_FILE", "")
 	if configPath == "" {
@@ -150,114 +129,27 @@ func initOperator() ([]internal.ZkOperatorModule, error) {
 
 	zkModules := make([]internal.ZkOperatorModule, 0)
 
+	crdProbeHandler := handler.ZkCRDProbeHandler{}
+	err := crdProbeHandler.Init(zkConfig)
+	if err != nil {
+		zklogger.Error(LOG_TAG, "Error while creating scenarioHandler ", err)
+		return nil, err
+	}
+
+	//Adding crdProbeHandler to zkModules
+	zkModules = append(zkModules, &crdProbeHandler)
+
 	irisConfig := iris.WithConfiguration(iris.Configuration{
 		DisablePathCorrection: true,
 		LogLevel:              zkConfig.LogsConfig.Level,
 	})
 
-	clusterId, err := GetClusterId(zkConfig)
-	if err != nil {
-		zklogger.Error(LOG_TAG, "Error while getting cluster id from secrets :", err)
-		return nil, err
-	}
-
-	zklogger.Debug(LOG_TAG, "Creating scenario handler.")
-
-	//Module for syncing scenarios
-	scenarioHandler := handler.ScenarioHandler{}
-	err = scenarioHandler.Init(zkConfig, clusterId)
-	if err != nil {
-		zklogger.Error(LOG_TAG, "Error while creating scenarioHandler ", err)
-		return nil, err
-	}
-	zkModules = append(zkModules, &scenarioHandler)
-
-	zklogger.Debug(LOG_TAG, "Creating obfuscation handler.")
-
-	// Module for managing obfuscation rules
-	obfuscationHandler := handler.ObfuscationHandler{}
-	err = obfuscationHandler.Init(zkConfig)
-	if err != nil {
-		zklogger.Error(LOG_TAG, "Error while creating obfuscationHandler ", err)
-		return nil, err
-	}
-
-	zkModules = append(zkModules, &obfuscationHandler)
-
-	zklogger.Debug(LOG_TAG, "Creating integrations handler.")
-
-	//Module for syncing integrations
-	integrationHandler := handler.IntegrationsHandler{}
-	err = integrationHandler.Init(zkConfig, clusterId)
-	if err != nil {
-		zklogger.Error(LOG_TAG, "Error while creating integrationHandler ", err)
-		return nil, err
-	}
-	zkModules = append(zkModules, &integrationHandler)
-
-	zklogger.Debug(LOG_TAG, "Creating service config handler.")
-
-	//Module for syncing integrations
-	serviceConfigHandler := handler.ServiceConfigHandler{}
-	err = serviceConfigHandler.Init(zkConfig, clusterId)
-	if err != nil {
-		zklogger.Error(LOG_TAG, "Error while creating serviceConfigHandler ", err)
-		return nil, err
-	}
-	zkModules = append(zkModules, &serviceConfigHandler)
-
-	clusterContextHandler := handler.ClusterContextHandler{ZkConfig: &zkConfig, ClusterId: clusterId}
-	zkModules = append(zkModules, &clusterContextHandler)
-
-	// Module for syncing Executor Attributes Map into Redis.
-	executorAttributesHandler := handler.ExecutorAttributesHandler{}
-	executorAttributesStore := storage.GetExecutorAttributesRedisStore(zkConfig)
-
-	executorAttributesHandler.Init(executorAttributesStore, zkConfig)
-	zkModules = append(zkModules, &executorAttributesHandler)
-
-	clusterStatusHandler := handler.NewClusterStatusHandler(zkConfig)
-	zkModules = append(zkModules, clusterStatusHandler)
-
-	//Staring syncing cluster status from zk cloud.
-	go clusterStatusHandler.StartPeriodicSync()
-
-	//Staring syncing scenarios from zk cloud.
-	go scenarioHandler.StartPeriodicSync()
-
-	//Staring syncing obfuscations from zk cloud.
-	go obfuscationHandler.StartPeriodicSync()
-
-	//Staring syncing integrations from zk cloud.
-	go integrationHandler.StartPeriodicSync()
-
-	//Staring syncing configurations from zk cloud.
-	go serviceConfigHandler.StartPeriodicSync()
-
-	//Staring syncing Executor Attributes from zk cloud.
-	go executorAttributesHandler.StartPeriodicSync()
-
-	zklogger.Debug(LOG_TAG, "Starting webhook server.")
-
 	app := newApp()
 
 	// start http server
-	go server.StartHttpServer(app, irisConfig, zkConfig, &clusterContextHandler, &serviceConfigHandler, zkModules)
+	go server.StartHttpServer(app, irisConfig, zkConfig, zkModules)
 
-	return zkModules, nil
-}
-
-func GetClusterId(zkConfig config.ZkOperatorConfig) (string, error) {
-	var err error
-	namespace := zkConfig.ClusterKey.ClusterKeyNamespace
-	secretName := zkConfig.ClusterKey.ClusterSecretName
-	clusterIdKey := zkConfig.ClusterKey.ClusterIdKey
-	clusterId, err := utils.GetSecretValue(namespace, secretName, clusterIdKey)
-	if err != nil {
-		zklogger.Error(LOG_TAG, "Error while getting cluster id from secrets :", err)
-		return "", err
-	}
-	return clusterId, err
+	return &crdProbeHandler, nil
 }
 
 func newApp() *iris.Application {
@@ -283,6 +175,9 @@ func newApp() *iris.Application {
 	}
 	app.UseRouter(crs)
 	app.AllowMethods(iris.MethodOptions)
+
+	//scraping metrics for prometheus
+	app.Get("/metrics", iris.FromStd(promhttp.Handler()))
 
 	return app
 }

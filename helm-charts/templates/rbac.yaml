@@ -79,7 +79,7 @@ rules:
 - apiGroups:
   - operator.zerok.ai
   resources:
-  - zerokinstrumentations
+  - zerokprobes
   verbs:
   - create
   - get
@@ -100,35 +100,17 @@ rules:
 - apiGroups:
   - operator.zerok.ai
   resources:
-  - zerokops/finalizers
+  - zerokprobes/finalizers
   verbs:
   - update
 - apiGroups:
   - operator.zerok.ai
   resources:
-  - zerokops/status
+  - zerokprobes/status
   verbs:
   - get
   - patch
   - update
-- apiGroups:
-    - v1
-    - ""
-  resources:
-    - nodes
-  verbs:
-    - list
-    - watch
-    - get
-- apiGroups:
-    - v1
-    - ""
-  resources:
-    - services
-  verbs:
-    - list
-    - watch
-    - get
 - apiGroups:
   - v1
   - ""

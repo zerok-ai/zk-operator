@@ -1,25 +1,55 @@
-# Zerok-operator
-Zerok operator in responsible for instrumenting the pods coming up in the cluster. It achieves this by adding a mutatingadmissionwebhook in the cluster.
+# Zerok-Operator
+The Zerok Operator is part of the [Zerok System](https://zerok-ai.github.io/helm-charts/), which is a set of tools for observability in Kubernetes clusters. The Zerok System works along with the OpenTelemetry Operator. Check out these docs [add link here] to learn more about how Zerok can benefit you. 
 
-# Pre-requisites
-It needs Redis to be up and running as it uses Redis to read language data for images. This data will be populated by the zerok-deamonset pod. The operator pod will sync the data from Redis based on the time interval specified in the config file.
+The Zerok Operator is a Kubernetes operator that provides a custom resource definition (CRD) for creating probes to capture traces of interest within Kubernetes clusters. A probe is a set of rules defined by the user for capturing traces of interest. The probes are created using the `ZerokProbe` custom resource definition (CRD). You can refer to the [ZEROKPROBE.md](ZEROKPROBE.md) for details about creating the `ZerokProbe` CRD. 
+
+## Prerequisites
+Redis needs to be installed in the cluster in zk-client namespace for the operator to work. Zerok Operator uses Redis as a backend to store the probe data. Please refer to the steps below for setting up Redis and the operator.
 
 
-### Running on the cluster
-1. Install the operator on a running cluster without rebuild.
+## Get Helm Repositories Info
 
-```
-make install
-```
-
-2. To create a new build of the operator and push to gke.
-
-```
-make buildAndPush
+```console
+helm repo add zerok-ai https://zerok-ai.github.io/helm-charts
+helm repo update
 ```
 
-3. Uninstall operator
+_See [`helm repo`](https://helm.sh/docs/helm/helm_repo/) for command documentation._
 
+## Install Helm Chart
+
+Install redis in zk-client namespace. This optional step is required only if redis is not installed in the cluster.
+```console
+helm install [RELEASE_NAME] zerok-ai/zk-redis
 ```
-make uninstall
+
+Install the Zerok Operator.
+```console
+helm install [RELEASE_NAME] zerok-ai/zk-operator
 ```
+
+_See [helm install](https://helm.sh/docs/helm/helm_install/) for command documentation._
+
+## Uninstall Helm Chart
+
+```console
+helm uninstall [RELEASE_NAME]
+```
+
+This removes all the Kubernetes components associated with the chart and deletes the release.
+
+_See [helm uninstall](https://helm.sh/docs/helm/helm_uninstall/) for command documentation._
+
+## Upgrading Helm Chart
+
+```console
+helm upgrade [RELEASE_NAME] [CHART] --install
+```
+
+_See [helm upgrade](https://helm.sh/docs/helm/helm_upgrade/) for command documentation._
+
+### Contributing
+Contributions to the Zerok Operator are welcome! Submit bug reports, feature requests, or code contributions.
+
+### Reporting Issues
+Encounter an issue? Please file a report on our GitHub issues page with detailed information to aid in quick resolution.
