@@ -107,8 +107,7 @@ spec:
                         operator:
                           type: string
                         rules:
-                          items: {}
-                          type: array
+                          x-kubernetes-preserve-unknown-fields: true
                         type:
                           type: string
                         value:

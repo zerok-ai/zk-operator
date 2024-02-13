@@ -3,13 +3,14 @@ package handler
 import (
 	"errors"
 	"github.com/kataras/iris/v12"
+	"github.com/zerok-ai/zk-operator/api/v1alpha1"
 	"github.com/zerok-ai/zk-operator/internal/config"
 	"github.com/zerok-ai/zk-operator/probe/model/response"
 	"github.com/zerok-ai/zk-operator/probe/service"
 	zkhttp "github.com/zerok-ai/zk-utils-go/http"
 	zklogger "github.com/zerok-ai/zk-utils-go/logs"
-	"github.com/zerok-ai/zk-utils-go/scenario/model"
-	"k8s.io/apimachinery/pkg/util/json"
+	"gopkg.in/yaml.v2"
+	"io"
 )
 
 type ProbeHandler interface {
@@ -67,21 +68,22 @@ func (p *probeHandler) GetAllServices(ctx iris.Context) {
 	ctx.JSON(zkHttpResponse)
 }
 
-func readProbeRequest(ctx iris.Context) (model.Scenario, error) {
-	var probeBody model.Scenario
-	body, err := ctx.GetBody()
+func readProbeRequest(ctx iris.Context) (v1alpha1.ZerokProbeSpec, error) {
+	var req v1alpha1.ZerokProbeSpec
+	body, err := io.ReadAll(ctx.Request().Body)
 	if err != nil {
-		return probeBody, err
+		return req, err
 	}
 
-	err = json.Unmarshal(body, &probeBody)
+	err = yaml.Unmarshal(body, req)
 	if err != nil {
-		return probeBody, err
+		return req, err
 	}
-	return probeBody, nil
+
+	return req, nil
 }
 
-func validateProbeBody(probeBody model.Scenario) error {
+func validateProbeBody(probeBody v1alpha1.ZerokProbeSpec) error {
 	if probeBody.Title == "" {
 		zklogger.Error(LogTag, "Title cannot be empty")
 		return errors.New("title cannot be empty")
