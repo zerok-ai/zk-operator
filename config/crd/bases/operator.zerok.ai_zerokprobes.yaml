@@ -18,9 +18,8 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: above line acts a code marker recognized by Kube builder and
-          root=true mean this is the root object ZerokProbe is the CRD schema for
-          crating probe
+        description: ZerokProbe is used to specify rules to filter the spans generated
+          by the services ZerokProbe is the CRD schema for crating probe
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -108,7 +107,8 @@ spec:
                         operator:
                           type: string
                         rules:
-                          x-kubernetes-preserve-unknown-fields: true
+                          items: {}
+                          type: array
                         type:
                           type: string
                         value:

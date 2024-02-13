@@ -291,6 +291,8 @@ github.com/zerok-ai/zk-utils-go v0.5.20-crdProbe1 h1:fWZXg5pctGA/GiTsJJUxMAA8x4g
 github.com/zerok-ai/zk-utils-go v0.5.20-crdProbe1/go.mod h1:xScrYaVTJ66ww68lMM54ykX4j1fAhj/A/aTpiTzwQ7Y=
 github.com/zerok-ai/zk-utils-go v0.5.21-badger.0.20240208055206-f9774b46abb0 h1:nEP3e1IDxLkMKYkPv5IN/KmoPuhRG/pdNzQY1tcFhJk=
 github.com/zerok-ai/zk-utils-go v0.5.21-badger.0.20240208055206-f9774b46abb0/go.mod h1:8Ov53xlPz+LLIZJFBl9jvF33Hc7XjWJp1g3lzwJw1Ow=
+github.com/zerok-ai/zk-utils-go v0.5.21-badger.0.20240213105214-e46cd081d0f3 h1:sGMHvhYqLy9P9/lFi/3PH5eQD6jMjm7LlJCsx80e/d4=
+github.com/zerok-ai/zk-utils-go v0.5.21-badger.0.20240213105214-e46cd081d0f3/go.mod h1:8Ov53xlPz+LLIZJFBl9jvF33Hc7XjWJp1g3lzwJw1Ow=
 go.uber.org/atomic v1.7.0 h1:ADUqmZGgLDDfbSL9ZmPxKTybcoEYHgpYfELNoN+7hsw=
 go.uber.org/atomic v1.7.0/go.mod h1:fEN4uk6kAWBTFdckzkM89CLk9XfWZrxpCo0nPH17wJc=
 go.uber.org/goleak v1.1.10/go.mod h1:8a7PlsEVH3e/a/GLqe5IIrQx6GzcnRmZEufDUTk4A7A=
