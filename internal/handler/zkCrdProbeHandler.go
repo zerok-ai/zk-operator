@@ -23,7 +23,7 @@ type ZkCRDProbeHandler struct {
 	latestUpdateTime string
 }
 
-func (h *ZkCRDProbeHandler) Init(cfg config.ZkOperatorConfig) error {
+func (h *ZkCRDProbeHandler) Init(cfg config.AppConfig) error {
 	store, err := zkredis.GetVersionedStore[model.Scenario](&cfg.Redis, dbNames.ScenariosDBName, common.RedisSyncInterval)
 	if err != nil {
 		return err

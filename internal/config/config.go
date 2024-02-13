@@ -13,7 +13,7 @@ type ClusterContextConfig struct {
 	Port      string `yaml:"port"`
 }
 
-type ZkOperatorConfig struct {
+type AppConfig struct {
 	Redis          config.RedisConfig    `yaml:"redis"`
 	Http           HttpServerConfig      `yaml:"http"`
 	LogsConfig     logsConfig.LogsConfig `yaml:"logs"`

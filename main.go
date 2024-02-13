@@ -8,6 +8,10 @@ import (
 	"flag"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/zerok-ai/zk-operator/probe"
+	probeHandler "github.com/zerok-ai/zk-operator/probe/handler"
+	probeService "github.com/zerok-ai/zk-operator/probe/service"
+	"github.com/zerok-ai/zk-operator/store"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"time"
 
@@ -120,7 +124,7 @@ func initOperator() (*handler.ZkCRDProbeHandler, error) {
 		return nil, fmt.Errorf("config yaml path not found")
 	}
 
-	var zkConfig config.ZkOperatorConfig
+	var zkConfig config.AppConfig
 
 	if err := cleanenv.ReadConfig(configPath, &zkConfig); err != nil {
 		zklogger.Error(LOG_TAG, "Error while reading config ", err)
@@ -179,9 +183,17 @@ func newApp() *iris.Application {
 	}
 	app.UseRouter(crs)
 	app.AllowMethods(iris.MethodOptions)
+	ph, _ := getProbeHandler(config.AppConfig{})
+	probe.Initialize(app.Party("/v1"), ph)
 
 	//scraping metrics for prometheus
 	app.Get("/metrics", iris.FromStd(promhttp.Handler()))
 
 	return app
+}
+
+func getProbeHandler(cfg config.AppConfig) (probeHandler.ProbeHandler, error) {
+	serviceStore := store.GetServiceStore(cfg.Redis)
+	probeSvc := probeService.NewProbeService(serviceStore)
+	return probeHandler.NewProbeHandler(probeSvc), nil
 }

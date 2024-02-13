@@ -1,0 +1,18 @@
+package probe
+
+import (
+	"github.com/kataras/iris/v12/core/router"
+	"github.com/zerok-ai/zk-operator/probe/handler"
+)
+
+func Initialize(app router.Party, ph handler.ProbeHandler) {
+
+	probeAPI := app.Party("/p/probe")
+	{
+		probeAPI.Get("/", ph.GetAllProbes)
+		probeAPI.Post("/", ph.CreateProbe)
+		probeAPI.Delete("", ph.DeleteProbe)
+		probeAPI.Put("/", ph.UpdateProbe)
+		probeAPI.Put("/", ph.GetAllServices)
+	}
+}
