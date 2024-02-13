@@ -37,15 +37,11 @@ func (h *ZkCRDProbeHandler) Init(cfg config.AppConfig) error {
 func (h *ZkCRDProbeHandler) CreateCRDProbe(zerokProbe *operatorv1alpha1.ZerokProbe) (string, error) {
 	logger.Debug(zkCRDProbeLog, "New CRD created")
 	zkProbe := constructRedisProbeStructureFromCRD(zerokProbe)
-	err := validateProbe(zerokProbe)
-	if err != nil {
-		logger.Error(zkCRDProbeLog, "Error while validating probe ", err)
-		return "", err
-	}
+	//check if zkProbe is enabled to false delete from redis
 	if !zkProbe.Enabled {
 		logger.Debug(zkCRDProbeLog, "Probe is Created with enable false, not processing and storing in redis")
 	} else {
-		err = h.VersionedStore.SetValue(zkProbe.Id, zkProbe)
+		err := h.VersionedStore.SetValue(zkProbe.Id, zkProbe)
 		if err != nil {
 			if errors.Is(err, zkredis.LATEST) {
 				logger.Info(zkCRDProbeLog, "Latest value is already present in redis for crd probe Id ", zkProbe.Id)
@@ -58,11 +54,6 @@ func (h *ZkCRDProbeHandler) CreateCRDProbe(zerokProbe *operatorv1alpha1.ZerokPro
 	promMetrics.TotalProbesCreated.Inc()
 	logger.Info(zkCRDProbeLog, "Successfully created new Probe with title ", zkProbe.Title)
 	return "", nil
-}
-
-func validateProbe(probe *operatorv1alpha1.ZerokProbe) error {
-	//TODO: write validations
-	return nil
 }
 
 func (h *ZkCRDProbeHandler) DeleteCRDProbe(zkCRDProbeId string) (string, error) {
@@ -114,10 +105,17 @@ func (h *ZkCRDProbeHandler) IsHealthy() bool {
 }
 
 func constructRedisProbeStructureFromCRD(zerokProbe *operatorv1alpha1.ZerokProbe) model.Scenario {
-	var zerokProbeWorkloadsMap map[string]model.Workload
-	var zerokServiceWorkloadMap map[string]string
 
 	zkProbeScenario := model.Scenario{}
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Error(zkCRDProbeLog, "Error in constructing probe from CRD", r)
+			zkProbeScenario = model.Scenario{}
+		}
+	}()
+
+	var zerokProbeWorkloadsMap map[string]model.Workload
+	var zerokServiceWorkloadMap map[string]string
 	zkProbeScenario.Enabled = zerokProbe.Spec.Enabled
 	zkProbeScenario.Version = strconv.FormatInt(time.Now().Unix(), 10)
 	zkProbeScenario.Id = string(zerokProbe.GetUID())
@@ -161,7 +159,7 @@ func getExecutorAndServiceNameFromKey(workloadKey string) (string, string, error
 
 	executor := operatorv1alpha1.ExecutorType(parts[0])
 	switch executor {
-	case operatorv1alpha1.OTEL, operatorv1alpha1.EBPF:
+	case operatorv1alpha1.OTEL:
 		// Valid executor
 	default:
 		return "", "", errors.New(fmt.Sprintf("invalid executor:%s provided in workload key", executor))
@@ -227,12 +225,14 @@ func getZerokProbeFiltersFromCrdFilters(crdFilter operatorv1alpha1.Filter, zerok
 		}
 		probeZerokFilter.Filters = &newFilters
 	}
+	//TODO:: throw error if both workloadIds and filters are nil
 	if crdFilter.Type != "" {
 		probeZerokFilter.Type = crdFilter.Type
 	} else {
 		probeZerokFilter.Type = "workload"
 	}
 
+	//TODO:: throw error if condition is NULL or empty
 	if probeZerokFilter.Condition != "" {
 		probeZerokFilter.Condition = model.Condition(crdFilter.Condition)
 	} else {
