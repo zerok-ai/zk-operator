@@ -1,19 +1,27 @@
 package service
 
 import (
-	"github.com/kataras/iris/v12"
+	"context"
+	"fmt"
 	operatorv1alpha1 "github.com/zerok-ai/zk-operator/api/v1alpha1"
+	"github.com/zerok-ai/zk-operator/internal/utils"
 	"github.com/zerok-ai/zk-operator/probe/model/response"
 	"github.com/zerok-ai/zk-operator/store"
 	zklogger "github.com/zerok-ai/zk-utils-go/logs"
 	"github.com/zerok-ai/zk-utils-go/zkerrors"
+	"gopkg.in/yaml.v2"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/util/homedir"
 )
 
 type ProbeService interface {
-	GetAllProbes(ctx iris.Context)
-	DeleteProbe(ctx iris.Context)
-	UpdateProbe(ctx iris.Context)
-	CreateProbe(operatorv1alpha1.ZerokProbeSpec) error
+	GetAllProbes() (response.CRDListResponse, *zkerrors.ZkError)
+	DeleteProbe(name string) *zkerrors.ZkError
+	UpdateProbe(probe operatorv1alpha1.ZerokProbeSpec) *zkerrors.ZkError
+	CreateProbe(operatorv1alpha1.ZerokProbeSpec) *zkerrors.ZkError
 	GetAllServices() (response.ServiceListResponse, *zkerrors.ZkError)
 }
 
@@ -21,35 +29,160 @@ type probeService struct {
 	serviceStore store.ServiceStore
 }
 
-func (p *probeService) GetAllProbes(ctx iris.Context) {
-	//TODO implement me
-	panic("implement me")
+func NewProbeService(serviceStore *store.ServiceStore) ProbeService {
+	return &probeService{
+		serviceStore: *serviceStore,
+	}
 }
 
-func (p *probeService) DeleteProbe(ctx iris.Context) {
-	//TODO implement me
-	panic("implement me")
+func (p *probeService) GetAllProbes() (response.CRDListResponse, *zkerrors.ZkError) {
+	var probeList response.CRDListResponse
+	clientSet, err := createDynamicClient()
+	if err != nil {
+		zklogger.Error("Error while creating k8s client config", err)
+		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, nil)
+		return probeList, &zkErr
+	}
+
+	crdList, err := clientSet.Resource(utils.SchemaGroupVersionKindForResource()).List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		zklogger.Error("Error while listing CRDs", err)
+		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, err.Error())
+		return probeList, &zkErr
+	}
+
+	crds := make([]response.CRD, 0)
+	for _, item := range crdList.Items {
+		spec, _, _ := unstructured.NestedMap(item.Object, "spec")
+		var mycrd response.CRD
+		jsonStr, err := yaml.Marshal(spec)
+		if err != nil {
+			zklogger.Error("Error while marshalling CRD struct to YAML", err)
+			zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, err.Error())
+			return probeList, &zkErr
+		}
+
+		err = yaml.Unmarshal(jsonStr, &mycrd)
+		if err != nil {
+			zklogger.Error("Error while unmarshalling YAML to CRD struct", err)
+			zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, err.Error())
+			return probeList, &zkErr
+		}
+
+		crds = append(crds, mycrd)
+	}
+
+	probeList.CRDList = crds
+
+	return probeList, nil
 }
 
-func (p *probeService) UpdateProbe(ctx iris.Context) {
-	//TODO implement me
-	panic("implement me")
+func (p *probeService) DeleteProbe(name string) *zkerrors.ZkError {
+	// Create a dynamic client
+	clientSet, err := createDynamicClient()
+	if err != nil {
+		zklogger.Error("Error while creating k8s client config", err)
+		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, nil)
+		return &zkErr
+	}
+
+	crd, err := getCRD(clientSet, name)
+	if err != nil {
+		zklogger.Error("Error while getting CRD", err)
+		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, err.Error())
+		return &zkErr
+	}
+
+	if crd.GetName() != name {
+		zklogger.Error("Error while deleting CRD. Name in the CRD and probe struct do not match", nil)
+		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, nil)
+		return &zkErr
+	}
+
+	err = deleteCRD(clientSet, name)
+	if err != nil {
+		zklogger.Error("Error while deleting CRD", err)
+		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, err.Error())
+		return &zkErr
+	}
+
+	fmt.Printf("CRD deleted successfully\n")
+	return nil
 }
 
-func (p *probeService) CreateProbe(operatorv1alpha1.ZerokProbeSpec) error {
-	//zkProbeSpecs := v1alpha1.ZerokProbeSpec{
-	//	Title:     scenario.Title,
-	//	Enabled:   true,
-	//	Workloads: scenario.Workloads,
-	//}
-	//zkProbe := v1alpha1.ZerokProbe{
-	//	TypeMeta:   metav1.TypeMeta{},
-	//	ObjectMeta: metav1.ObjectMeta{},
-	//	Spec:       v1alpha1.ZerokProbeSpec{},
-	//	Status:     v1alpha1.ZerokProbeStatus{},
-	//}
+func (p *probeService) UpdateProbe(probe operatorv1alpha1.ZerokProbeSpec) *zkerrors.ZkError {
+	yamlData, err := yaml.Marshal(probe)
+	if err != nil {
+		zklogger.Error("Error while marshalling CRD struct to YAML", err)
+		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, err.Error())
+		return &zkErr
+	}
 
-	//fmt.Print(scenario.Id)
+	var unstructuredObj unstructured.Unstructured
+	err = yaml.Unmarshal(yamlData, &unstructuredObj)
+	if err != nil {
+		zklogger.Error("Error while unmarshalling YAML to unstructured object", err)
+		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, err.Error())
+		return &zkErr
+	}
+
+	if unstructuredObj.GetName() != probe.Title {
+		zklogger.Error("Error while updating CRD. Name in the CRD and probe struct do not match", nil)
+		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, nil)
+		return &zkErr
+	}
+
+	// Create a dynamic client
+	clientSet, err := createDynamicClient()
+	if err != nil {
+		zklogger.Error("Error while creating k8s client config", err)
+		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, nil)
+		return &zkErr
+	}
+
+	_, err = upsertCRD(clientSet, &unstructuredObj)
+	if err != nil {
+		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, err.Error())
+		return &zkErr
+	}
+
+	fmt.Printf("CRD updated successfully\n")
+	return nil
+}
+
+func (p *probeService) CreateProbe(probe operatorv1alpha1.ZerokProbeSpec) *zkerrors.ZkError {
+	yamlData, err := yaml.Marshal(probe)
+	if err != nil {
+		zklogger.Error("Error while marshalling CRD struct to YAML", err)
+		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, err.Error())
+		return &zkErr
+	}
+
+	var unstructuredObj unstructured.Unstructured
+	err = yaml.Unmarshal(yamlData, &unstructuredObj)
+	if err != nil {
+		zklogger.Error("Error while unmarshalling YAML to unstructured object", err)
+		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, err.Error())
+		return &zkErr
+	}
+
+	unstructuredObj.SetName(probe.Title)
+
+	// Create a dynamic client
+	clientSet, err := createDynamicClient()
+	if err != nil {
+		zklogger.Error("Error while creating k8s client config", err)
+		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, nil)
+		return &zkErr
+	}
+
+	_, err = upsertCRD(clientSet, &unstructuredObj)
+	if err != nil {
+		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, err.Error())
+		return &zkErr
+	}
+
+	fmt.Printf("CRD created successfully\n")
 	return nil
 }
 
@@ -66,8 +199,54 @@ func (p *probeService) GetAllServices() (response.ServiceListResponse, *zkerrors
 	return serviceListResponse, nil
 }
 
-func NewProbeService(serviceStore *store.ServiceStore) ProbeService {
-	return &probeService{
-		serviceStore: *serviceStore,
+func createDynamicClient() (*dynamic.DynamicClient, error) {
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		if home := homedir.HomeDir(); home != "" {
+			config, err = rest.InClusterConfig()
+			if err != nil {
+				zklogger.Error("Error while creating k8s client config", err)
+				return nil, fmt.Errorf("failed to create Kubernetes client config: %v", err)
+			}
+		}
 	}
+
+	clientSet, err := dynamic.NewForConfig(config)
+	if err != nil {
+		zklogger.Error("Error while creating k8s client config", err)
+		return nil, fmt.Errorf("failed to create Kubernetes client config: %v", err)
+	}
+
+	return clientSet, nil
+}
+
+func getCRD(clientSet *dynamic.DynamicClient, name string) (*unstructured.Unstructured, error) {
+	crd, err := clientSet.Resource(utils.SchemaGroupVersionKindForResource()).Get(context.Background(), name, metav1.GetOptions{})
+	if err != nil {
+		zklogger.Error("Error while getting CRD", err)
+		return nil, fmt.Errorf("failed to get CRD: %v", err)
+	}
+
+	return crd, nil
+}
+
+func deleteCRD(clientSet *dynamic.DynamicClient, name string) error {
+	err := clientSet.Resource(utils.SchemaGroupVersionKindForResource()).Delete(context.Background(), name, metav1.DeleteOptions{})
+	if err != nil {
+		zklogger.Error("Error while deleting CRD", err)
+		return fmt.Errorf("failed to delete CRD: %v", err)
+	}
+
+	return nil
+}
+
+func upsertCRD(clientSet *dynamic.DynamicClient, crdUpsertReq *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+	// Create the CRD
+	crd, err := clientSet.Resource(utils.SchemaGroupVersionKindForResource()).Create(context.Background(), crdUpsertReq, metav1.CreateOptions{})
+	if err != nil {
+		zklogger.Error("Error while creating CRD", err)
+		return nil, fmt.Errorf("failed to create CRD: %v", err)
+	}
+
+	return crd, nil
 }

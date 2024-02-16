@@ -28,19 +28,43 @@ type probeHandler struct {
 	cfg     config.AppConfig
 }
 
+func NewProbeHandler(service service.ProbeService) ProbeHandler {
+	return &probeHandler{service: service}
+}
+
 func (p *probeHandler) GetAllProbes(ctx iris.Context) {
-	//TODO implement me
-	panic("implement me")
+	resp, zkErr := p.service.GetAllProbes()
+	zkHttpResponse := zkhttp.ToZkResponse[response.CRDListResponse](200, resp, nil, zkErr)
+	ctx.StatusCode(zkHttpResponse.Status)
+	ctx.JSON(zkHttpResponse)
 }
 
 func (p *probeHandler) DeleteProbe(ctx iris.Context) {
-	//TODO implement me
-	panic("implement me")
+	zkErr := p.service.DeleteProbe(ctx.Params().Get("name"))
+	zkHttpResponse := zkhttp.ToZkResponse[any](200, nil, nil, zkErr)
+	ctx.StatusCode(zkHttpResponse.Status)
+	ctx.JSON(zkHttpResponse)
 }
 
 func (p *probeHandler) UpdateProbe(ctx iris.Context) {
-	//TODO implement me
-	panic("implement me")
+	probeBody, err := readProbeRequest(ctx)
+	if err != nil {
+		zklogger.Error(LogTag, "Error reading probe request", err)
+		ctx.StopWithJSON(iris.StatusBadRequest, iris.Map{"error": "Error reading probe request"})
+		return
+	}
+
+	err = validateProbeBody(probeBody)
+	if err != nil {
+		zklogger.Error(LogTag, "Error validating probe body", err)
+		ctx.StopWithJSON(iris.StatusBadRequest, iris.Map{"error": "Error validating probe body"})
+		return
+	}
+
+	zkErr := p.service.UpdateProbe(probeBody)
+	zkHttpResponse := zkhttp.ToZkResponse[any](200, nil, nil, zkErr)
+	ctx.StatusCode(zkHttpResponse.Status)
+	ctx.JSON(zkHttpResponse)
 }
 
 func (p *probeHandler) CreateProbe(ctx iris.Context) {
@@ -58,7 +82,10 @@ func (p *probeHandler) CreateProbe(ctx iris.Context) {
 		return
 	}
 
-	err = p.service.CreateProbe(probeBody)
+	zkErr := p.service.CreateProbe(probeBody)
+	zkHttpResponse := zkhttp.ToZkResponse[any](200, nil, nil, zkErr)
+	ctx.StatusCode(zkHttpResponse.Status)
+	ctx.JSON(zkHttpResponse)
 }
 
 func (p *probeHandler) GetAllServices(ctx iris.Context) {
@@ -102,8 +129,4 @@ func validateProbeBody(probeBody v1alpha1.ZerokProbeSpec) error {
 	probeBody.GroupBy = nil
 	probeBody.RateLimit = nil
 	return nil
-}
-
-func NewProbeHandler(service service.ProbeService) ProbeHandler {
-	return &probeHandler{service: service}
 }
