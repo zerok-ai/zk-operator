@@ -7,6 +7,10 @@ import (
 
 	"flag"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/zerok-ai/zk-operator/probe"
+	handler2 "github.com/zerok-ai/zk-operator/probe/handler"
+	"github.com/zerok-ai/zk-operator/probe/service"
+	"github.com/zerok-ai/zk-operator/store"
 	zkConfig "github.com/zerok-ai/zk-utils-go/config"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"time"
@@ -164,7 +168,7 @@ func newApp() *iris.Application {
 	}
 	app.UseRouter(crs)
 	app.AllowMethods(iris.MethodOptions)
-	ph, _ := getProbeHandler(config.AppConfig{})
+	ph, _ := getProbeHandler(config.ZkOperatorConfig{})
 	probe.Initialize(app.Party("/v1"), ph)
 
 	//scraping metrics for prometheus
@@ -176,8 +180,8 @@ func newApp() *iris.Application {
 	return app
 }
 
-func getProbeHandler(cfg config.AppConfig) (probeHandler.ProbeHandler, error) {
+func getProbeHandler(cfg config.ZkOperatorConfig) (handler2.ProbeHandler, error) {
 	serviceStore := store.GetServiceStore(cfg.Redis)
-	probeSvc := probeService.NewProbeService(serviceStore)
-	return probeHandler.NewProbeHandler(probeSvc), nil
+	probeSvc := service.NewProbeService(serviceStore)
+	return handler2.NewProbeHandler(probeSvc), nil
 }
