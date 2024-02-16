@@ -11,7 +11,7 @@ func Initialize(app router.Party, ph handler.ProbeHandler) {
 	{
 		probeAPI.Get("/", ph.GetAllProbes)
 		probeAPI.Post("/", ph.CreateProbe)
-		probeAPI.Delete("", ph.DeleteProbe)
+		probeAPI.Delete("/{name}", ph.DeleteProbe)
 		probeAPI.Put("/", ph.UpdateProbe)
 		probeAPI.Get("/service", ph.GetAllServices)
 	}

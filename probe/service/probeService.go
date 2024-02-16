@@ -2,12 +2,14 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	operatorv1alpha1 "github.com/zerok-ai/zk-operator/api/v1alpha1"
 	"github.com/zerok-ai/zk-operator/internal/utils"
 	"github.com/zerok-ai/zk-operator/probe/model/response"
 	"github.com/zerok-ai/zk-operator/store"
 	zklogger "github.com/zerok-ai/zk-utils-go/logs"
+	"github.com/zerok-ai/zk-utils-go/scenario/model"
 	"github.com/zerok-ai/zk-utils-go/zkerrors"
 	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,6 +18,8 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/homedir"
 )
+
+var LogTag = "probeService"
 
 type ProbeService interface {
 	GetAllProbes() (response.CRDListResponse, *zkerrors.ZkError)
@@ -51,29 +55,35 @@ func (p *probeService) GetAllProbes() (response.CRDListResponse, *zkerrors.ZkErr
 		return probeList, &zkErr
 	}
 
-	crds := make([]response.CRD, 0)
+	fmt.Printf("CRD list: %v\n", crdList)
+
+	crds := make([]model.Scenario, 0)
 	for _, item := range crdList.Items {
 		spec, _, _ := unstructured.NestedMap(item.Object, "spec")
-		var mycrd response.CRD
+		fmt.Println("-----------------" + item.GetName())
+		var myCRD model.Scenario
 		jsonStr, err := yaml.Marshal(spec)
+		fmt.Println(jsonStr)
 		if err != nil {
 			zklogger.Error("Error while marshalling CRD struct to YAML", err)
 			zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, err.Error())
 			return probeList, &zkErr
 		}
 
-		err = yaml.Unmarshal(jsonStr, &mycrd)
+		err = yaml.Unmarshal(jsonStr, &myCRD)
 		if err != nil {
 			zklogger.Error("Error while unmarshalling YAML to CRD struct", err)
 			zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, err.Error())
 			return probeList, &zkErr
 		}
 
-		crds = append(crds, mycrd)
+		crds = append(crds, myCRD)
 	}
 
-	probeList.CRDList = crds
+	a, _ := json.Marshal(crds)
+	fmt.Println(string(a))
 
+	probeList.CRDList = crds
 	return probeList, nil
 }
 
@@ -86,18 +96,24 @@ func (p *probeService) DeleteProbe(name string) *zkerrors.ZkError {
 		return &zkErr
 	}
 
+	zklogger.Error(LogTag, "Name: ", name)
+
 	crd, err := getCRD(clientSet, name)
 	if err != nil {
-		zklogger.Error("Error while getting CRD", err)
+		zklogger.Error(LogTag, "Error while getting CRD", err)
 		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, err.Error())
 		return &zkErr
 	}
 
+	zklogger.Error(LogTag, "CRD name: ", crd.GetName())
+
 	if crd.GetName() != name {
-		zklogger.Error("Error while deleting CRD. Name in the CRD and probe struct do not match", nil)
+		zklogger.Error(LogTag, "Error while deleting CRD. Name in the CRD and probe struct do not match", nil)
 		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, nil)
 		return &zkErr
 	}
+
+	zklogger.Error(LogTag, "CRD name222222: ", crd.GetName())
 
 	err = deleteCRD(clientSet, name)
 	if err != nil {
@@ -221,7 +237,7 @@ func createDynamicClient() (*dynamic.DynamicClient, error) {
 }
 
 func getCRD(clientSet *dynamic.DynamicClient, name string) (*unstructured.Unstructured, error) {
-	crd, err := clientSet.Resource(utils.SchemaGroupVersionKindForResource()).Get(context.Background(), name, metav1.GetOptions{})
+	crd, err := clientSet.Resource(utils.SchemaGroupVersionKindForResource()).Namespace("zk-client").Get(context.Background(), name, metav1.GetOptions{})
 	if err != nil {
 		zklogger.Error("Error while getting CRD", err)
 		return nil, fmt.Errorf("failed to get CRD: %v", err)
@@ -231,7 +247,7 @@ func getCRD(clientSet *dynamic.DynamicClient, name string) (*unstructured.Unstru
 }
 
 func deleteCRD(clientSet *dynamic.DynamicClient, name string) error {
-	err := clientSet.Resource(utils.SchemaGroupVersionKindForResource()).Delete(context.Background(), name, metav1.DeleteOptions{})
+	err := clientSet.Resource(utils.SchemaGroupVersionKindForResource()).Namespace("zk-client").Delete(context.Background(), name, metav1.DeleteOptions{})
 	if err != nil {
 		zklogger.Error("Error while deleting CRD", err)
 		return fmt.Errorf("failed to delete CRD: %v", err)
@@ -242,7 +258,7 @@ func deleteCRD(clientSet *dynamic.DynamicClient, name string) error {
 
 func upsertCRD(clientSet *dynamic.DynamicClient, crdUpsertReq *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 	// Create the CRD
-	crd, err := clientSet.Resource(utils.SchemaGroupVersionKindForResource()).Create(context.Background(), crdUpsertReq, metav1.CreateOptions{})
+	crd, err := clientSet.Resource(utils.SchemaGroupVersionKindForResource()).Namespace("zk-client").Create(context.Background(), crdUpsertReq, metav1.CreateOptions{})
 	if err != nil {
 		zklogger.Error("Error while creating CRD", err)
 		return nil, fmt.Errorf("failed to create CRD: %v", err)

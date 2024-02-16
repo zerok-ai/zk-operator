@@ -5,28 +5,25 @@ import (
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 
-	"flag"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/zerok-ai/zk-operator/probe"
-	handler2 "github.com/zerok-ai/zk-operator/probe/handler"
-	"github.com/zerok-ai/zk-operator/probe/service"
+	probeHandler "github.com/zerok-ai/zk-operator/probe/handler"
+	probeService "github.com/zerok-ai/zk-operator/probe/service"
 	"github.com/zerok-ai/zk-operator/store"
 	zkConfig "github.com/zerok-ai/zk-utils-go/config"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"time"
 
+	operatorv1alpha1 "github.com/zerok-ai/zk-operator/api/v1alpha1"
+	"github.com/zerok-ai/zk-operator/controllers"
 	"github.com/zerok-ai/zk-operator/internal"
+	"github.com/zerok-ai/zk-operator/internal/handler"
+	"github.com/zerok-ai/zk-operator/internal/server"
 	zklogger "github.com/zerok-ai/zk-utils-go/logs"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-
-	operatorv1alpha1 "github.com/zerok-ai/zk-operator/api/v1alpha1"
-	"github.com/zerok-ai/zk-operator/controllers"
-	"github.com/zerok-ai/zk-operator/internal/handler"
-	"github.com/zerok-ai/zk-operator/internal/server"
 
 	"github.com/kataras/iris/v12"
 
@@ -47,19 +44,19 @@ func init() {
 }
 
 func main() {
-	var metricsAddr string
-	var probeAddr string
-	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
-	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
-	opts := zap.Options{
-		Development: true,
-	}
-	opts.BindFlags(flag.CommandLine)
-	flag.Parse()
+	var metricsAddr = ":8080"
+	var probeAddr = ":8081"
+	//flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
+	//flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
+	//opts := zap.Options{
+	//	Development: true,
+	//}
+	//opts.BindFlags(flag.CommandLine)
+	//flag.Parse()
+	//
+	//ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
-	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
-
-	var d time.Duration = 15 * time.Minute
+	var d = 15 * time.Minute
 
 	setupLog.Info("Starting Operator.")
 	zkCRDProbeHandler, err := initOperator()
@@ -180,8 +177,8 @@ func newApp() *iris.Application {
 	return app
 }
 
-func getProbeHandler(cfg config.ZkOperatorConfig) (handler2.ProbeHandler, error) {
+func getProbeHandler(cfg config.ZkOperatorConfig) (probeHandler.ProbeHandler, error) {
 	serviceStore := store.GetServiceStore(cfg.Redis)
-	probeSvc := service.NewProbeService(serviceStore)
-	return handler2.NewProbeHandler(probeSvc), nil
+	probeSvc := probeService.NewProbeService(serviceStore)
+	return probeHandler.NewProbeHandler(probeSvc), nil
 }

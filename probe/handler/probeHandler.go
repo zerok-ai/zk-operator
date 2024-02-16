@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"fmt"
 	"github.com/kataras/iris/v12"
 	"github.com/zerok-ai/zk-operator/api/v1alpha1"
 	"github.com/zerok-ai/zk-operator/internal/config"
@@ -11,6 +12,7 @@ import (
 	zklogger "github.com/zerok-ai/zk-utils-go/logs"
 	"gopkg.in/yaml.v2"
 	"io"
+	"reflect"
 )
 
 type ProbeHandler interface {
@@ -25,21 +27,32 @@ const LogTag = "probeHandler"
 
 type probeHandler struct {
 	service service.ProbeService
-	cfg     config.AppConfig
+	cfg     config.ZkOperatorConfig
 }
 
 func NewProbeHandler(service service.ProbeService) ProbeHandler {
+	zklogger.Error(LogTag, "NewProbeHandler******....******")
 	return &probeHandler{service: service}
 }
 
 func (p *probeHandler) GetAllProbes(ctx iris.Context) {
+	zklogger.Error(LogTag, "GetAllProbes************")
 	resp, zkErr := p.service.GetAllProbes()
+	fmt.Println(LogTag, resp)
+	fmt.Println(LogTag, zkErr)
 	zkHttpResponse := zkhttp.ToZkResponse[response.CRDListResponse](200, resp, nil, zkErr)
 	ctx.StatusCode(zkHttpResponse.Status)
-	ctx.JSON(zkHttpResponse)
+	fmt.Println(reflect.TypeOf(zkHttpResponse))
+	err := ctx.JSON(zkHttpResponse)
+	if err != nil {
+		zklogger.Error(LogTag, "Error marshalling response", err)
+		return
+	}
+
 }
 
 func (p *probeHandler) DeleteProbe(ctx iris.Context) {
+	zklogger.Error(LogTag, "DeleteProbe************")
 	zkErr := p.service.DeleteProbe(ctx.Params().Get("name"))
 	zkHttpResponse := zkhttp.ToZkResponse[any](200, nil, nil, zkErr)
 	ctx.StatusCode(zkHttpResponse.Status)
@@ -47,6 +60,7 @@ func (p *probeHandler) DeleteProbe(ctx iris.Context) {
 }
 
 func (p *probeHandler) UpdateProbe(ctx iris.Context) {
+	zklogger.Error(LogTag, "UpdateProbe************")
 	probeBody, err := readProbeRequest(ctx)
 	if err != nil {
 		zklogger.Error(LogTag, "Error reading probe request", err)
@@ -68,6 +82,7 @@ func (p *probeHandler) UpdateProbe(ctx iris.Context) {
 }
 
 func (p *probeHandler) CreateProbe(ctx iris.Context) {
+	zklogger.Error(LogTag, "CreateProbe************")
 	probeBody, err := readProbeRequest(ctx)
 	if err != nil {
 		zklogger.Error(LogTag, "Error reading probe request", err)
@@ -89,6 +104,7 @@ func (p *probeHandler) CreateProbe(ctx iris.Context) {
 }
 
 func (p *probeHandler) GetAllServices(ctx iris.Context) {
+	zklogger.Error(LogTag, "GetAllServices************")
 	resp, zkErr := p.service.GetAllServices()
 	zkHttpResponse := zkhttp.ToZkResponse[response.ServiceListResponse](200, resp, nil, zkErr)
 	ctx.StatusCode(zkHttpResponse.Status)

@@ -8,7 +8,7 @@ import (
 const (
 	Group      = "operator.zerok.ai"
 	Version    = "v1alpha1"
-	ZeroKProbe = "ZerokProbe"
+	ZeroKProbe = "zerokprobes"
 )
 
 func GetTypeName(i interface{}) string {
