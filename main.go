@@ -6,8 +6,8 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 
 	"flag"
-	"fmt"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	zkConfig "github.com/zerok-ai/zk-utils-go/config"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"time"
 
@@ -16,16 +16,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/utils/env"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	operatorv1alpha1 "github.com/zerok-ai/zk-operator/api/v1alpha1"
 	"github.com/zerok-ai/zk-operator/controllers"
-	handler "github.com/zerok-ai/zk-operator/internal/handler"
-	server "github.com/zerok-ai/zk-operator/internal/server"
-
-	"github.com/ilyakaznacheev/cleanenv"
+	"github.com/zerok-ai/zk-operator/internal/handler"
+	"github.com/zerok-ai/zk-operator/internal/server"
 
 	"github.com/kataras/iris/v12"
 
@@ -110,27 +107,19 @@ func main() {
 
 func initOperator() (*handler.ZkCRDProbeHandler, error) {
 
-	configPath := env.GetString("CONFIG_FILE", "")
-	if configPath == "" {
-		zklogger.Error(LOG_TAG, "Config yaml path not found.")
-		return nil, fmt.Errorf("config yaml path not found")
+	var cfg config.ZkOperatorConfig
+	if err := zkConfig.ProcessArgs[config.ZkOperatorConfig](&cfg); err != nil {
+		panic(err)
 	}
 
-	var zkConfig config.ZkOperatorConfig
-
-	if err := cleanenv.ReadConfig(configPath, &zkConfig); err != nil {
-		zklogger.Error(LOG_TAG, "Error while reading config ", err)
-		return nil, err
-	}
-
-	zklogger.Init(zkConfig.LogsConfig)
+	zklogger.Init(cfg.LogsConfig)
 
 	zklogger.Debug(LOG_TAG, "Successfully read configs.")
 
 	zkModules := make([]internal.ZkOperatorModule, 0)
 
 	crdProbeHandler := handler.ZkCRDProbeHandler{}
-	err := crdProbeHandler.Init(zkConfig)
+	err := crdProbeHandler.Init(cfg)
 	if err != nil {
 		zklogger.Error(LOG_TAG, "Error while creating scenarioHandler ", err)
 		return nil, err
@@ -141,13 +130,13 @@ func initOperator() (*handler.ZkCRDProbeHandler, error) {
 
 	irisConfig := iris.WithConfiguration(iris.Configuration{
 		DisablePathCorrection: true,
-		LogLevel:              zkConfig.LogsConfig.Level,
+		LogLevel:              cfg.LogsConfig.Level,
 	})
 
 	app := newApp()
 
 	// start http server
-	go server.StartHttpServer(app, irisConfig, zkConfig, zkModules)
+	go server.StartHttpServer(app, irisConfig, cfg, zkModules)
 
 	return &crdProbeHandler, nil
 }

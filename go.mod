@@ -1,13 +1,10 @@
 module github.com/zerok-ai/zk-operator
 
-go 1.21
+go 1.20
 
 require (
 	github.com/ilyakaznacheev/cleanenv v1.4.2
 	github.com/kataras/iris/v12 v12.2.0
-	github.com/onsi/ginkgo v1.16.5
-	github.com/onsi/gomega v1.27.4
-	github.com/redis/go-redis/v9 v9.0.5
 	github.com/zerok-ai/zk-utils-go v0.5.20-crdProbe1
 	k8s.io/apimachinery v0.26.0
 	k8s.io/client-go v0.26.0
@@ -45,6 +42,9 @@ require (
 	github.com/mailgun/raymond/v2 v2.0.48 // indirect
 	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.26 // indirect
+	github.com/onsi/ginkgo/v2 v2.9.1 // indirect
+	github.com/onsi/gomega v1.27.4 // indirect
+	github.com/redis/go-redis/v9 v9.0.5 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/schollz/closestmatch v2.1.0+incompatible // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
@@ -87,7 +87,6 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.18.0
 	github.com/prometheus/client_model v0.5.0 // indirect
@@ -107,7 +106,6 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apiextensions-apiserver v0.26.0 // indirect
