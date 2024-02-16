@@ -28,10 +28,10 @@ type Workloads map[string]Workload
 
 // +k8s:deepcopy-gen=true
 type ZerokProbeSpec struct {
-	Title     string      `json:"title" yaml:"title"`
-	Enabled   bool        `json:"enabled" yaml:"enabled"`
-	Workloads Workloads   `json:"workloads,omitempty" yaml:"workloads"`
-	Filter    Filter      `json:"filter,omitempty" yaml:"filter"`
+	Title     string      `json:"title"`
+	Enabled   bool        `json:"enabled"`
+	Workloads Workloads   `json:"workloads,omitempty"`
+	Filter    Filter      `json:"filter,omitempty"`
 	GroupBy   []GroupBy   `json:"group_by,omitempty"`
 	RateLimit []RateLimit `json:"rate_limit,omitempty"`
 }
@@ -133,7 +133,7 @@ const (
 type ZerokProbeStatus struct {
 
 	// +optional
-	Phase ZerokProbePhase `json:"phase,omitempty"`
+	Phase ZerokProbePhase `json:"phase,omitempty" protobuf:"bytes,1,opt,name=phase,casttype=ZerokProbePhase"`
 
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }

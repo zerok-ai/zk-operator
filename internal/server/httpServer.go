@@ -10,7 +10,7 @@ import (
 
 var LOG_TAG_HTTP = "HttpServer"
 
-func StartHttpServer(app *iris.Application, config iris.Configurator, zkConfig config.AppConfig, modules []internal.ZkOperatorModule) {
+func StartHttpServer(app *iris.Application, config iris.Configurator, zkConfig config.ZkOperatorConfig, modules []internal.ZkOperatorModule) {
 
 	httpServerConfig := zkConfig.Http
 	logger.Debug(LOG_TAG_HTTP, zkConfig.ClusterContext.Path)
