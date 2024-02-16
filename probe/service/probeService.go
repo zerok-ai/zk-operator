@@ -1,12 +1,11 @@
 package service
 
 import (
-	"fmt"
 	"github.com/kataras/iris/v12"
+	operatorv1alpha1 "github.com/zerok-ai/zk-operator/api/v1alpha1"
 	"github.com/zerok-ai/zk-operator/probe/model/response"
 	"github.com/zerok-ai/zk-operator/store"
 	zklogger "github.com/zerok-ai/zk-utils-go/logs"
-	"github.com/zerok-ai/zk-utils-go/scenario/model"
 	"github.com/zerok-ai/zk-utils-go/zkerrors"
 )
 
@@ -14,7 +13,7 @@ type ProbeService interface {
 	GetAllProbes(ctx iris.Context)
 	DeleteProbe(ctx iris.Context)
 	UpdateProbe(ctx iris.Context)
-	CreateProbe(scenario model.Scenario) error
+	CreateProbe(operatorv1alpha1.ZerokProbeSpec) error
 	GetAllServices() (response.ServiceListResponse, *zkerrors.ZkError)
 }
 
@@ -37,7 +36,7 @@ func (p *probeService) UpdateProbe(ctx iris.Context) {
 	panic("implement me")
 }
 
-func (p *probeService) CreateProbe(scenario model.Scenario) error {
+func (p *probeService) CreateProbe(operatorv1alpha1.ZerokProbeSpec) error {
 	//zkProbeSpecs := v1alpha1.ZerokProbeSpec{
 	//	Title:     scenario.Title,
 	//	Enabled:   true,
@@ -50,7 +49,7 @@ func (p *probeService) CreateProbe(scenario model.Scenario) error {
 	//	Status:     v1alpha1.ZerokProbeStatus{},
 	//}
 
-	fmt.Print(scenario.Id)
+	//fmt.Print(scenario.Id)
 	return nil
 }
 

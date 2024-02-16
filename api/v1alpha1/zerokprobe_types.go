@@ -28,10 +28,10 @@ type Workloads map[string]Workload
 
 // +k8s:deepcopy-gen=true
 type ZerokProbeSpec struct {
-	Title     string      `json:"title"`
-	Enabled   bool        `json:"enabled"`
-	Workloads Workloads   `json:"workloads,omitempty"`
-	Filter    Filter      `json:"filter,omitempty"`
+	Title     string      `json:"title" yaml:"title"`
+	Enabled   bool        `json:"enabled" yaml:"enabled"`
+	Workloads Workloads   `json:"workloads,omitempty" yaml:"workloads"`
+	Filter    Filter      `json:"filter,omitempty" yaml:"filter"`
 	GroupBy   []GroupBy   `json:"group_by,omitempty"`
 	RateLimit []RateLimit `json:"rate_limit,omitempty"`
 }
