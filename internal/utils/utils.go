@@ -6,9 +6,10 @@ import (
 )
 
 const (
-	Group      = "operator.zerok.ai"
-	Version    = "v1alpha1"
-	ZeroKProbe = "zerokprobes"
+	Group              = "operator.zerok.ai"
+	Version            = "v1alpha1"
+	ZeroKProbeResource = "zerokprobes"
+	ZeroKProbeKind     = "ZerokProbe"
 )
 
 func GetTypeName(i interface{}) string {
@@ -19,6 +20,6 @@ func SchemaGroupVersionKindForResource() schema.GroupVersionResource {
 	return schema.GroupVersionResource{
 		Group:    Group,
 		Version:  Version,
-		Resource: ZeroKProbe,
+		Resource: ZeroKProbeResource,
 	}
 }

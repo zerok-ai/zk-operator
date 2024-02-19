@@ -4,16 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	operatorv1alpha1 "github.com/zerok-ai/zk-operator/api/v1alpha1"
+	"github.com/zerok-ai/zk-operator/api/v1alpha1"
 	"github.com/zerok-ai/zk-operator/internal/utils"
+	"github.com/zerok-ai/zk-operator/probe/model/request"
 	"github.com/zerok-ai/zk-operator/probe/model/response"
 	"github.com/zerok-ai/zk-operator/store"
 	zklogger "github.com/zerok-ai/zk-utils-go/logs"
 	"github.com/zerok-ai/zk-utils-go/scenario/model"
 	"github.com/zerok-ai/zk-utils-go/zkerrors"
-	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/homedir"
@@ -24,8 +25,8 @@ var LogTag = "probeService"
 type ProbeService interface {
 	GetAllProbes() (response.CRDListResponse, *zkerrors.ZkError)
 	DeleteProbe(name string) *zkerrors.ZkError
-	UpdateProbe(probe operatorv1alpha1.ZerokProbeSpec) *zkerrors.ZkError
-	CreateProbe(operatorv1alpha1.ZerokProbeSpec) *zkerrors.ZkError
+	UpdateProbe(name string, probe request.UpsertProbeRequest) *zkerrors.ZkError
+	CreateProbe(request.UpsertProbeRequest) *zkerrors.ZkError
 	GetAllServices() (response.ServiceListResponse, *zkerrors.ZkError)
 }
 
@@ -62,7 +63,7 @@ func (p *probeService) GetAllProbes() (response.CRDListResponse, *zkerrors.ZkErr
 		spec, _, _ := unstructured.NestedMap(item.Object, "spec")
 		fmt.Println("-----------------" + item.GetName())
 		var myCRD model.Scenario
-		jsonStr, err := yaml.Marshal(spec)
+		jsonStr, err := json.Marshal(spec)
 		fmt.Println(jsonStr)
 		if err != nil {
 			zklogger.Error("Error while marshalling CRD struct to YAML", err)
@@ -70,7 +71,7 @@ func (p *probeService) GetAllProbes() (response.CRDListResponse, *zkerrors.ZkErr
 			return probeList, &zkErr
 		}
 
-		err = yaml.Unmarshal(jsonStr, &myCRD)
+		err = json.Unmarshal(jsonStr, &myCRD)
 		if err != nil {
 			zklogger.Error("Error while unmarshalling YAML to CRD struct", err)
 			zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, err.Error())
@@ -126,25 +127,11 @@ func (p *probeService) DeleteProbe(name string) *zkerrors.ZkError {
 	return nil
 }
 
-func (p *probeService) UpdateProbe(probe operatorv1alpha1.ZerokProbeSpec) *zkerrors.ZkError {
-	yamlData, err := yaml.Marshal(probe)
+func (p *probeService) CreateProbe(probe request.UpsertProbeRequest) *zkerrors.ZkError {
+	unstructuredObj, err := convertToUnstructured(probe)
 	if err != nil {
-		zklogger.Error("Error while marshalling CRD struct to YAML", err)
+		zklogger.Error("Error while converting to unstructured object", err)
 		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, err.Error())
-		return &zkErr
-	}
-
-	var unstructuredObj unstructured.Unstructured
-	err = yaml.Unmarshal(yamlData, &unstructuredObj)
-	if err != nil {
-		zklogger.Error("Error while unmarshalling YAML to unstructured object", err)
-		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, err.Error())
-		return &zkErr
-	}
-
-	if unstructuredObj.GetName() != probe.Title {
-		zklogger.Error("Error while updating CRD. Name in the CRD and probe struct do not match", nil)
-		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, nil)
 		return &zkErr
 	}
 
@@ -156,49 +143,68 @@ func (p *probeService) UpdateProbe(probe operatorv1alpha1.ZerokProbeSpec) *zkerr
 		return &zkErr
 	}
 
-	_, err = upsertCRD(clientSet, &unstructuredObj)
+	_, err = clientSet.Resource(utils.SchemaGroupVersionKindForResource()).Namespace("zk-client").Create(context.TODO(), &unstructuredObj, metav1.CreateOptions{})
 	if err != nil {
+		zklogger.Error("Error while creating CRD", err)
 		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, err.Error())
 		return &zkErr
 	}
 
-	fmt.Printf("CRD updated successfully\n")
-	return nil
-}
-
-func (p *probeService) CreateProbe(probe operatorv1alpha1.ZerokProbeSpec) *zkerrors.ZkError {
-	yamlData, err := yaml.Marshal(probe)
 	if err != nil {
-		zklogger.Error("Error while marshalling CRD struct to YAML", err)
-		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, err.Error())
-		return &zkErr
-	}
-
-	var unstructuredObj unstructured.Unstructured
-	err = yaml.Unmarshal(yamlData, &unstructuredObj)
-	if err != nil {
-		zklogger.Error("Error while unmarshalling YAML to unstructured object", err)
-		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, err.Error())
-		return &zkErr
-	}
-
-	unstructuredObj.SetName(probe.Title)
-
-	// Create a dynamic client
-	clientSet, err := createDynamicClient()
-	if err != nil {
-		zklogger.Error("Error while creating k8s client config", err)
-		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, nil)
-		return &zkErr
-	}
-
-	_, err = upsertCRD(clientSet, &unstructuredObj)
-	if err != nil {
+		zklogger.Error("Error while creating CRD", err)
 		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, err.Error())
 		return &zkErr
 	}
 
 	fmt.Printf("CRD created successfully\n")
+	return nil
+}
+
+func (p *probeService) UpdateProbe(probeName string, probe request.UpsertProbeRequest) *zkerrors.ZkError {
+	clientSet, err := createDynamicClient()
+	if err != nil {
+		zklogger.Error("Error while creating k8s client config", err)
+		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, nil)
+		return &zkErr
+	}
+
+	zklogger.Error(LogTag, "Name: ", probeName)
+
+	crd, err := getCRD(clientSet, probeName)
+	if err != nil {
+		zklogger.Error(LogTag, "Error while getting CRD", err)
+		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, err.Error())
+		return &zkErr
+	}
+
+	zklogger.Error(LogTag, "CRD name: ", crd.GetName())
+
+	if crd.GetName() != probeName {
+		zklogger.Error(LogTag, "Error while deleting CRD. Name in the CRD and probe struct do not match", nil)
+		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, nil)
+		return &zkErr
+	}
+
+	unstructuredObj, err := convertToUnstructured(probe)
+	unstructuredObj.SetResourceVersion(crd.GetResourceVersion())
+
+	if err != nil {
+		zklogger.Error("Error while converting to unstructured object", err)
+		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, err.Error())
+		return &zkErr
+	}
+
+	_, err = clientSet.Resource(utils.SchemaGroupVersionKindForResource()).Namespace("zk-client").Update(context.TODO(), &unstructuredObj, metav1.UpdateOptions{})
+	if err != nil {
+	}
+
+	if err != nil {
+		zklogger.Error("Error while creating CRD", err)
+		zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, err.Error())
+		return &zkErr
+	}
+
+	fmt.Printf("CRD updated successfully\n")
 	return nil
 }
 
@@ -256,13 +262,52 @@ func deleteCRD(clientSet *dynamic.DynamicClient, name string) error {
 	return nil
 }
 
-func upsertCRD(clientSet *dynamic.DynamicClient, crdUpsertReq *unstructured.Unstructured) (*unstructured.Unstructured, error) {
-	// Create the CRD
-	crd, err := clientSet.Resource(utils.SchemaGroupVersionKindForResource()).Namespace("zk-client").Create(context.Background(), crdUpsertReq, metav1.CreateOptions{})
+func convertToUnstructured(probeRequest request.UpsertProbeRequest) (unstructured.Unstructured, error) {
+	var zkProbeSpec v1alpha1.ZerokProbeSpec
+	zkProbeSpec.Title = probeRequest.Title
+	zkProbeSpec.Enabled = probeRequest.Enabled
+
+	workloadByteArr, err := json.Marshal(probeRequest.Workloads)
 	if err != nil {
-		zklogger.Error("Error while creating CRD", err)
-		return nil, fmt.Errorf("failed to create CRD: %v", err)
+		zklogger.Error("Error while marshalling workloads", err)
+		return unstructured.Unstructured{}, err
 	}
 
-	return crd, nil
+	err = json.Unmarshal(workloadByteArr, &zkProbeSpec.Workloads)
+	if err != nil {
+		zklogger.Error("Error while unmarshalling workloads", err)
+		return unstructured.Unstructured{}, err
+	}
+
+	filterByteArr, err := json.Marshal(probeRequest.Filter)
+	if err != nil {
+		zklogger.Error("Error while marshalling filter", err)
+		return unstructured.Unstructured{}, err
+	}
+
+	err = json.Unmarshal(filterByteArr, &zkProbeSpec.Filter)
+	if err != nil {
+		zklogger.Error("Error while unmarshalling filter", err)
+		return unstructured.Unstructured{}, err
+	}
+
+	var unstructuredObj unstructured.Unstructured
+	probeReqStr, err := json.Marshal(zkProbeSpec)
+	if err != nil {
+		zklogger.Error("Error while marshalling probe request", err)
+		return unstructuredObj, err
+	}
+
+	var data map[string]interface{}
+	err = json.Unmarshal(probeReqStr, &data)
+	unstructuredObj = unstructured.Unstructured{Object: data}
+	unstructuredObj.SetName(probeRequest.Title)
+
+	unstructuredObj.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   utils.Group,
+		Version: utils.Version,
+		Kind:    utils.ZeroKProbeKind,
+	})
+
+	return unstructuredObj, nil
 }
