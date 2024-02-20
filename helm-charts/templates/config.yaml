@@ -9,6 +9,8 @@ data:
         service_list: 6
     http:
       port: 8472
+      healthCheckPort: ":8081"
+      metricsPort: ":8080"
     logs:
       color: {{ .Values.serviceConfigs.logs.color }}
       level: {{ .Values.serviceConfigs.logs.level }}

@@ -4,7 +4,9 @@ import "github.com/zerok-ai/zk-utils-go/storage/redis/config"
 import logsConfig "github.com/zerok-ai/zk-utils-go/logs/config"
 
 type HttpServerConfig struct {
-	Port string `yaml:"port"`
+	Port            string `yaml:"port"`
+	HealthCheckPort string `yaml:"healthCheckPort"`
+	MetricsPort     string `yaml:"metricsPort"`
 }
 
 type ClusterContextConfig struct {

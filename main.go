@@ -44,22 +44,17 @@ func init() {
 }
 
 func main() {
-	var metricsAddr = ":8080"
-	var probeAddr = ":8081"
-	//flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
-	//flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
-	//opts := zap.Options{
-	//	Development: true,
-	//}
-	//opts.BindFlags(flag.CommandLine)
-	//flag.Parse()
-	//
-	//ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+	var cfg config.ZkOperatorConfig
+	if err := zkConfig.ProcessArgs[config.ZkOperatorConfig](&cfg); err != nil {
+		panic(err)
+	}
 
+	var metricsAddr = cfg.Http.MetricsPort
+	var healthProbeAddr = cfg.Http.HealthCheckPort
 	var d = 15 * time.Minute
 
 	setupLog.Info("Starting Operator.")
-	zkCRDProbeHandler, err := initOperator()
+	zkCRDProbeHandler, err := initOperator(cfg)
 	if err != nil {
 		message := "Failed to initialize operator with error " + err.Error()
 		setupLog.Info(message)
@@ -70,7 +65,7 @@ func main() {
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
 		Port:                   9443,
-		HealthProbeBindAddress: probeAddr,
+		HealthProbeBindAddress: healthProbeAddr,
 		Namespace:              "",
 		SyncPeriod:             &d,
 	})
@@ -106,15 +101,8 @@ func main() {
 	}
 }
 
-func initOperator() (*handler.ZkCRDProbeHandler, error) {
-
-	var cfg config.ZkOperatorConfig
-	if err := zkConfig.ProcessArgs[config.ZkOperatorConfig](&cfg); err != nil {
-		panic(err)
-	}
-
+func initOperator(cfg config.ZkOperatorConfig) (*handler.ZkCRDProbeHandler, error) {
 	zklogger.Init(cfg.LogsConfig)
-
 	zklogger.Debug(LOG_TAG, "Successfully read configs.")
 
 	zkModules := make([]internal.ZkOperatorModule, 0)
