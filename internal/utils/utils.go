@@ -10,7 +10,7 @@ const (
 	Version             = "v1alpha1"
 	ZeroKProbeResource  = "zerokprobes"
 	ZeroKProbeKind      = "ZerokProbe"
-	ServiceListRedisKey = "serviceList"
+	ServiceListRedisKey = "service_list"
 )
 
 func GetTypeName(i interface{}) string {
