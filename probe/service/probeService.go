@@ -10,7 +10,6 @@ import (
 	"github.com/zerok-ai/zk-operator/probe/model/response"
 	"github.com/zerok-ai/zk-operator/store"
 	zklogger "github.com/zerok-ai/zk-utils-go/logs"
-	"github.com/zerok-ai/zk-utils-go/scenario/model"
 	"github.com/zerok-ai/zk-utils-go/zkerrors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -58,13 +57,11 @@ func (p *probeService) GetAllProbes() (response.CRDListResponse, *zkerrors.ZkErr
 
 	fmt.Printf("CRD list: %v\n", crdList)
 
-	crds := make([]model.Scenario, 0)
+	crds := make([]response.ProbeResponse, 0)
 	for _, item := range crdList.Items {
 		spec, _, _ := unstructured.NestedMap(item.Object, "spec")
-		fmt.Println("-----------------" + item.GetName())
-		var myCRD model.Scenario
+		var myCRD response.ProbeResponse
 		jsonStr, err := json.Marshal(spec)
-		fmt.Println(jsonStr)
 		if err != nil {
 			zklogger.Error("Error while marshalling CRD struct to YAML", err)
 			zkErr := zkerrors.ZkErrorBuilder{}.Build(zkerrors.ZkErrorInternalServer, err.Error())
@@ -300,7 +297,16 @@ func convertToUnstructured(probeRequest request.UpsertProbeRequest) (unstructure
 
 	var data map[string]interface{}
 	err = json.Unmarshal(probeReqStr, &data)
-	unstructuredObj = unstructured.Unstructured{Object: data}
+	unstructuredObj = unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": fmt.Sprintf("%s/%s", utils.Group, utils.Version),
+			"kind":       utils.ZeroKProbeKind,
+			"metadata": map[string]interface{}{
+				"name": probeRequest.Title,
+			},
+			"spec": data,
+		},
+	}
 	unstructuredObj.SetName(probeRequest.Title)
 
 	unstructuredObj.SetGroupVersionKind(schema.GroupVersionKind{

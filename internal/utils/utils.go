@@ -6,10 +6,11 @@ import (
 )
 
 const (
-	Group              = "operator.zerok.ai"
-	Version            = "v1alpha1"
-	ZeroKProbeResource = "zerokprobes"
-	ZeroKProbeKind     = "ZerokProbe"
+	Group               = "operator.zerok.ai"
+	Version             = "v1alpha1"
+	ZeroKProbeResource  = "zerokprobes"
+	ZeroKProbeKind      = "ZerokProbe"
+	ServiceListRedisKey = "serviceList"
 )
 
 func GetTypeName(i interface{}) string {

@@ -6,6 +6,7 @@ data:
       readTimeout: 20
       dbs:
         scenarios: 2
+        service_list: 6
     http:
       port: 8472
     logs:

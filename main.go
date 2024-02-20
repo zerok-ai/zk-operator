@@ -135,6 +135,8 @@ func initOperator() (*handler.ZkCRDProbeHandler, error) {
 	})
 
 	app := newApp()
+	ph, _ := getProbeHandler(cfg)
+	probe.Initialize(app.Party("/v1"), ph)
 
 	// start http server
 	go server.StartHttpServer(app, irisConfig, cfg, zkModules)
@@ -165,8 +167,6 @@ func newApp() *iris.Application {
 	}
 	app.UseRouter(crs)
 	app.AllowMethods(iris.MethodOptions)
-	ph, _ := getProbeHandler(config.ZkOperatorConfig{})
-	probe.Initialize(app.Party("/v1"), ph)
 
 	//scraping metrics for prometheus
 	app.Get("/metrics", iris.FromStd(promhttp.Handler()))
