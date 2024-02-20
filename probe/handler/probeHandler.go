@@ -34,7 +34,7 @@ func NewProbeHandler(service service.ProbeService) ProbeHandler {
 
 func (p *probeHandler) GetAllProbes(ctx iris.Context) {
 	resp, zkErr := p.service.GetAllProbes()
-	zkHttpResponse := zkhttp.ToZkResponse[response.CRDListResponse](200, resp, nil, zkErr)
+	zkHttpResponse := zkhttp.ToZkResponse[response.CRDListResponse](iris.StatusOK, resp, nil, zkErr)
 	ctx.StatusCode(zkHttpResponse.Status)
 	err := ctx.JSON(zkHttpResponse)
 	if err != nil {
@@ -45,7 +45,7 @@ func (p *probeHandler) GetAllProbes(ctx iris.Context) {
 
 func (p *probeHandler) DeleteProbe(ctx iris.Context) {
 	zkErr := p.service.DeleteProbe(ctx.Params().Get("name"))
-	zkHttpResponse := zkhttp.ToZkResponse[any](200, nil, nil, zkErr)
+	zkHttpResponse := zkhttp.ToZkResponse[any](iris.StatusOK, nil, nil, zkErr)
 	ctx.StatusCode(zkHttpResponse.Status)
 	ctx.JSON(zkHttpResponse)
 }
@@ -66,7 +66,7 @@ func (p *probeHandler) CreateProbe(ctx iris.Context) {
 	}
 
 	zkErr := p.service.CreateProbe(probeBody)
-	zkHttpResponse := zkhttp.ToZkResponse[any](201, nil, nil, zkErr)
+	zkHttpResponse := zkhttp.ToZkResponse[any](iris.StatusCreated, nil, nil, zkErr)
 	ctx.StatusCode(zkHttpResponse.Status)
 	ctx.JSON(zkHttpResponse)
 }
@@ -94,7 +94,7 @@ func (p *probeHandler) UpdateProbe(ctx iris.Context) {
 	}
 
 	zkErr := p.service.UpdateProbe(probeName, probeBody)
-	zkHttpResponse := zkhttp.ToZkResponse[any](200, nil, nil, zkErr)
+	zkHttpResponse := zkhttp.ToZkResponse[any](iris.StatusOK, nil, nil, zkErr)
 	ctx.StatusCode(zkHttpResponse.Status)
 	ctx.JSON(zkHttpResponse)
 }
