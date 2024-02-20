@@ -55,8 +55,6 @@ func (p *probeService) GetAllProbes() (response.CRDListResponse, *zkerrors.ZkErr
 		return probeList, &zkErr
 	}
 
-	fmt.Printf("CRD list: %v\n", crdList)
-
 	crds := make([]response.ProbeResponse, 0)
 	for _, item := range crdList.Items {
 		spec, _, _ := unstructured.NestedMap(item.Object, "spec")
@@ -77,9 +75,6 @@ func (p *probeService) GetAllProbes() (response.CRDListResponse, *zkerrors.ZkErr
 
 		crds = append(crds, myCRD)
 	}
-
-	a, _ := json.Marshal(crds)
-	fmt.Println(string(a))
 
 	probeList.CRDList = crds
 	return probeList, nil
@@ -111,8 +106,6 @@ func (p *probeService) DeleteProbe(name string) *zkerrors.ZkError {
 		return &zkErr
 	}
 
-	zklogger.Error(LogTag, "CRD name222222: ", crd.GetName())
-
 	err = deleteCRD(clientSet, name)
 	if err != nil {
 		zklogger.Error("Error while deleting CRD", err)
@@ -120,7 +113,7 @@ func (p *probeService) DeleteProbe(name string) *zkerrors.ZkError {
 		return &zkErr
 	}
 
-	fmt.Printf("CRD deleted successfully\n")
+	zklogger.Info(LogTag, "CRD deleted successfully\n")
 	return nil
 }
 
@@ -153,7 +146,7 @@ func (p *probeService) CreateProbe(probe request.UpsertProbeRequest) *zkerrors.Z
 		return &zkErr
 	}
 
-	fmt.Printf("CRD created successfully\n")
+	zklogger.Info(LogTag, "CRD created successfully\n")
 	return nil
 }
 
@@ -201,7 +194,7 @@ func (p *probeService) UpdateProbe(probeName string, probe request.UpsertProbeRe
 		return &zkErr
 	}
 
-	fmt.Printf("CRD updated successfully\n")
+	zklogger.Info(LogTag, "CRD updated successfully\n")
 	return nil
 }
 

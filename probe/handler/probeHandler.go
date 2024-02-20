@@ -2,7 +2,6 @@ package handler
 
 import (
 	"errors"
-	"fmt"
 	"github.com/kataras/iris/v12"
 	"github.com/zerok-ai/zk-operator/internal/config"
 	"github.com/zerok-ai/zk-operator/probe/model/request"
@@ -12,7 +11,6 @@ import (
 	zkhttp "github.com/zerok-ai/zk-utils-go/http"
 	zklogger "github.com/zerok-ai/zk-utils-go/logs"
 	"gopkg.in/yaml.v2"
-	"reflect"
 )
 
 type ProbeHandler interface {
@@ -36,17 +34,13 @@ func NewProbeHandler(service service.ProbeService) ProbeHandler {
 
 func (p *probeHandler) GetAllProbes(ctx iris.Context) {
 	resp, zkErr := p.service.GetAllProbes()
-	fmt.Println(LogTag, resp)
-	fmt.Println(LogTag, zkErr)
 	zkHttpResponse := zkhttp.ToZkResponse[response.CRDListResponse](200, resp, nil, zkErr)
 	ctx.StatusCode(zkHttpResponse.Status)
-	fmt.Println(reflect.TypeOf(zkHttpResponse))
 	err := ctx.JSON(zkHttpResponse)
 	if err != nil {
 		zklogger.Error(LogTag, "Error marshalling response", err)
 		return
 	}
-
 }
 
 func (p *probeHandler) DeleteProbe(ctx iris.Context) {
@@ -72,7 +66,7 @@ func (p *probeHandler) CreateProbe(ctx iris.Context) {
 	}
 
 	zkErr := p.service.CreateProbe(probeBody)
-	zkHttpResponse := zkhttp.ToZkResponse[any](200, nil, nil, zkErr)
+	zkHttpResponse := zkhttp.ToZkResponse[any](201, nil, nil, zkErr)
 	ctx.StatusCode(zkHttpResponse.Status)
 	ctx.JSON(zkHttpResponse)
 }
@@ -106,7 +100,6 @@ func (p *probeHandler) UpdateProbe(ctx iris.Context) {
 }
 
 func (p *probeHandler) GetAllServices(ctx iris.Context) {
-	zklogger.Error(LogTag, "GetAllServices************")
 	resp, zkErr := p.service.GetAllServices()
 	zkHttpResponse := zkhttp.ToZkResponse[response.ServiceListResponse](200, resp, nil, zkErr)
 	ctx.StatusCode(zkHttpResponse.Status)
