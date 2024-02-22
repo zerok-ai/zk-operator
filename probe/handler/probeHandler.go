@@ -33,7 +33,14 @@ func NewProbeHandler(service service.ProbeService) ProbeHandler {
 }
 
 func (p *probeHandler) GetAllProbes(ctx iris.Context) {
-	resp, zkErr := p.service.GetAllProbes()
+	ns := ctx.URLParam("ns")
+	if common.IsEmpty(ns) {
+		zklogger.Error(LogTag, "Namespace cannot be empty")
+		ctx.StopWithJSON(iris.StatusBadRequest, iris.Map{"error": "Namespace cannot be empty"})
+		return
+	}
+
+	resp, zkErr := p.service.GetAllProbes(ns)
 	zkHttpResponse := zkhttp.ToZkResponse[response.CRDListResponse](iris.StatusOK, resp, nil, zkErr)
 	ctx.StatusCode(zkHttpResponse.Status)
 	err := ctx.JSON(zkHttpResponse)
@@ -44,13 +51,27 @@ func (p *probeHandler) GetAllProbes(ctx iris.Context) {
 }
 
 func (p *probeHandler) DeleteProbe(ctx iris.Context) {
-	zkErr := p.service.DeleteProbe(ctx.Params().Get("name"))
+	ns := ctx.URLParam("ns")
+	if common.IsEmpty(ns) {
+		zklogger.Error(LogTag, "Namespace cannot be empty")
+		ctx.StopWithJSON(iris.StatusBadRequest, iris.Map{"error": "Namespace cannot be empty"})
+		return
+	}
+
+	zkErr := p.service.DeleteProbe(ns, ctx.Params().Get("name"))
 	zkHttpResponse := zkhttp.ToZkResponse[any](iris.StatusOK, nil, nil, zkErr)
 	ctx.StatusCode(zkHttpResponse.Status)
 	ctx.JSON(zkHttpResponse)
 }
 
 func (p *probeHandler) CreateProbe(ctx iris.Context) {
+	ns := ctx.URLParam("ns")
+	if common.IsEmpty(ns) {
+		zklogger.Error(LogTag, "Namespace cannot be empty")
+		ctx.StopWithJSON(iris.StatusBadRequest, iris.Map{"error": "Namespace cannot be empty"})
+		return
+	}
+
 	probeBody, err := readProbeRequest(ctx)
 	if err != nil {
 		zklogger.Error(LogTag, "Error reading probe request", err)
@@ -65,13 +86,20 @@ func (p *probeHandler) CreateProbe(ctx iris.Context) {
 		return
 	}
 
-	zkErr := p.service.CreateProbe(probeBody)
+	zkErr := p.service.CreateProbe(ns, probeBody)
 	zkHttpResponse := zkhttp.ToZkResponse[any](iris.StatusCreated, nil, nil, zkErr)
 	ctx.StatusCode(zkHttpResponse.Status)
 	ctx.JSON(zkHttpResponse)
 }
 
 func (p *probeHandler) UpdateProbe(ctx iris.Context) {
+	ns := ctx.URLParam("ns")
+	if common.IsEmpty(ns) {
+		zklogger.Error(LogTag, "Namespace cannot be empty")
+		ctx.StopWithJSON(iris.StatusBadRequest, iris.Map{"error": "Namespace cannot be empty"})
+		return
+	}
+
 	probeName := ctx.Params().Get("name")
 	if common.IsEmpty(probeName) {
 		zklogger.Error(LogTag, "Probe name cannot be empty")
@@ -93,7 +121,7 @@ func (p *probeHandler) UpdateProbe(ctx iris.Context) {
 		return
 	}
 
-	zkErr := p.service.UpdateProbe(probeName, probeBody)
+	zkErr := p.service.UpdateProbe(ns, probeName, probeBody)
 	zkHttpResponse := zkhttp.ToZkResponse[any](iris.StatusOK, nil, nil, zkErr)
 	ctx.StatusCode(zkHttpResponse.Status)
 	ctx.JSON(zkHttpResponse)

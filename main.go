@@ -5,6 +5,7 @@ import (
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 
+	"github.com/kataras/iris/v12"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/zerok-ai/zk-operator/probe"
 	probeHandler "github.com/zerok-ai/zk-operator/probe/handler"
@@ -25,15 +26,13 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/kataras/iris/v12"
-
 	"github.com/zerok-ai/zk-operator/internal/config"
 )
 
 var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
-	LOG_TAG  = "Main"
+	LogTag   = "Main"
 )
 
 func init() {
@@ -103,14 +102,14 @@ func main() {
 
 func initOperator(cfg config.ZkOperatorConfig) (*handler.ZkCRDProbeHandler, error) {
 	zklogger.Init(cfg.LogsConfig)
-	zklogger.Debug(LOG_TAG, "Successfully read configs.")
+	zklogger.Debug(LogTag, "Successfully read configs.")
 
 	zkModules := make([]internal.ZkOperatorModule, 0)
 
 	crdProbeHandler := handler.ZkCRDProbeHandler{}
 	err := crdProbeHandler.Init(cfg)
 	if err != nil {
-		zklogger.Error(LOG_TAG, "Error while creating scenarioHandler ", err)
+		zklogger.Error(LogTag, "Error while creating scenarioHandler ", err)
 		return nil, err
 	}
 
