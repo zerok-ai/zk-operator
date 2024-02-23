@@ -161,6 +161,11 @@ func newApp() *iris.Application {
 	//scraping metrics for prometheus
 	app.Get("/metrics", iris.FromStd(promhttp.Handler()))
 
+	app.HandleDir("/static", "./static")
+	app.Get("/probe", func(ctx iris.Context) {
+		ctx.ServeFile("./static/index.html")
+	})
+
 	return app
 }
 
