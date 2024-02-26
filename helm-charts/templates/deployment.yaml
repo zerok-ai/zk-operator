@@ -48,8 +48,6 @@ spec:
             drop:
             - ALL
       - env:
-        - name: CONFIG_FILE
-          value: /opt/operator-config.yaml
         - name: POD_NAMESPACE
           valueFrom:
             fieldRef:
@@ -94,11 +92,11 @@ spec:
             drop:
             - ALL
         volumeMounts:
-        - mountPath: /opt
-          name: zk-operator-config
+        - mountPath: /zk/config
+          name: config
       serviceAccountName: zk-operator
       terminationGracePeriodSeconds: 10
       volumes:
       - configMap:
           name: {{ include "zk-operator.fullname" . }}
-        name: zk-operator-config
+        name: config

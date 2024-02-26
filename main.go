@@ -5,29 +5,26 @@ import (
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 
-	"flag"
-	"fmt"
+	"github.com/kataras/iris/v12"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/zerok-ai/zk-operator/probe"
+	probeHandler "github.com/zerok-ai/zk-operator/probe/handler"
+	probeService "github.com/zerok-ai/zk-operator/probe/service"
+	"github.com/zerok-ai/zk-operator/store"
+	zkConfig "github.com/zerok-ai/zk-utils-go/config"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"time"
 
+	operatorv1alpha1 "github.com/zerok-ai/zk-operator/api/v1alpha1"
+	"github.com/zerok-ai/zk-operator/controllers"
 	"github.com/zerok-ai/zk-operator/internal"
+	"github.com/zerok-ai/zk-operator/internal/handler"
+	"github.com/zerok-ai/zk-operator/internal/server"
 	zklogger "github.com/zerok-ai/zk-utils-go/logs"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/utils/env"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-
-	operatorv1alpha1 "github.com/zerok-ai/zk-operator/api/v1alpha1"
-	"github.com/zerok-ai/zk-operator/controllers"
-	handler "github.com/zerok-ai/zk-operator/internal/handler"
-	server "github.com/zerok-ai/zk-operator/internal/server"
-
-	"github.com/ilyakaznacheev/cleanenv"
-
-	"github.com/kataras/iris/v12"
 
 	"github.com/zerok-ai/zk-operator/internal/config"
 )
@@ -35,7 +32,7 @@ import (
 var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
-	LOG_TAG  = "Main"
+	LogTag   = "Main"
 )
 
 func init() {
@@ -46,22 +43,17 @@ func init() {
 }
 
 func main() {
-	var metricsAddr string
-	var probeAddr string
-	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
-	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
-	opts := zap.Options{
-		Development: true,
+	var cfg config.ZkOperatorConfig
+	if err := zkConfig.ProcessArgs[config.ZkOperatorConfig](&cfg); err != nil {
+		panic(err)
 	}
-	opts.BindFlags(flag.CommandLine)
-	flag.Parse()
 
-	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
-
-	var d time.Duration = 15 * time.Minute
+	var metricsAddr = cfg.Http.MetricsPort
+	var healthProbeAddr = cfg.Http.HealthCheckPort
+	var d = 15 * time.Minute
 
 	setupLog.Info("Starting Operator.")
-	zkCRDProbeHandler, err := initOperator()
+	zkCRDProbeHandler, err := initOperator(cfg)
 	if err != nil {
 		message := "Failed to initialize operator with error " + err.Error()
 		setupLog.Info(message)
@@ -72,7 +64,7 @@ func main() {
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
 		Port:                   9443,
-		HealthProbeBindAddress: probeAddr,
+		HealthProbeBindAddress: healthProbeAddr,
 		Namespace:              "",
 		SyncPeriod:             &d,
 	})
@@ -108,31 +100,16 @@ func main() {
 	}
 }
 
-func initOperator() (*handler.ZkCRDProbeHandler, error) {
-
-	configPath := env.GetString("CONFIG_FILE", "")
-	if configPath == "" {
-		zklogger.Error(LOG_TAG, "Config yaml path not found.")
-		return nil, fmt.Errorf("config yaml path not found")
-	}
-
-	var zkConfig config.ZkOperatorConfig
-
-	if err := cleanenv.ReadConfig(configPath, &zkConfig); err != nil {
-		zklogger.Error(LOG_TAG, "Error while reading config ", err)
-		return nil, err
-	}
-
-	zklogger.Init(zkConfig.LogsConfig)
-
-	zklogger.Debug(LOG_TAG, "Successfully read configs.")
+func initOperator(cfg config.ZkOperatorConfig) (*handler.ZkCRDProbeHandler, error) {
+	zklogger.Init(cfg.LogsConfig)
+	zklogger.Debug(LogTag, "Successfully read configs.")
 
 	zkModules := make([]internal.ZkOperatorModule, 0)
 
 	crdProbeHandler := handler.ZkCRDProbeHandler{}
-	err := crdProbeHandler.Init(zkConfig)
+	err := crdProbeHandler.Init(cfg)
 	if err != nil {
-		zklogger.Error(LOG_TAG, "Error while creating scenarioHandler ", err)
+		zklogger.Error(LogTag, "Error while creating scenarioHandler ", err)
 		return nil, err
 	}
 
@@ -141,13 +118,23 @@ func initOperator() (*handler.ZkCRDProbeHandler, error) {
 
 	irisConfig := iris.WithConfiguration(iris.Configuration{
 		DisablePathCorrection: true,
-		LogLevel:              zkConfig.LogsConfig.Level,
+		LogLevel:              cfg.LogsConfig.Level,
 	})
 
 	app := newApp()
+	app.Get("/metrics", iris.FromStd(promhttp.Handler()))
+	app.Get("/metrics", iris.FromStd(promhttp.Handler()))
+	go server.StartHttpServer(app, irisConfig, cfg, zkModules)
 
-	// start http server
-	go server.StartHttpServer(app, irisConfig, zkConfig, zkModules)
+	uiApp := newApp()
+	ph, _ := getProbeHandler(cfg)
+	probe.Initialize(uiApp.Party("/"), ph)
+	uiApp.Get("/", func(ctx iris.Context) {
+		remoteURL := cfg.CrdUI.Path
+		ctx.Application().Logger().Infof("Redirecting to: %s", remoteURL)
+		ctx.Redirect(remoteURL, iris.StatusTemporaryRedirect)
+	})
+	go server.StartUIServer(uiApp, irisConfig, cfg)
 
 	return &crdProbeHandler, nil
 }
@@ -176,8 +163,11 @@ func newApp() *iris.Application {
 	app.UseRouter(crs)
 	app.AllowMethods(iris.MethodOptions)
 
-	//scraping metrics for prometheus
-	app.Get("/metrics", iris.FromStd(promhttp.Handler()))
-
 	return app
+}
+
+func getProbeHandler(cfg config.ZkOperatorConfig) (probeHandler.ProbeHandler, error) {
+	serviceStore := store.GetServiceStore(cfg.Redis)
+	probeSvc := probeService.NewProbeService(serviceStore)
+	return probeHandler.NewProbeHandler(probeSvc), nil
 }

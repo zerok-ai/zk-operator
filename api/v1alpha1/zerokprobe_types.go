@@ -133,7 +133,7 @@ const (
 type ZerokProbeStatus struct {
 
 	// +optional
-	Phase ZerokProbePhase `json:"phase,omitempty"`
+	Phase ZerokProbePhase `json:"phase,omitempty" protobuf:"bytes,1,opt,name=phase,casttype=ZerokProbePhase"`
 
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
