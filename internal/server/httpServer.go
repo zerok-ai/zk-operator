@@ -26,3 +26,11 @@ func StartHttpServer(app *iris.Application, config iris.Configurator, zkConfig c
 		return
 	}
 }
+
+func StartUIServer(app *iris.Application, config iris.Configurator, zkConfig config.ZkOperatorConfig) {
+	err := app.Run(iris.Addr(":"+zkConfig.CrdUI.Port), config)
+	if err != nil {
+		logger.Error(LOG_TAG_HTTP, "Error while starting http server ", err)
+		return
+	}
+}

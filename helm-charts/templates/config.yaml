@@ -14,6 +14,9 @@ data:
     logs:
       color: {{ .Values.serviceConfigs.logs.color }}
       level: {{ .Values.serviceConfigs.logs.level }}
+    crdUI:
+      port: {{ .Values.global.crdUI.port}}
+      path: {{ .Values.global.crdUI.path}}
 kind: ConfigMap
 metadata:
   name: zk-operator

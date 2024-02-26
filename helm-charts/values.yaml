@@ -5,6 +5,10 @@ global:
     pullPolicy: Always
   dockerBase: "zerokai"
 
+  crdUI:
+    port: 1137
+    path: "https://google.com"
+
 image:
   repo: "zk-operator"
   tag: "latest"
@@ -53,7 +57,6 @@ serviceConfigs:
   logs:
     color: true
     level: DEBUG
-
 
 # enable init container
 enableInitContainer: false

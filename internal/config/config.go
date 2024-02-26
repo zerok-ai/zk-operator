@@ -9,6 +9,11 @@ type HttpServerConfig struct {
 	MetricsPort     string `yaml:"metricsPort"`
 }
 
+type CrdUI struct {
+	Port string `yaml:"port"`
+	Path string `yaml:"path"`
+}
+
 type ClusterContextConfig struct {
 	Path      string `yaml:"path"`
 	CloudAddr string `yaml:"cloudAddr"`
@@ -20,4 +25,5 @@ type ZkOperatorConfig struct {
 	Http           HttpServerConfig      `yaml:"http"`
 	LogsConfig     logsConfig.LogsConfig `yaml:"logs"`
 	ClusterContext ClusterContextConfig  `yaml:"clusterContext"`
+	CrdUI          CrdUI                 `yaml:"crdUI"`
 }

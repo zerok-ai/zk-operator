@@ -12,7 +12,6 @@ import (
 	probeService "github.com/zerok-ai/zk-operator/probe/service"
 	"github.com/zerok-ai/zk-operator/store"
 	zkConfig "github.com/zerok-ai/zk-utils-go/config"
-	"path/filepath"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"time"
 
@@ -123,11 +122,19 @@ func initOperator(cfg config.ZkOperatorConfig) (*handler.ZkCRDProbeHandler, erro
 	})
 
 	app := newApp()
-	ph, _ := getProbeHandler(cfg)
-	probe.Initialize(app.Party("/v1"), ph)
-
-	// start http server
+	app.Get("/metrics", iris.FromStd(promhttp.Handler()))
+	app.Get("/metrics", iris.FromStd(promhttp.Handler()))
 	go server.StartHttpServer(app, irisConfig, cfg, zkModules)
+
+	uiApp := newApp()
+	ph, _ := getProbeHandler(cfg)
+	probe.Initialize(uiApp.Party("/"), ph)
+	uiApp.Get("/", func(ctx iris.Context) {
+		remoteURL := cfg.CrdUI.Path
+		ctx.Application().Logger().Infof("Redirecting to: %s", remoteURL)
+		ctx.Redirect(remoteURL, iris.StatusTemporaryRedirect)
+	})
+	go server.StartUIServer(uiApp, irisConfig, cfg)
 
 	return &crdProbeHandler, nil
 }
@@ -155,24 +162,6 @@ func newApp() *iris.Application {
 	}
 	app.UseRouter(crs)
 	app.AllowMethods(iris.MethodOptions)
-
-	//scraping metrics for prometheus
-	app.Get("/metrics", iris.FromStd(promhttp.Handler()))
-
-	//scraping metrics for prometheus
-	app.Get("/metrics", iris.FromStd(promhttp.Handler()))
-
-	staticDir := "/zk/static"
-	app.HandleDir("/static", staticDir)
-	app.Get("/probe", func(ctx iris.Context) {
-		filePath := filepath.Join(staticDir, "index.html")
-		err := ctx.ServeFile(filePath)
-		if err != nil {
-			zklogger.Error(LogTag, "Error while serving file ", err)
-			ctx.StatusCode(iris.StatusInternalServerError)
-			ctx.WriteString(err.Error())
-		}
-	}).Describe("probe static page")
 
 	return app
 }
